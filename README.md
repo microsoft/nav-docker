@@ -2,6 +2,8 @@
 
 This GitHub repository aims to provide a centralized location for community engagement. In here you will find documentation, Dockerfiles and additional developer resources. 
 
+## It has not been decided yet, to which extend Microsoft will ship Docker images with NAV, so everything in this repo is work in progress and might be subject to deletion.
+
 Dynamics NAV in Docker is based on a generic image, which can run any version of NAV (NAV 2016 and up).
 Specific images with a specific version of NAV can be built using the generic image and a NAV DVD.
 
