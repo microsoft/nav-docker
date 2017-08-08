@@ -2,9 +2,8 @@
 
 This GitHub repository aims to provide a centralized location for community engagement. In here you will find documentation, Dockerfiles and additional developer resources. 
 
-Dynamics NAV in Docker comes in two different flavors:
-- [Generic image](https://github.com/Microsoft/nav-docker/tree/master/generic): All images are based on Windows Container technology and can only be run using [Docker Engine for Windows Containers](https://msdn.microsoft.com/en-us/virtualization/windowscontainers/docker/configure_docker_daemon).
-- [Specific images](https://github.com/Microsoft/nav-docker/tree/master/specific): All images are based on Windows Container technology and can only be run using [Docker Engine for Windows Containers](https://msdn.microsoft.com/en-us/virtualization/windowscontainers/docker/configure_docker_daemon).
+Dynamics NAV in Docker is based on a generic image, which can run any version of NAV (NAV 2016 and up).
+Specific images with a specific version of NAV can be built using the generic image and a NAV DVD.
 
 Visit the [Microsoft Docker Hub page](https://hub.docker.com/u/microsoft) for more information and additional images.
 
