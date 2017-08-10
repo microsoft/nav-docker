@@ -13,11 +13,22 @@ if ($restartingInstance) {
 } else {
     $licenseOk = $false
     if ($licensefile -eq "") {
-        Write-Host "Using CRONUS license file"
-        $licensefile = "$ServiceTierFolder\Cronus.flf"
+
         if ($runningSpecificImage) { 
             $licenseOk = $true
         }
+
+        if ($databaseServer -ne "localhost") {
+            $licenseOk = $true
+        }
+
+        if ($licenseOk) {
+            Write-Host "Using existing license file"
+        } else {
+            Write-Host "Use CRONUS license file"
+            $licensefile = "$ServiceTierFolder\Cronus.flf"
+        }
+
     } else {
         if ($licensefile.StartsWith("https://") -or $licensefile.StartsWith("http://"))
         {
