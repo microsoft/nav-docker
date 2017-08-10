@@ -9,7 +9,7 @@
 
 if ($databaseServer -eq "localhost") {
     if ($password -ne "") {
-        $sqlcmd = "ALTER LOGIN sa with password=" +"'" + $password + "'" + ";ALTER LOGIN sa ENABLE;"
+        $sqlcmd = "ALTER LOGIN sa with password=" +"'" + $password + "'" + ",CHECK_POLICY = OFF;ALTER LOGIN sa ENABLE;"
         & sqlcmd -Q $sqlcmd
     }
     
