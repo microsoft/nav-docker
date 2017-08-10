@@ -26,7 +26,9 @@ if ($auth -eq "Windows") {
         if ($pwd -eq "") { $pwd = Get-RandomPassword }
         New-NavServerUser -ServerInstance NAV -Username $username -Password (ConvertTo-SecureString -String $pwd -AsPlainText -Force)
         New-NavServerUserPermissionSet -ServerInstance NAV -username $username -PermissionSetId SUPER
-        Write-Host "NAV Admin Username  : $username"
-        Write-Host "NAV Admin Password  : $pwd"
+        if ($password -eq "") {
+            Write-Host "NAV Admin Username  : $username"
+            Write-Host "NAV Admin Password  : $pwd"
+        }
     }
 }
