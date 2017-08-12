@@ -131,5 +131,6 @@ Copy-Item $sourceFile -destination $targetFile
 # Put a web.config file in the Deployment folder, which will tell IIS to allow downloading of .config files etc.
 $sourceFile = Join-Path $runPath 'deployment_web.config'
 $targetFile = Join-Path $clickOnceDirectory 'Win\Deployment\web.config'
+Copy-Item $sourceFile -destination $targetFile
 $targetFile = Join-Path $clickOnceDirectory 'Finsql\Deployment\web.config'
 Copy-Item $sourceFile -destination $targetFile
