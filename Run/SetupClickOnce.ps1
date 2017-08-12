@@ -41,6 +41,7 @@ New-Item (Join-Path $ClickOnceDirectory "Finsql") -type directory | Out-Null
 $templateFilesFolder  = Join-Path $clickOnceInstallerToolsFolder 'TemplateFiles'
 Copy-Item $templateFilesFolder\* -Destination (Join-Path $ClickOnceDirectory "Win") -Recurse
 Copy-Item $templateFilesFolder\* -Destination (Join-Path $ClickOnceDirectory "Finsql") -Recurse
+Copy-Item (Join-Path $runPath "NAVClientInstallation.html") -Destination $clickOnceDirectory
 
 # Save config file and copy the relevant WinClient files to the Deployment\ApplicationFiles folder
 $clickOnceApplicationFilesDirectoryWin = Join-Path $ClickOnceDirectory 'Win\Deployment\ApplicationFiles'
@@ -87,6 +88,7 @@ Set-DeploymentManifestSettings `
 # Finsql
 Rename-Item (Join-Path $clickOnceApplicationFilesDirectoryFinsql 'Microsoft.Dynamics.Nav.Client.exe.manifest') (Join-Path $clickOnceApplicationFilesDirectoryFinsql 'finsql.exe.manifest')
 $applicationManifestFile = Join-Path $clickOnceApplicationFilesDirectoryFinsql 'finsql.exe.manifest'
+(Get-Content $applicationManifestFile).replace('"msil"', '"x86"') | Set-Content $applicationManifestFile
 $applicationIdentityName = "$hostname Finsql ClickOnce"
 $applicationIdentityVersion = (Get-Item -Path (Join-Path $clickOnceApplicationFilesDirectoryFinsql 'finsql.exe')).VersionInfo.FileVersion
 
@@ -101,6 +103,7 @@ Set-ApplicationManifestApplicationIdentity `
 
 Rename-Item (Join-Path $clickOnceDirectory 'Finsql\Deployment\Microsoft.Dynamics.Nav.Client.application') (Join-Path $clickOnceDirectory 'Finsql\Deployment\finsql.application')
 $deploymentManifestFile = Join-Path $clickOnceDirectory 'Finsql\Deployment\finsql.application'
+(Get-Content $deploymentManifestFile).replace('"msil"', '"x86"') | Set-Content $deploymentManifestFile
 $deploymentIdentityName = "$hostname Finsql ClickOnce"
 $deploymentIdentityVersion = $applicationIdentityVersion
 $deploymentManifestUrl = ($webSiteUrl + "/Finsql/Deployment/Finsql.application")
@@ -116,7 +119,7 @@ Set-DeploymentManifestSettings `
     -DeploymentIdentityName $DeploymentIdentityName `
     -DeploymentIdentityVersion $DeploymentIdentityVersion `
     -ApplicationPublisher $ApplicationPublisher `
-    -ApplicationName $ApplicationName `
+    -ApplicationName $applicationNameFinSql `
     -DeploymentManifestUrl $DeploymentManifestUrl
 
 
