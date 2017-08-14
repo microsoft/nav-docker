@@ -45,3 +45,10 @@ if ($servicesUseSSL) {
         netsh http add sslcert ipport=0.0.0.0:$_ certhash=$certificateThumbprint appid="{00112233-4455-6677-8899-AABBCCDDEEFF}" | Out-Null
     }
 }
+
+if ($developerServicesKeyExists) {
+    $serverConfigFile = Join-Path $ServiceTierFolder "Microsoft.Dynamics.Nav.Server.exe.config"
+    $serverConfig = [xml](Get-Content -Path $serverConfigFile)
+    $serverConfig.SelectSingleNode("//configuration/runtime/NetFx40_LegacySecurityPolicy").enabled = "false"
+    $serverConfig.Save($serverConfigFile)
+}

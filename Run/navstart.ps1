@@ -207,10 +207,10 @@ if ($runningGenericImage -or $buildingImage) {
                 $dir = $_.FullName
                 Get-ChildItem (Join-Path $dir "*.msi") | % {
                     $filepath = $_.FullName
-                    if ($filepath.Contains('WebHelp.')) {
+                    if ($filepath.Contains('\WebHelp\')) {
                         Write-Host "Skipping $filepath"
                     } else {
-                        Write-Host "xInstalling $filepath"
+                        Write-Host "Installing $filepath"
                         Start-Process -FilePath $filepath -WorkingDirectory $dir -ArgumentList "/qn /norestart" -Wait
                     }
                 }
