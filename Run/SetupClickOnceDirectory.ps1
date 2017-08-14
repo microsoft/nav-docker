@@ -46,6 +46,8 @@ Copy-Item "$roleTailoredClientFolder\fin.etx"                                   
 Copy-Item "$roleTailoredClientFolder\ROTAccess.dll"                                                  -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-Item "$roleTailoredClientFolder\System.Reflection.Metadata.dll"                                 -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-Item "$roleTailoredClientFolder\System.Spatial.dll"                                             -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
+Copy-Item "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.DotNetBridge.dll"                        -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
+Copy-Item "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Types.dll"                               -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
 
 Get-ChildItem -Path "$roleTailoredClientFolder\??-??" -Directory | % {
     $Name = $_.Name
