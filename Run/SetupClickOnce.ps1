@@ -26,8 +26,10 @@ $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ACSU
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='DnsIdentity']").value = "$dnsIdentity"
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ClientServicesCredentialType']").value = "$Auth"
 
-$applicationName = "Microsoft Dynamics NAV Windows Client for $hostname"
-$applicationNameFinSql = "Microsoft Dynamics NAV C/SIDE for $hostname"
+$navVersion = Get-ChildItem -Path $NavDvdPath -Filter setup.exe | Select-Object -First 1 | ForEach-Object { $_.VersionInfo.ProductVersion }
+
+$applicationName = "NAV Win Client $navVersion"
+$applicationNameFinSql = "NAV C/SIDE $navVersion"
 $applicationPublisher = "Microsoft Corporation"
 
 
