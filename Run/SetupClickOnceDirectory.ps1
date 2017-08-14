@@ -48,6 +48,7 @@ Copy-Item "$roleTailoredClientFolder\System.Reflection.Metadata.dll"            
 Copy-Item "$roleTailoredClientFolder\System.Spatial.dll"                                             -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-Item "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.DotNetBridge.dll"                        -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-Item "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Types.dll"                               -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
+Copy-Item "$roleTailoredClientFolder\Add-ins"                                                        -Destination "$ClickOnceApplicationFilesDirectoryFinsql\Add-ins" -Recurse
 
 Get-ChildItem -Path "$roleTailoredClientFolder\??-??" -Directory | % {
     $Name = $_.Name
