@@ -112,8 +112,15 @@ if ($runningGenericImage -or $buildingImage)
     start-process "$NavDvdPath\Prerequisite Components\IIS URL Rewrite Module\rewrite_2.0_rtw_x64.msi" -ArgumentList "/quiet /qn /passive" -Wait
 
     Write-Host "Installing ReportViewer"
-    start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer\SQLSysClrTypes.msi" -ArgumentList "/quiet /qn /passive" -Wait
-    start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer\ReportViewer.msi" -ArgumentList "/quiet /qn /passive" -Wait
+    if (Test-Path "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer" -PathType Container) {
+        start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer\SQLSysClrTypes.msi" -ArgumentList "/quiet /qn /passive" -Wait
+        start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer\ReportViewer.msi" -ArgumentList "/quiet /qn /passive" -Wait
+    }
+
+    if (Test-Path "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2015" -PathType Container) {
+        start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2015\SQLSysClrTypes.msi" -ArgumentList "/quiet /qn /passive" -Wait
+        start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2015\ReportViewer.msi" -ArgumentList "/quiet /qn /passive" -Wait
+    }
 
     Write-Host "Installing OpenXML"
     start-process "$NavDvdPath\Prerequisite Components\Open XML SDK 2.5 for Microsoft Office\OpenXMLSDKv25.msi" -ArgumentList "/quiet /qn /passive" -Wait
@@ -172,7 +179,8 @@ if ($buildingImage) {
                     -DatabaseInstance $databaseInstance `
                     -DatabaseName "$databaseName" `
                     -FilePath "$databaseFile" `
-                    -DestinationPath "$databaseFolder" | Out-Null
+                    -DestinationPath "$databaseFolder" `
+                    -Timeout $SqlTimeout | Out-Null
 
 } elseif ($databaseServer -ne "localhost" -or $databaseName -ne "") {
 
@@ -199,8 +207,12 @@ if ($runningGenericImage -or $buildingImage) {
                 $dir = $_.FullName
                 Get-ChildItem (Join-Path $dir "*.msi") | % {
                     $filepath = $_.FullName
-                    Write-Host "Installing $filepath"
-                    Start-Process -FilePath $filepath -WorkingDirectory $dir -ArgumentList "/qn /norestart" -Wait
+                    if ($filepath.Contains('WebHelp.')) {
+                        Write-Host "Skipping $filepath"
+                    } else {
+                        Write-Host "xInstalling $filepath"
+                        Start-Process -FilePath $filepath -WorkingDirectory $dir -ArgumentList "/qn /norestart" -Wait
+                    }
                 }
             }
         }

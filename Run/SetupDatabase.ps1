@@ -71,6 +71,7 @@ if ($restartInstance) {
                         -DatabaseInstance $databaseInstance `
                         -DatabaseName "$databaseName" `
                         -FilePath "$databaseFile" `
-                        -DestinationPath "$databaseFolder" | Out-Null
+                        -DestinationPath "$databaseFolder" `
+                        -Timeout $SqlTimeout | Out-Null
     }
 }

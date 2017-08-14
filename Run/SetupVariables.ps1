@@ -20,3 +20,7 @@ if ($auth -eq "") {
     }
 }
 $clickOnce = "$env:ClickOnce"
+$SqlTimeout = "$env:SqlTimeout"
+if ($SqlTimeout -eq "") {
+    $SqlTimeout = "300"
+}
