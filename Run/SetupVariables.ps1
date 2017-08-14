@@ -5,12 +5,19 @@ if ($username -eq "ContainerAdministrator") {
 $password = "$env:password"
 $licensefile = "$env:licensefile"
 $bakfile = "$env:bakfile"
-$databaseServer = "$env:databaseServer"
-if ($databaseServer -eq "") {
+if ($bakfile -ne "") {
     $databaseServer = "localhost"
+    $databaseInstance = ""
+    $databaseName = ""
+} else {
+    $databaseServer = "$env:databaseServer"
+    $databaseInstance = "$env:databaseInstance"
+    $databaseName = "$env:databaseName"
+    if ($databaseServer -eq "") {
+        $databaseServer = "localhost"
+    }
 }
-$databaseInstance = "$env:databaseInstance"
-$databaseName = "$env:databaseName"
+
 $Accept_eula = "$env:Accept_eula"
 $useSSL = "$env:UseSSL"
 $auth = "$env:Auth"
