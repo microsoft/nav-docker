@@ -28,8 +28,8 @@ $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='Clie
 
 $navVersion = Get-ChildItem -Path $NavDvdPath -Filter setup.exe | Select-Object -First 1 | ForEach-Object { $_.VersionInfo.ProductVersion }
 
-$applicationName = "NAV Win Client $navVersion"
-$applicationNameFinSql = "NAV C/SIDE $navVersion"
+$applicationName = "NAV Windows Client for $hostname"
+$applicationNameFinSql = "NAV C/SIDE for $hostname"
 $applicationPublisher = "Microsoft Corporation"
 
 
