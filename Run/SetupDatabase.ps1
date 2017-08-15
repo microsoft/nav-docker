@@ -8,7 +8,7 @@
 #     $databaseName
 #
 
-if ($restartInstance) {
+if ($restartingInstance) {
 
     # Nothing to do
 
