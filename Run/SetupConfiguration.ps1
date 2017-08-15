@@ -14,16 +14,17 @@
 
 Write-Host "Modify NAV Service Tier Config File with Instance Specific Settings"
 if (Test-Path "$NavDvdPath\Prerequisite Components\DotNetCore" -PathType Container) {
-    $PublicWebBaseUrl = "$protocol$hostname"
+    $PublicWebBaseUrl = "$protocol$hostname$publicwebClientPort"
 } else {
-    $PublicWebBaseUrl = "$protocol$hostname/NAV/WebClient/"
+    $PublicWebBaseUrl = "$protocol$hostname$publicwebClientPort/NAV/WebClient/"
 }
 $CustomConfigFile =  Join-Path $ServiceTierFolder "CustomSettings.config"
 $CustomConfig = [xml](Get-Content $CustomConfigFile)
 $customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesCredentialType']").Value = $auth
 $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value = $PublicWebBaseUrl
-$CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicSOAPBaseUrl']").Value = "$protocol${hostname}:7047/NAV/WS"
-$CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicODataBaseUrl']").Value = "$protocol${hostname}:7048/NAV/OData"
+$CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicSOAPBaseUrl']").Value = "$protocol${hostname}:$publicSoapPort/NAV/WS"
+$CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicODataBaseUrl']").Value = "$protocol${hostname}:$publicODataPort/NAV/OData"
+$CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWinBaseUrl']").Value = "DynamicsNAV://${hostname}:$publicWinClientPort/NAV/"
 if ($navUseSSL) {
     $CustomConfig.SelectSingleNode("//appSettings/add[@key='ServicesCertificateThumbprint']").Value = "$certificateThumbprint"
     $CustomConfig.SelectSingleNode("//appSettings/add[@key='ServicesCertificateValidationEnabled']").Value = "false"

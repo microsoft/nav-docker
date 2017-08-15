@@ -86,6 +86,14 @@ if ($servicesUseSSL) {
     $webClientPort = 80
 }
 
+# Default public ports
+if ($publicWebClientPort -ne "") { $publicWebClientPort = ":$publicWebClientPort" }
+if ($publicFileSharePort -eq "") { $publicFileSharePort = "8080" }
+if ($publicWinClientPort -eq "") { $publicWinClientPort = "7046" }
+if ($publicSoapPort      -eq "") { $publicSoapPort      = "7047" }
+if ($publicODataPort     -eq "") { $publicODataPort     = "7048" }
+
+
 if ($runningGenericImage -or $runningSpecificImage) {
     Write-Host "Using $auth Authentication"
 }
@@ -326,13 +334,13 @@ if ($runningGenericImage -or $runningSpecificImage) {
         $acl.AddAccessRule($rule)
         Set-Acl -Path $ResourcesFolder $acl
         $acl = $null
-
-        
     }
+
+    . (Get-MyFilePath "SetupWebConfiguration.ps1")
 
     Write-Host "Create http download site"
     New-Item -Path $httpPath -ItemType Directory | Out-Null
-    New-Website -Name http -Port 8080 -PhysicalPath $httpPath | Out-Null
+    New-Website -Name http -Port $publicFileSharePort -PhysicalPath $httpPath | Out-Null
 
     $webConfigFile = Join-Path $httpPath "web.config"
     Copy-Item -Path (Join-Path $runPath "web.config") -Destination $webConfigFile
@@ -360,7 +368,7 @@ if (!$buildingImage) {
         Write-Host "Dev. ServerInstance : NAV"
     }
     if (Test-Path -Path "$httpPath/NAV" -PathType Container) {
-        Write-Host "ClickOnce Manifest  : http://${hostname}:8080/NAV"
+        Write-Host "ClickOnce Manifest  : http://${hostname}:$publicFileSharePort/NAV"
     }
 
     . (Get-MyFilePath "AdditionalOutput.ps1")
@@ -368,7 +376,7 @@ if (!$buildingImage) {
     Write-Host 
     Write-Host "Files:"
     Get-ChildItem -Path $httpPath -file | % {
-        Write-Host "http://${hostname}:8080/$($_.Name)"
+        Write-Host "http://${hostname}:$publicFileSharePort/$($_.Name)"
     }
     Write-Host 
 

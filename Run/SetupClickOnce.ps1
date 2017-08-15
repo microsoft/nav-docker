@@ -15,13 +15,14 @@ Import-Module WebAdministration
 
 $clickOnceDirectory = Join-Path $httpPath "NAV"
 Remove-Item $clickOnceDirectory -Force -Recurse -ErrorAction SilentlyContinue
-$webSiteUrl = "http://${hostname}:8080/NAV"
+$webSiteUrl = "http://${hostname}:$publicFileSharePort/NAV"
 
 $ClientUserSettingsFileName = Join-Path (Get-ChildItem -Path "$NavDvdPath\RoleTailoredClient\CommonAppData\Microsoft\Microsoft Dynamics NAV" -Directory | Select-Object -Last 1).FullName "ClientUserSettings.config"
 [xml]$ClientUserSettings = Get-Content $clientUserSettingsFileName
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='Server']").value = "$hostname"
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ServerInstance']").value="NAV"
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ServicesCertificateValidationEnabled']").value="false"
+$clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ClientServicesPort']").value="$publicWinClientPort"
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ACSUri']").value = ""
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='DnsIdentity']").value = "$dnsIdentity"
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ClientServicesCredentialType']").value = "$Auth"
