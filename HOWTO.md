@@ -575,7 +575,6 @@ function Enter-Container {
         $AttributeCollection.Add($ParameterAttribute)
   
         # Generate and set the ValidateSet 
-        #$arrSet = Get-WmiObject Win32_Service| select -ExpandProperty Name
         $arrSet = Get-Container| select -ExpandProperty Names | ForEach-Object { $_.Substring(1) }
         $ValidateSetAttribute = New-Object System.Management.Automation.ValidateSetAttribute($arrSet)
   
