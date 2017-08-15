@@ -26,44 +26,53 @@ $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ACSU
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='DnsIdentity']").value = "$dnsIdentity"
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ClientServicesCredentialType']").value = "$Auth"
 
-$applicationName = "Microsoft Dynamics NAV Windows Client for $hostname"
+$navVersion = Get-ChildItem -Path $NavDvdPath -Filter setup.exe | Select-Object -First 1 | ForEach-Object { $_.VersionInfo.ProductVersion }
+
+$applicationName = "NAV Windows Client for $hostname"
+$applicationNameFinSql = "NAV C/SIDE for $hostname"
 $applicationPublisher = "Microsoft Corporation"
+
 
 # Create empty directory
 New-Item $ClickOnceDirectory -type directory | Out-Null
+New-Item (Join-Path $ClickOnceDirectory "Win") -type directory | Out-Null
+New-Item (Join-Path $ClickOnceDirectory "Finsql") -type directory | Out-Null
+
 
 # Copy file structure from the installation folder
 $templateFilesFolder  = Join-Path $clickOnceInstallerToolsFolder 'TemplateFiles'
-Copy-Item $templateFilesFolder\* -Destination $ClickOnceDirectory -Recurse
+Copy-Item $templateFilesFolder\* -Destination (Join-Path $ClickOnceDirectory "Win") -Recurse
+Copy-Item $templateFilesFolder\* -Destination (Join-Path $ClickOnceDirectory "Finsql") -Recurse
+Copy-Item (Join-Path $runPath "NAVClientInstallation.html") -Destination $clickOnceDirectory
 
 # Save config file and copy the relevant WinClient files to the Deployment\ApplicationFiles folder
-$clickOnceApplicationFilesDirectory = Join-Path $ClickOnceDirectory 'Deployment\ApplicationFiles'
-$clientUserSettingsFile = Join-Path $clickOnceApplicationFilesDirectory 'ClientUserSettings.config'
+$clickOnceApplicationFilesDirectoryWin = Join-Path $ClickOnceDirectory 'Win\Deployment\ApplicationFiles'
+$clickOnceApplicationFilesDirectoryFinsql = Join-Path $ClickOnceDirectory 'Finsql\Deployment\ApplicationFiles'
+$clientUserSettingsFile = Join-Path $clickOnceApplicationFilesDirectoryWin 'ClientUserSettings.config'
 $ClientUserSettings.Save($clientUserSettingsFile)
 . (Get-MyFilePath "SetupClickOnceDirectory.ps1")
 
 $MageExeLocation = Join-Path $runPath 'Install\mage.exe'
 
-$clickOnceApplicationFilesDirectory = Join-Path $clickOnceDirectory 'Deployment\ApplicationFiles'
-
-$applicationManifestFile = Join-Path $clickOnceApplicationFilesDirectory 'Microsoft.Dynamics.Nav.Client.exe.manifest'
+# Win Client
+$applicationManifestFile = Join-Path $clickOnceApplicationFilesDirectoryWin 'Microsoft.Dynamics.Nav.Client.exe.manifest'
 $applicationIdentityName = "$hostname ClickOnce"
-$applicationIdentityVersion = (Get-Item -Path (Join-Path $clickOnceApplicationFilesDirectory 'Microsoft.Dynamics.Nav.Client.exe')).VersionInfo.FileVersion
+$applicationIdentityVersion = (Get-Item -Path (Join-Path $clickOnceApplicationFilesDirectoryWin 'Microsoft.Dynamics.Nav.Client.exe')).VersionInfo.FileVersion
 
 Set-ApplicationManifestFileList `
     -ApplicationManifestFile $ApplicationManifestFile `
-    -ApplicationFilesDirectory $ClickOnceApplicationFilesDirectory `
+    -ApplicationFilesDirectory $ClickOnceApplicationFilesDirectoryWin `
     -MageExeLocation $MageExeLocation
 Set-ApplicationManifestApplicationIdentity `
     -ApplicationManifestFile $ApplicationManifestFile `
     -ApplicationIdentityName $ApplicationIdentityName `
     -ApplicationIdentityVersion $ApplicationIdentityVersion
 
-$deploymentManifestFile = Join-Path $clickOnceDirectory 'Deployment\Microsoft.Dynamics.Nav.Client.application'
+$deploymentManifestFile = Join-Path $clickOnceDirectory 'Win\Deployment\Microsoft.Dynamics.Nav.Client.application'
 $deploymentIdentityName = "$hostname ClickOnce"
 $deploymentIdentityVersion = $applicationIdentityVersion
-$deploymentManifestUrl = ($webSiteUrl + "/Deployment/Microsoft.Dynamics.Nav.Client.application")
-$applicationManifestUrl = ($webSiteUrl + "/Deployment/ApplicationFiles/Microsoft.Dynamics.Nav.Client.exe.manifest")
+$deploymentManifestUrl = ($webSiteUrl + "/Win/Deployment/Microsoft.Dynamics.Nav.Client.application")
+$applicationManifestUrl = ($webSiteUrl + "/Win/Deployment/ApplicationFiles/Microsoft.Dynamics.Nav.Client.exe.manifest")
 
 Set-DeploymentManifestApplicationReference `
     -DeploymentManifestFile $DeploymentManifestFile `
@@ -78,6 +87,44 @@ Set-DeploymentManifestSettings `
     -ApplicationName $ApplicationName `
     -DeploymentManifestUrl $DeploymentManifestUrl
 
+# Finsql
+Rename-Item (Join-Path $clickOnceApplicationFilesDirectoryFinsql 'Microsoft.Dynamics.Nav.Client.exe.manifest') (Join-Path $clickOnceApplicationFilesDirectoryFinsql 'finsql.exe.manifest')
+$applicationManifestFile = Join-Path $clickOnceApplicationFilesDirectoryFinsql 'finsql.exe.manifest'
+(Get-Content $applicationManifestFile).replace('"msil"', '"x86"') | Set-Content $applicationManifestFile
+$applicationIdentityName = "$hostname Finsql ClickOnce"
+$applicationIdentityVersion = (Get-Item -Path (Join-Path $clickOnceApplicationFilesDirectoryFinsql 'finsql.exe')).VersionInfo.FileVersion
+
+Set-ApplicationManifestFileList `
+    -ApplicationManifestFile $ApplicationManifestFile `
+    -ApplicationFilesDirectory $ClickOnceApplicationFilesDirectoryFinsql `
+    -MageExeLocation $MageExeLocation
+Set-ApplicationManifestApplicationIdentity `
+    -ApplicationManifestFile $ApplicationManifestFile `
+    -ApplicationIdentityName $ApplicationIdentityName `
+    -ApplicationIdentityVersion $ApplicationIdentityVersion
+
+Rename-Item (Join-Path $clickOnceDirectory 'Finsql\Deployment\Microsoft.Dynamics.Nav.Client.application') (Join-Path $clickOnceDirectory 'Finsql\Deployment\finsql.application')
+$deploymentManifestFile = Join-Path $clickOnceDirectory 'Finsql\Deployment\finsql.application'
+(Get-Content $deploymentManifestFile).replace('"msil"', '"x86"') | Set-Content $deploymentManifestFile
+$deploymentIdentityName = "$hostname Finsql ClickOnce"
+$deploymentIdentityVersion = $applicationIdentityVersion
+$deploymentManifestUrl = ($webSiteUrl + "/Finsql/Deployment/Finsql.application")
+$applicationManifestUrl = ($webSiteUrl + "/Finsql/Deployment/ApplicationFiles/Finsql.exe.manifest")
+
+Set-DeploymentManifestApplicationReference `
+    -DeploymentManifestFile $DeploymentManifestFile `
+    -ApplicationManifestFile $ApplicationManifestFile `
+    -ApplicationManifestUrl $ApplicationManifestUrl `
+    -MageExeLocation $MageExeLocation
+Set-DeploymentManifestSettings `
+    -DeploymentManifestFile $DeploymentManifestFile `
+    -DeploymentIdentityName $DeploymentIdentityName `
+    -DeploymentIdentityVersion $DeploymentIdentityVersion `
+    -ApplicationPublisher $ApplicationPublisher `
+    -ApplicationName $applicationNameFinSql `
+    -DeploymentManifestUrl $DeploymentManifestUrl
+
+
 # Put a web.config file in the root folder, which will tell IIS which .html file to open
 $sourceFile = Join-Path $runPath 'root_web.config'
 $targetFile = Join-Path $clickOnceDirectory 'web.config'
@@ -85,5 +132,7 @@ Copy-Item $sourceFile -destination $targetFile
 
 # Put a web.config file in the Deployment folder, which will tell IIS to allow downloading of .config files etc.
 $sourceFile = Join-Path $runPath 'deployment_web.config'
-$targetFile = Join-Path $clickOnceDirectory 'Deployment\web.config'
+$targetFile = Join-Path $clickOnceDirectory 'Win\Deployment\web.config'
+Copy-Item $sourceFile -destination $targetFile
+$targetFile = Join-Path $clickOnceDirectory 'Finsql\Deployment\web.config'
 Copy-Item $sourceFile -destination $targetFile
