@@ -546,3 +546,58 @@ Pull-ContainerImage -Repository "navdocker.azurecr.io/dynamics-nav" -Tag "2017" 
 ```
 
 If you are pulling from the Docker hub you can avoid the authorization parameter.
+
+## Make entering a running container easier
+You probably will oftentimes want to enter a container and get a PowerShell session inside it. A convenient function to make this quick and easy is:
+
+```
+function Enter-Container {
+    [CmdletBinding()]
+    param
+    ()
+ 
+    DynamicParam {
+        # Set the dynamic parameters name
+        $ParameterName = 'Container'
+              
+        # Create the dictionary 
+        $RuntimeParameterDictionary = New-Object System.Management.Automation.RuntimeDefinedParameterDictionary
+  
+        # Create the collection of attributes
+        $AttributeCollection = New-Object System.Collections.ObjectModel.Collection[System.Attribute]
+              
+        # Create and set the parameters' attributes
+        $ParameterAttribute = New-Object System.Management.Automation.ParameterAttribute
+        $ParameterAttribute.Mandatory = $true
+        $ParameterAttribute.Position = 0
+  
+        # Add the attributes to the attributes collection
+        $AttributeCollection.Add($ParameterAttribute)
+  
+        # Generate and set the ValidateSet 
+        $arrSet = Get-Container| select -ExpandProperty Names | ForEach-Object { $_.Substring(1) }
+        $ValidateSetAttribute = New-Object System.Management.Automation.ValidateSetAttribute($arrSet)
+  
+        # Add the ValidateSet to the attributes collection
+        $AttributeCollection.Add($ValidateSetAttribute)
+  
+        # Create and return the dynamic parameter
+        $RuntimeParameter = New-Object System.Management.Automation.RuntimeDefinedParameter($ParameterName, [string], $AttributeCollection)
+        $RuntimeParameterDictionary.Add($ParameterName, $RuntimeParameter)
+        return $RuntimeParameterDictionary
+    }
+ 
+    begin {
+        # Bind the parameter to a friendly variable
+        $Container = $PsBoundParameters[$ParameterName]
+    }
+  
+    Process {
+        Enter-PSSession -ContainerId (Get-Container $Container).ID -RunAsAdministrator
+    }
+}
+```
+
+With that in place you can enter a container like this:
+
+![Enter a container](https://www.axians-infoma.de/wp-content/uploads/2017/08/enter-container.gif "Enter a container")
