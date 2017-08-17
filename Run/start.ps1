@@ -12,6 +12,18 @@ function Get-MyFilePath([string]$FileName)
     }
 }
 
-. (Get-MyFilePath "HelperFunctions.ps1")
-. (Get-MyFilePath "navstart.ps1")
+try {
+
+    . (Get-MyFilePath "HelperFunctions.ps1")
+    . (Get-MyFilePath "navstart.ps1")
+
+} catch {
+
+    Write-Host -ForegroundColor Red $_.Exception.Message
+    Write-Host -ForegroundColor Red $_.ScriptStackTrace
+
+    if ("$env:ExitOnError" -ne "N") {
+        return
+    }
+}
 . (Get-MyFilePath "MainLoop.ps1")

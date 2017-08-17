@@ -1,5 +1,8 @@
 Write-Host "Initializing..."
 
+$hostname = hostname
+Write-Host "Hostname is $hostname"
+
 $runPath = "c:\Run"
 $myPath = Join-Path $runPath "my"
 $navDvdPath = "C:\NAVDVD"
@@ -255,9 +258,6 @@ if ($runningGenericImage -or $runningSpecificImage) {
         Stop-Service -Name $SqlServiceName -ErrorAction Ignore
     }
 
-    $hostname = hostname
-    Write-Host "Hostname is $hostname"
-    
     # Certificate
     if ($navUseSSL -or $servicesUseSSL) {
         . (Get-MyFilePath "SetupCertificate.ps1")
