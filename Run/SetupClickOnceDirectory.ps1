@@ -38,7 +38,9 @@ Copy-Item "$roleTailoredClientFolder\finsql.exe.config"                         
 Copy-Item "$roleTailoredClientFolder\fin.stx"                                                        -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-Item "$roleTailoredClientFolder\fin.etx"                                                        -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-Item "$roleTailoredClientFolder\Cronus.flf"                                                     -Destination "$ClickOnceApplicationFilesDirectoryFinsql\CRONUS.FLF"
-Copy-Item "$roleTailoredClientFolder\Commandline.dll"                                                -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
+if (Test-Path "$roleTailoredClientFolder\Commandline.dll") {
+    Copy-Item "$roleTailoredClientFolder\Commandline.dll"                                            -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
+}
 Copy-Item "$roleTailoredClientFolder\Finhlink.exe"                                                   -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-Item "$roleTailoredClientFolder\ndbcs.dll"                                                      -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-Item "$roleTailoredClientFolder\NSObjectXProxy.dll"                                             -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
