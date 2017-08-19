@@ -154,17 +154,17 @@ if ($runningGenericImage -or $buildingImage) {
     Copy-Item -Path "$navDvdPath\*.vsix" -Destination $runPath
 
     Write-Host "Copy PowerShell Scripts"
-    Copy-Item -Path "$navDvdPath\WindowsPowerShellScripts\Cloud\NAVAdministration\" -Destination "C:\Program Files (x86)\" -Recurse -Force
+    Copy-Item -Path "$navDvdPath\WindowsPowerShellScripts\Cloud\NAVAdministration\" -Destination $runPath -Recurse -Force
 
     Write-Host "Copy ClientUserSettings"
-    Copy-Item (Join-Path (Get-ChildItem -Path "$NavDvdPath\RoleTailoredClient\CommonAppData\Microsoft\Microsoft Dynamics NAV" -Directory | Select-Object -Last 1).FullName "ClientUserSettings.config") "C:\"
+    Copy-Item (Join-Path (Get-ChildItem -Path "$NavDvdPath\RoleTailoredClient\CommonAppData\Microsoft\Microsoft Dynamics NAV" -Directory | Select-Object -Last 1).FullName "ClientUserSettings.config") $runPath
 }
 
 $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName
 $roleTailoredClientFolder = (Get-Item "C:\Program Files (x86)\Microsoft Dynamics NAV\*\RoleTailored Client").FullName
 $clickOnceInstallerToolsFolder = (Get-Item "C:\Program Files (x86)\Microsoft Dynamics NAV\*\ClickOnce Installer Tools").FullName
 $WebClientFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Web Client")[0]
-$PowerShellScriptsFolder = (Get-Item "C:\Program Files (x86)\NAVAdministration").FullName
+$NAVAdministrationScriptsFolder = (Get-Item "$runPath\NAVAdministration").FullName
 
 if (!(Test-Path (Join-Path $roleTailoredClientFolder 'hlink.dll'))) {
     Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path $roleTailoredClientFolder 'hlink.dll')

@@ -10,14 +10,14 @@
 # OUTPUT
 #
 
-Import-Module "$PowerShellScriptsFolder\NAVAdministration.psm1"
+Import-Module "$NAVAdministrationScriptsFolder\NAVAdministration.psm1"
 Import-Module WebAdministration
 
 $clickOnceDirectory = Join-Path $httpPath "NAV"
 Remove-Item $clickOnceDirectory -Force -Recurse -ErrorAction SilentlyContinue
 $webSiteUrl = "http://${hostname}:$publicFileSharePort/NAV"
 
-$ClientUserSettingsFileName = "C:\ClientUserSettings.config"
+$ClientUserSettingsFileName = "$runPath\ClientUserSettings.config"
 [xml]$ClientUserSettings = Get-Content $clientUserSettingsFileName
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='Server']").value = "$hostname"
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ServerInstance']").value="NAV"
@@ -26,8 +26,6 @@ $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='Clie
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ACSUri']").value = ""
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='DnsIdentity']").value = "$dnsIdentity"
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ClientServicesCredentialType']").value = "$Auth"
-
-$navVersion = Get-ChildItem -Path $roleTailoredClientFolder -Filter finsql.exe | Select-Object -First 1 | ForEach-Object { $_.VersionInfo.ProductVersion }
 
 $applicationName = "NAV Windows Client for $hostname"
 $applicationNameFinSql = "NAV C/SIDE for $hostname"
