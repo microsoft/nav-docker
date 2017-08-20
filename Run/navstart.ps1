@@ -85,6 +85,9 @@ if (Test-Path "C:\Program Files\Microsoft Dynamics NAV" -PathType Container) {
     $restartingInstance = ($CurrentPublicWebBaseUrl -ne "")
     $hostnameChanged = ($CurrentPublicWebBaseUrl -ne $ExpectedPublicWebBaseUrl)
 }
+
+$PublicWebBaseUrl = $ExpectedPublicWebBaseUrl
+
 if ($restartingInstance) { Write-Host "Restarting Instance" }
 
 $runningGenericImage = !$restartingInstance -and !$buildingImage -and (!(Test-Path "C:\Program Files\Microsoft Dynamics NAV" -PathType Container))
