@@ -82,7 +82,8 @@ if (Test-Path "C:\Program Files\Microsoft Dynamics NAV" -PathType Container) {
     $CustomConfigFile = Join-Path (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName "CustomSettings.config"
     $CustomConfig = [xml](Get-Content $CustomConfigFile)
     $CurrentPublicWebBaseUrl = $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value
-    $restartingInstance = ($CurrentPublicWebBaseUrl -eq $ExpectedPublicWebBaseUrl)
+    $restartingInstance = ($CurrentPublicWebBaseUrl -ne "")
+    $hostnameChanged = ($CurrentPublicWebBaseUrl -ne $ExpectedPublicWebBaseUrl)
 }
 if ($restartingInstance) { Write-Host "Restarting Instance" }
 
@@ -271,8 +272,11 @@ if ($runningGenericImage -or $runningSpecificImage) {
         . (Get-MyFilePath "SetupCertificate.ps1")
     }
     
-    . (Get-MyFilePath "SetupConfiguration.ps1")
     . (Get-MyFilePath "SetupAddIns.ps1")
+}
+
+if ($runningGenericImage -or $runningSpecificImage -or $hostnameChanged) {
+    . (Get-MyFilePath "SetupConfiguration.ps1")
 }
 
 if ($restartingInstance) {
@@ -363,6 +367,11 @@ if ($runningGenericImage -or $runningSpecificImage) {
     . (Get-MyFilePath "SetupSqlUsers.ps1")
     . (Get-MyFilePath "SetupNavUsers.ps1")
     . (Get-MyFilePath "AdditionalSetup.ps1")
+}
+
+if ($clickOnce -eq "Y" -and $hostnameChanged) {
+    Write-Host "Recreate ClickOnce Manifest due to hostname change"
+    . (Get-MyFilePath "SetupClickOnce.ps1")
 }
 
 if (!$buildingImage) {
