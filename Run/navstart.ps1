@@ -40,31 +40,6 @@ $SqlServiceName = 'MSSQLSERVER'
 #
 if ($buildingImage) { Write-Host "Building Image" }
 
-$restartingInstance = $false
-if (Test-Path "C:\Program Files\Microsoft Dynamics NAV" -PathType Container) {
-    $CustomConfigFile = Join-Path (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName "CustomSettings.config"
-    $CustomConfig = [xml](Get-Content $CustomConfigFile)
-    $restartingInstance = ($CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value -ne "")
-}
-if ($restartingInstance) { Write-Host "Restarting Instance" }
-
-$runningGenericImage = !$restartingInstance -and !$buildingImage -and (!(Test-Path "C:\Program Files\Microsoft Dynamics NAV" -PathType Container))
-if ($runningGenericImage) { Write-Host "Running Generic Image" }
-
-$runningSpecificImage = (!$restartingInstance) -and (!$runningGenericImage) -and (!$buildingImage)
-if ($runningSpecificImage) { Write-Host "Running Specific Image" }
-
-if ($buildingImage + $restartingInstance + $runningGenericImage + $runningSpecificImage -ne 1) {
-    Write-Error "ERROR: Cannot determine reason for running script."
-    exit 1
-}
-
-if ($databaseServer -eq 'localhost') {
-    # start the SQL Server
-    Write-Host "Starting Local SQL Server"
-    Start-Service -Name $SqlServiceName -ErrorAction Ignore
-}
-
 if ($WindowsAuth) {
     $navUseSSL = $false
 } else {
@@ -96,6 +71,41 @@ if ($publicWinClientPort -eq "") { $publicWinClientPort = "7046" }
 if ($publicSoapPort      -eq "") { $publicSoapPort      = "7047" }
 if ($publicODataPort     -eq "") { $publicODataPort     = "7048" }
 
+if (Test-Path "$NavDvdPath\Prerequisite Components\DotNetCore" -PathType Container) {
+    $ExpectedPublicWebBaseUrl = "$protocol$hostname$publicwebClientPort"
+} else {
+    $ExpectedPublicWebBaseUrl = "$protocol$hostname$publicwebClientPort/NAV/WebClient/"
+}
+
+$restartingInstance = $false
+if (Test-Path "C:\Program Files\Microsoft Dynamics NAV" -PathType Container) {
+    $CustomConfigFile = Join-Path (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName "CustomSettings.config"
+    $CustomConfig = [xml](Get-Content $CustomConfigFile)
+    $CurrentPublicWebBaseUrl = $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value
+    $restartingInstance = ($CurrentPublicWebBaseUrl -ne "")
+    $hostnameChanged = ($CurrentPublicWebBaseUrl -ne $ExpectedPublicWebBaseUrl)
+}
+
+$PublicWebBaseUrl = $ExpectedPublicWebBaseUrl
+
+if ($restartingInstance) { Write-Host "Restarting Instance" }
+
+$runningGenericImage = !$restartingInstance -and !$buildingImage -and (!(Test-Path "C:\Program Files\Microsoft Dynamics NAV" -PathType Container))
+if ($runningGenericImage) { Write-Host "Running Generic Image" }
+
+$runningSpecificImage = (!$restartingInstance) -and (!$runningGenericImage) -and (!$buildingImage)
+if ($runningSpecificImage) { Write-Host "Running Specific Image" }
+
+if ($buildingImage + $restartingInstance + $runningGenericImage + $runningSpecificImage -ne 1) {
+    Write-Error "ERROR: Cannot determine reason for running script."
+    exit 1
+}
+
+if ($databaseServer -eq 'localhost') {
+    # start the SQL Server
+    Write-Host "Starting Local SQL Server"
+    Start-Service -Name $SqlServiceName -ErrorAction Ignore
+}
 
 if ($runningGenericImage -or $runningSpecificImage) {
     Write-Host "Using $auth Authentication"
@@ -251,20 +261,25 @@ if ($runningGenericImage -or $runningSpecificImage -or $buildingImage) {
     $CustomConfig.Save($CustomConfigFile)
 }
 
-if ($runningGenericImage -or $runningSpecificImage) {
+if ($runningGenericImage -or $runningSpecificImage -or $restartingInstance) {
 
     if ($databaseServer -ne 'localhost') {
         Write-Host "Stopping local SQL Server"
         Stop-Service -Name $SqlServiceName -ErrorAction Ignore
     }
+}
 
+if ($runningGenericImage -or $runningSpecificImage) {
     # Certificate
     if ($navUseSSL -or $servicesUseSSL) {
         . (Get-MyFilePath "SetupCertificate.ps1")
     }
     
-    . (Get-MyFilePath "SetupConfiguration.ps1")
     . (Get-MyFilePath "SetupAddIns.ps1")
+}
+
+if ($runningGenericImage -or $runningSpecificImage -or $hostnameChanged) {
+    . (Get-MyFilePath "SetupConfiguration.ps1")
 }
 
 if ($restartingInstance) {
@@ -355,6 +370,11 @@ if ($runningGenericImage -or $runningSpecificImage) {
     . (Get-MyFilePath "SetupSqlUsers.ps1")
     . (Get-MyFilePath "SetupNavUsers.ps1")
     . (Get-MyFilePath "AdditionalSetup.ps1")
+}
+
+if ($clickOnce -eq "Y" -and $hostnameChanged) {
+    Write-Host "Recreate ClickOnce Manifest due to hostname change"
+    . (Get-MyFilePath "SetupClickOnce.ps1")
 }
 
 if (!$buildingImage) {
