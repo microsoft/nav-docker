@@ -223,3 +223,16 @@ function Restore-BacpacWithRetry
         }
     }
 }
+
+function Get-NavDatabaseFiles([string]$DatabaseName)
+{
+    Invoke-sqlcmd -ea stop  -QueryTimeout 0 -Query "SELECT f.physical_name FROM sys.sysdatabases db INNER JOIN sys.master_files f ON f.database_id = db.dbid WHERE db.name = '$DatabaseName'" | % {
+        $file = $_.physical_name
+        if (Test-Path $file)
+        {
+            $file = Resolve-Path $file
+        }
+        $file
+    }
+}
+
