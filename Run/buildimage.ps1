@@ -1,3 +1,14 @@
 ﻿$BuildingImage = $true
+
+(New-Object System.Net.WebClient).DownloadFile("$env:NAVDVDURL", "C:\NAVDVD.zip")
+[Reflection.Assembly]::LoadWithPartialName("System.IO.Compression.Filesystem") | Out-Null
+[System.IO.Compression.ZipFile]::ExtractToDirectory("C:\NAVDVD.zip","C:\NAVDVD\")
+Remove-Item -Path "C:\NAVDVD.zip" -Force
+if ("$env:VSIXURL" -ne "") {
+    (New-Object System.Net.WebClient).DownloadFile("$env:VSIXURL", ("C:\NAVDVD\"+"$env:VSIXURL".Substring("$env:VSIXURL".LastIndexOf("/")+1)))
+}
+
 . (Join-Path $PSScriptRoot "navstart.ps1")
+
+Remove-Item -Path "C:\NAVDVD" -Force -Recurse
 $BuildingImage = $false

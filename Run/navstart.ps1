@@ -293,18 +293,34 @@ if ($runningGenericImage -or $runningSpecificImage) {
     Get-WebSite | Remove-WebSite
     Get-WebBinding | Remove-WebBinding
     
-    if (Test-Path "$NavDvdPath\Prerequisite Components\DotNetCore" -PathType Container) {
+    $certparam = @{}
+    if ($servicesUseSSL) {
+        $certparam += @{CertificateThumbprint = $certificateThumbprint}
+    }
+
+    if (Test-Path "C:\Program Files\dotnet\shared\Microsoft.NETCore.App" -PathType Container) {
         
         Write-Host "Create DotNetCore NAV Web Server Instance"
-        $webClientFolder = (Get-Item "$NavDvdPath\WebClient\Microsoft Dynamics NAV\*\Web Client").FullName
+        #$webClientFolder = (Get-Item "$NavDvdPath\WebClient\Microsoft Dynamics NAV\*\Web Client").FullName
         $publishFolder = "$webClientFolder\WebPublish"
+
+# Fix bug in NAVWebClientManagement.psm1
+$scriptname = "$webClientFolder\Scripts\NAVWebClientManagement.psm1"
+$script = Get-Content $scriptname
+$script = $script.Replace('Remove-Website -Name $SiteName -ErrorAction Ignore','Get-WebSite -Name $SiteName | Remove-WebSite')
+$script = $script.Replace('Remove-WebAppPool $AppPoolName -ErrorAction Ignore','if (Test-Path "IIS:\AppPools\$AppPoolName") { Remove-WebAppPool $AppPoolName }')
+$script = $script.Replace('Remove-WebApplication -Site $ContainerName -Name $WebServerInstance -ErrorAction Ignore','Get-WebApplication -Site $ContainerName -Name $WebServerInstance | Remove-WebApplication')
+Set-Content -Path $scriptname -Value $script
+
         Import-Module "$webClientFolder\Scripts\NAVWebClientManagement.psm1"
-        if ($servicesUseSSL) {
-            New-NAVWebServerInstance -PublishFolder $publishFolder -WebServerInstance "NAV" -Server "localhost" -ServerInstance "NAV" -ClientServicesCredentialType $Auth -ClientServicesPort "7046" -WebSitePort $webClientPort -AddFirewallException $false -CertificateThumbprint $certificateThumbprint
-        }
-        else {
-            New-NAVWebServerInstance -PublishFolder $publishFolder -WebServerInstance "NAV" -Server "localhost" -ServerInstance "NAV" -ClientServicesCredentialType $Auth -ClientServicesPort "7046" -WebSitePort $webClientPort -AddFirewallException $false
-        }
+        New-NAVWebServerInstance -PublishFolder $publishFolder `
+                                 -WebServerInstance "NAV" `
+                                 -Server "localhost" `
+                                 -ServerInstance "NAV" `
+                                 -ClientServicesCredentialType $Auth `
+                                 -ClientServicesPort "7046" `
+                                 -WebSitePort $webClientPort `
+                                 -AddFirewallException $false @certparam
 
         $navsettingsFile = Join-Path $wwwRootPath "nav\navsettings.json"
         $config = Get-Content $navSettingsFile | ConvertFrom-Json
@@ -315,13 +331,19 @@ if ($runningGenericImage -or $runningSpecificImage) {
     } else {
         # Create Web Client
         Write-Host "Create Web Site"
-        if ($servicesUseSSL) {
-            New-NavWebSite -WebClientFolder $WebClientFolder -inetpubFolder (Join-Path $runPath "inetpub") -AppPoolName "NavWebClientAppPool" -SiteName "NavWebClient" -Port $webClientPort -Auth $Auth -CertificateThumbprint $certificateThumbprint
-        } else {
-            New-NavWebSite -WebClientFolder $WebClientFolder -inetpubFolder (Join-Path $runPath "inetpub") -AppPoolName "NavWebClientAppPool" -SiteName "NavWebClient" -Port $webClientPort -Auth $Auth
-        }
+        New-NavWebSite -WebClientFolder $WebClientFolder `
+                       -inetpubFolder (Join-Path $runPath "inetpub") `
+                       -AppPoolName "NavWebClientAppPool" `
+                       -SiteName "NavWebClient" `
+                       -Port $webClientPort `
+                       -Auth $Auth @certparam
+
         Write-Host "Create NAV Web Server Instance"
-        New-NAVWebServerInstance -Server "localhost" -ClientServicesCredentialType $auth -ClientServicesPort 7046 -ServerInstance "NAV" -WebServerInstance "NAV"
+        New-NAVWebServerInstance -Server "localhost" `
+                                 -ClientServicesCredentialType $auth `
+                                 -ClientServicesPort 7046 `
+                                 -ServerInstance "NAV" `
+                                 -WebServerInstance "NAV"
 
         # Give Everyone access to resources
         $ResourcesFolder = "$WebClientFolder".Replace('C:\Program Files\', 'C:\ProgramData\Microsoft\')

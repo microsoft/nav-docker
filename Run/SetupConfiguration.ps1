@@ -4,7 +4,6 @@
 #     $hostname
 #     $ServiceTierFolder
 #     $navUseSSL
-#     $NavDvdPath
 #     $servicesUseSSL
 #     $certificateThumbprint
 #
@@ -13,11 +12,7 @@
 #
 
 Write-Host "Modify NAV Service Tier Config File with Instance Specific Settings"
-if (Test-Path "$NavDvdPath\Prerequisite Components\DotNetCore" -PathType Container) {
-    $PublicWebBaseUrl = "$protocol$hostname$publicwebClientPort"
-} else {
-    $PublicWebBaseUrl = "$protocol$hostname$publicwebClientPort/NAV/WebClient/"
-}
+$PublicWebBaseUrl = "$protocol$hostname$publicwebClientPort/NAV/WebClient/"
 $CustomConfigFile =  Join-Path $ServiceTierFolder "CustomSettings.config"
 $CustomConfig = [xml](Get-Content $CustomConfigFile)
 $customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesCredentialType']").Value = $auth
