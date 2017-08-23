@@ -30,6 +30,7 @@ $windowsAuth = ($auth -eq "Windows")
 
 $NavServiceName = 'MicrosoftDynamicsNavServer$NAV'
 $SqlServiceName = 'MSSQLSERVER'
+$SqlWriterServiceName = "SQLWriter"
 
 # This script is multi-purpose
 #
@@ -62,6 +63,7 @@ if ($buildingImage + $restartingInstance + $runningGenericImage + $runningSpecif
 if ($databaseServer -eq 'localhost') {
     # start the SQL Server
     Write-Host "Starting Local SQL Server"
+    Start-Service -Name $SqlWriterServiceName -ErrorAction Ignore
     Start-Service -Name $SqlServiceName -ErrorAction Ignore
 }
 
@@ -263,6 +265,7 @@ if ($runningGenericImage -or $runningSpecificImage) {
     if ($databaseServer -ne 'localhost') {
         Write-Host "Stopping local SQL Server"
         Stop-Service -Name $SqlServiceName -ErrorAction Ignore
+        Stop-Service -Name $SqlWriterServiceName -ErrorAction Ignore
     }
 
     # Certificate
@@ -274,21 +277,15 @@ if ($runningGenericImage -or $runningSpecificImage) {
     . (Get-MyFilePath "SetupAddIns.ps1")
 }
 
-if ($restartingInstance) {
-    WaitForService -ServiceName $NavServiceName
-} elseif ($runningGenericImage -or $buildingImage) {
+if ($runningGenericImage -or $buildingImage) {
     # Create NAV Service
     Write-Host "Create NAV Service Tier"
     $serviceCredentials = New-Object System.Management.Automation.PSCredential ("NT AUTHORITY\SYSTEM", (new-object System.Security.SecureString))
-    New-Service -Name $NavServiceName -BinaryPathName """$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe"" `$NAV /config ""$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe.config""" -DisplayName '"Microsoft Dynamics NAV Server [NAV]' -Description 'NAV' -StartupType auto -Credential $serviceCredentials -DependsOn @("HTTP") | Out-Null
-    Write-Host "Start NAV Service Tier"
-    Start-Service -Name $NavServiceName -WarningAction Ignore
-} elseif ($runningSpecificImage) {
-    # Restart NAV Service
-    Write-Host "Restart NAV Service Tier"
-    Stop-Service -Name $NavServiceName -ErrorAction Ignore
-    Start-Service -Name $NavServiceName -WarningAction Ignore
+    New-Service -Name $NavServiceName -BinaryPathName """$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe"" `$NAV /config ""$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe.config""" -DisplayName '"Microsoft Dynamics NAV Server [NAV]' -Description 'NAV' -StartupType manual -Credential $serviceCredentials -DependsOn @("HTTP") | Out-Null
 }
+
+Write-Host "Start NAV Service Tier"
+Start-Service -Name $NavServiceName -WarningAction Ignore
 
 . (Get-MyFilePath "SetupLicense.ps1")
 

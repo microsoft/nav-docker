@@ -9,7 +9,10 @@ RUN Add-WindowsFeature Web-Server,web-AppInit,web-Asp-Net45,web-Windows-Auth,web
     Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\Dnscache\Parameters' -Name ServerPriorityTimeLimit -Value 0 -Type DWord; \
     Remove-Item c:\license.txt; \
     Remove-Item c:\start.ps1; \
-    Remove-Item c:\dockerfile
+    Remove-Item c:\dockerfile; \
+    Set-Service MSSQLSERVER -startuptype "manual"; \
+    Set-Service SQLTELEMETRY -startuptype "manual"; \
+    Set-Service SQLWriter -startuptype "manual"
     
 COPY Run /Run/
 
