@@ -33,6 +33,8 @@ Copy-Item "$roleTailoredClientFolder\RapidStart.ico"                            
 Copy-Item "$roleTailoredClientFolder\System.Collections.Immutable.dll"                               -Destination "$ClickOnceApplicationFilesDirectoryWin"
 Copy-Item "$roleTailoredClientFolder\Add-ins"                                                        -Destination "$ClickOnceApplicationFilesDirectoryWin\Add-ins" -Recurse
 Copy-Item "$roleTailoredClientFolder\Images"                                                         -Destination "$ClickOnceApplicationFilesDirectoryWin\Images"  -Recurse
+
+
 Copy-Item "$roleTailoredClientFolder\finsql.exe"                                                     -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-Item "$roleTailoredClientFolder\finsql.exe.config"                                              -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-Item "$roleTailoredClientFolder\fin.stx"                                                        -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
@@ -49,6 +51,7 @@ Copy-Item "$roleTailoredClientFolder\ROTAccess.dll"                             
 Copy-Item "$roleTailoredClientFolder\System.Reflection.Metadata.dll"                                 -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-Item "$roleTailoredClientFolder\System.Spatial.dll"                                             -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-Item "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.DotNetBridge.dll"                        -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
+Copy-Item "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Language.dll"                            -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-Item "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Types.dll"                               -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-Item "$roleTailoredClientFolder\Add-ins"                                                        -Destination "$ClickOnceApplicationFilesDirectoryFinsql\Add-ins" -Recurse
 
