@@ -261,7 +261,7 @@ if ($runningGenericImage -or $runningSpecificImage -or $buildingImage) {
     $CustomConfig.Save($CustomConfigFile)
 }
 
-if ($runningGenericImage -or $runningSpecificImage -or $restartingInstance) {
+if ($runningGenericImage -or $runningSpecificImage) {
 
     if ($databaseServer -ne 'localhost') {
         Write-Host "Stopping local SQL Server"
