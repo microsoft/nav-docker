@@ -181,7 +181,7 @@ if (!(Test-Path (Join-Path $serviceTierFolder 'hlink.dll'))) {
 Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
 
 # Database
-if ($buildingImage) {
+if ($buildingImage -and ($bakfile -eq "")) {
 
     # Restore CRONUS Demo database to databases folder
 
