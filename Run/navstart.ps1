@@ -41,13 +41,21 @@ $SqlWriterServiceName = "SQLWriter"
 #
 if ($buildingImage) { Write-Host "Building Image" }
 
+$ExpectedPublicWebBaseUrl = "$protocol$hostname$publicwebClientPort/NAV/WebClient/"
+
 $restartingInstance = $false
+$hostnameChanged = $false
 if (Test-Path "C:\Program Files\Microsoft Dynamics NAV" -PathType Container) {
     $CustomConfigFile = Join-Path (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName "CustomSettings.config"
     $CustomConfig = [xml](Get-Content $CustomConfigFile)
-    $restartingInstance = ($CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value -ne "")
+    $CurrentPublicWebBaseUrl = $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value
+    $restartingInstance = ($CurrentPublicWebBaseUrl -ne "")
+    $hostnameChanged = ($CurrentPublicWebBaseUrl -ne $ExpectedPublicWebBaseUrl)
 }
-if ($restartingInstance) { Write-Host "Restarting Instance" }
+$PublicWebBaseUrl = $ExpectedPublicWebBaseUrl
+if ($restartingInstance) { 
+    if ($hostnameChanged) { Write-Host "Restarting Instance (hostname changed)" } else { Write-Host "Restarting Instance" }
+}
 
 $runningGenericImage = !$restartingInstance -and !$buildingImage -and (!(Test-Path "C:\Program Files\Microsoft Dynamics NAV" -PathType Container))
 if ($runningGenericImage) { Write-Host "Running Generic Image" }
@@ -177,6 +185,20 @@ if (!(Test-Path (Join-Path $roleTailoredClientFolder 'hlink.dll'))) {
 if (!(Test-Path (Join-Path $serviceTierFolder 'hlink.dll'))) {
     Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path $serviceTierFolder 'hlink.dll')
 }
+if (!(Test-Path "C:\Program Files (x86)\ReportBuilder" -PathType Container)) {
+    $reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder'
+    if (Test-Path $reportBuilderSrc -PathType Container) {
+        Write-Host "Copy ReportBuilder"
+        Copy-Item -Path $reportBuilderSrc -Destination 'C:\Program Files (x86)' -Recurse
+        New-PSDrive -Name HKCR -PSProvider Registry -Root HKEY_CLASSES_ROOT -ErrorAction Ignore | Out-null
+        New-Item "HKCR:\MSReportBuilder_ReportFile_32" -itemtype Directory -ErrorAction Ignore | Out-null
+        New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell" -itemtype Directory -ErrorAction Ignore | Out-null
+        New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open" -itemtype Directory -ErrorAction Ignore | Out-null
+        New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -itemtype Directory -ErrorAction Ignore | Out-null
+        Set-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -value 'c:\program files (x86)\ReportBuilder\MSReportBuilder.exe "%1"'
+    }
+}
+
 
 Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
 
@@ -323,8 +345,7 @@ Set-Content -Path $scriptname -Value $script
                                  -ServerInstance "NAV" `
                                  -ClientServicesCredentialType $Auth `
                                  -ClientServicesPort "7046" `
-                                 -WebSitePort $webClientPort `
-                                 -AddFirewallException $false @certparam
+                                 -WebSitePort $webClientPort @certparam
 
         $navsettingsFile = Join-Path $wwwRootPath "nav\navsettings.json"
         $config = Get-Content $navSettingsFile | ConvertFrom-Json

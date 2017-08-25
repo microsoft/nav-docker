@@ -2,17 +2,16 @@
 #     $auth
 #     $protocol
 #     $hostname
+#     $publicWebBaseUrl
 #     $ServiceTierFolder
 #     $navUseSSL
 #     $servicesUseSSL
 #     $certificateThumbprint
 #
 # OUTPUT
-#    $publicWebBaseUrl
 #
 
 Write-Host "Modify NAV Service Tier Config File with Instance Specific Settings"
-$PublicWebBaseUrl = "$protocol$hostname$publicwebClientPort/NAV/WebClient/"
 $CustomConfigFile =  Join-Path $ServiceTierFolder "CustomSettings.config"
 $CustomConfig = [xml](Get-Content $CustomConfigFile)
 $customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesCredentialType']").Value = $auth
