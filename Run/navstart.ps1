@@ -293,9 +293,12 @@ if ($runningGenericImage -or $runningSpecificImage) {
     if ($navUseSSL -or $servicesUseSSL) {
         . (Get-MyFilePath "SetupCertificate.ps1")
     }
-    
-    . (Get-MyFilePath "SetupConfiguration.ps1")
+
     . (Get-MyFilePath "SetupAddIns.ps1")
+}
+
+if ($runningGenericImage -or $runningSpecificImage -or $hostnameChanged) {
+    . (Get-MyFilePath "SetupConfiguration.ps1")
 }
 
 if ($runningGenericImage -or $buildingImage) {
@@ -402,6 +405,12 @@ Set-Content -Path $scriptname -Value $script
     . (Get-MyFilePath "SetupNavUsers.ps1")
     . (Get-MyFilePath "AdditionalSetup.ps1")
 }
+
+if ($clickOnce -eq "Y" -and $hostnameChanged) {
+    Write-Host "Recreate ClickOnce Manifest due to hostname change"
+    . (Get-MyFilePath "SetupClickOnce.ps1")
+}
+
 
 if (!$buildingImage) {
     $ip = (Get-NetIPAddress | Where-Object { $_.AddressFamily -eq "IPv4" -and $_.IPAddress -ne "127.0.0.1" })[0].IPAddress
