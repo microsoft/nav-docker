@@ -32,6 +32,37 @@ $NavServiceName = 'MicrosoftDynamicsNavServer$NAV'
 $SqlServiceName = 'MSSQLSERVER'
 $SqlWriterServiceName = "SQLWriter"
 
+if ($WindowsAuth) {
+    $navUseSSL = $false
+} else {
+    $navUseSSL = $true
+}
+
+if ($useSSL -eq "") {
+    $servicesUseSSL = $navUseSSL
+} elseif ($useSSL -eq "Y") {
+    $servicesUseSSL = $true
+} elseif ($useSSL -eq "N") {
+    $servicesUseSSL = $false
+} else {
+    throw "Illegal value for UseSSL"
+}
+
+if ($servicesUseSSL) {
+    $protocol = "https://"
+    $webClientPort = 443
+} else {
+    $protocol = "http://"
+    $webClientPort = 80
+}
+
+# Default public ports
+if ($publicWebClientPort -ne "") { $publicWebClientPort = ":$publicWebClientPort" }
+if ($publicFileSharePort -eq "") { $publicFileSharePort = "8080" }
+if ($publicWinClientPort -eq "") { $publicWinClientPort = "7046" }
+if ($publicSoapPort      -eq "") { $publicSoapPort      = "7047" }
+if ($publicODataPort     -eq "") { $publicODataPort     = "7048" }
+
 # This script is multi-purpose
 #
 # $buildingImage is true when called during build of specific NAV image (with CRONUS Demo Database and CRONUS license)
@@ -74,38 +105,6 @@ if ($databaseServer -eq 'localhost') {
     Start-Service -Name $SqlWriterServiceName -ErrorAction Ignore
     Start-Service -Name $SqlServiceName -ErrorAction Ignore
 }
-
-if ($WindowsAuth) {
-    $navUseSSL = $false
-} else {
-    $navUseSSL = $true
-}
-
-if ($useSSL -eq "") {
-    $servicesUseSSL = $navUseSSL
-} elseif ($useSSL -eq "Y") {
-    $servicesUseSSL = $true
-} elseif ($useSSL -eq "N") {
-    $servicesUseSSL = $false
-} else {
-    throw "Illegal value for UseSSL"
-}
-
-if ($servicesUseSSL) {
-    $protocol = "https://"
-    $webClientPort = 443
-} else {
-    $protocol = "http://"
-    $webClientPort = 80
-}
-
-# Default public ports
-if ($publicWebClientPort -ne "") { $publicWebClientPort = ":$publicWebClientPort" }
-if ($publicFileSharePort -eq "") { $publicFileSharePort = "8080" }
-if ($publicWinClientPort -eq "") { $publicWinClientPort = "7046" }
-if ($publicSoapPort      -eq "") { $publicSoapPort      = "7047" }
-if ($publicODataPort     -eq "") { $publicODataPort     = "7048" }
-
 
 if ($runningGenericImage -or $runningSpecificImage) {
     Write-Host "Using $auth Authentication"
