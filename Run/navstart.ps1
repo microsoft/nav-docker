@@ -201,43 +201,8 @@ if (!(Test-Path "C:\Program Files (x86)\ReportBuilder" -PathType Container)) {
 
 Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
 
-# Database
-if ($buildingImage -and ($bakfile -eq "")) {
-
-    # Restore CRONUS Demo database to databases folder
-
-    Write-Host "Restore CRONUS Demo Database"
-    $databaseFolder = "c:\databases"
-    $databaseServer = "localhost"
-    $databaseInstance = ""
-    $databaseName = "CRONUS"
-    $bak = (Get-ChildItem -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\*.bak")[0]
-    $databaseFile = $bak.FullName
-
-    # Restore database
-    New-Item -Path $databaseFolder -itemtype Directory | Out-Null
-    New-NAVDatabase -DatabaseServer $databaseServer `
-                    -DatabaseInstance $databaseInstance `
-                    -DatabaseName "$databaseName" `
-                    -FilePath "$databaseFile" `
-                    -DestinationPath "$databaseFolder" `
-                    -Timeout $SqlTimeout | Out-Null
-
-} elseif ($databaseServer -ne "localhost" -or $databaseName -ne "") {
-
-    # Database settings specified
-    if ($databaseName -eq "") {
-        Write-Error "ERROR: When specifying Database Server parameters, you need to specify the DatabaseName as well"
-        exit 1
-    }
-
-    Write-Host "Using Database Connection $DatabaseServer/$DatabaseInstance [$DatabaseName]"
-
-} else {
-
-    . (Get-MyFilePath "SetupDatabase.ps1")
-
-}
+# Setup Database Connection
+. (Get-MyFilePath "SetupDatabase.ps1")
 
 if ($runningGenericImage -or $buildingImage) {
 
