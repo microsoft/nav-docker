@@ -29,8 +29,9 @@ if ($auth -eq "" -or $auth -eq "navuserpassword") {
 $windowsAuth = ($auth -eq "Windows")
 
 $NavServiceName = 'MicrosoftDynamicsNavServer$NAV'
-$SqlServiceName = 'MSSQLSERVER'
+$SqlServiceName = 'MSSQL$SQLEXPRESS'
 $SqlWriterServiceName = "SQLWriter"
+$SqlBrowserServiceName = "SQLBrowser"
 
 if ($WindowsAuth) {
     $navUseSSL = $false
@@ -102,6 +103,7 @@ if ($buildingImage + $restartingInstance + $runningGenericImage + $runningSpecif
 if ($databaseServer -eq 'localhost') {
     # start the SQL Server
     Write-Host "Starting Local SQL Server"
+    Start-Service -Name $SqlBrowserServiceName -ErrorAction Ignore
     Start-Service -Name $SqlWriterServiceName -ErrorAction Ignore
     Start-Service -Name $SqlServiceName -ErrorAction Ignore
 }
@@ -252,6 +254,7 @@ if ($runningGenericImage -or $runningSpecificImage) {
         Write-Host "Stopping local SQL Server"
         Stop-Service -Name $SqlServiceName -ErrorAction Ignore
         Stop-Service -Name $SqlWriterServiceName -ErrorAction Ignore
+        Stop-Service -Name $SqlBrowserServiceName -ErrorAction Ignore
     }
 
     # Certificate

@@ -23,8 +23,9 @@ if ($bakfile -ne "") {
     $databaseServer = "$env:databaseServer"
     $databaseInstance = "$env:databaseInstance"
     $databaseName = "$env:databaseName"
-    if ($databaseServer -eq "") {
+    if ($databaseServer -eq "" -and $databaseInstance -eq "") {
         $databaseServer = "localhost"
+        $databaseInstance = "SQLEXPRESS"
     }
 }
 
