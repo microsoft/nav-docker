@@ -178,26 +178,27 @@ $clickOnceInstallerToolsFolder = (Get-Item "C:\Program Files (x86)\Microsoft Dyn
 $WebClientFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Web Client")[0]
 $NAVAdministrationScriptsFolder = (Get-Item "$runPath\NAVAdministration").FullName
 
-if (!(Test-Path (Join-Path $roleTailoredClientFolder 'hlink.dll'))) {
-    Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path $roleTailoredClientFolder 'hlink.dll')
-}
-if (!(Test-Path (Join-Path $serviceTierFolder 'hlink.dll'))) {
-    Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path $serviceTierFolder 'hlink.dll')
-}
-if (!(Test-Path "C:\Program Files (x86)\ReportBuilder" -PathType Container)) {
-    $reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder'
-    if (Test-Path $reportBuilderSrc -PathType Container) {
-        Write-Host "Copy ReportBuilder"
-        Copy-Item -Path $reportBuilderSrc -Destination 'C:\Program Files (x86)' -Recurse
-        New-PSDrive -Name HKCR -PSProvider Registry -Root HKEY_CLASSES_ROOT -ErrorAction Ignore | Out-null
-        New-Item "HKCR:\MSReportBuilder_ReportFile_32" -itemtype Directory -ErrorAction Ignore | Out-null
-        New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell" -itemtype Directory -ErrorAction Ignore | Out-null
-        New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open" -itemtype Directory -ErrorAction Ignore | Out-null
-        New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -itemtype Directory -ErrorAction Ignore | Out-null
-        Set-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -value 'c:\program files (x86)\ReportBuilder\MSReportBuilder.exe "%1"'
+if ($runningGenericImage -or $buildingImage) {
+    if (!(Test-Path (Join-Path $roleTailoredClientFolder 'hlink.dll'))) {
+        Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path $roleTailoredClientFolder 'hlink.dll')
+    }
+    if (!(Test-Path (Join-Path $serviceTierFolder 'hlink.dll'))) {
+        Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path $serviceTierFolder 'hlink.dll')
+    }
+    if (!(Test-Path "C:\Program Files (x86)\ReportBuilder" -PathType Container)) {
+        $reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder'
+        if (Test-Path $reportBuilderSrc -PathType Container) {
+            Write-Host "Copy ReportBuilder"
+            Copy-Item -Path $reportBuilderSrc -Destination 'C:\Program Files (x86)' -Recurse
+            New-PSDrive -Name HKCR -PSProvider Registry -Root HKEY_CLASSES_ROOT -ErrorAction Ignore | Out-null
+            New-Item "HKCR:\MSReportBuilder_ReportFile_32" -itemtype Directory -ErrorAction Ignore | Out-null
+            New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell" -itemtype Directory -ErrorAction Ignore | Out-null
+            New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open" -itemtype Directory -ErrorAction Ignore | Out-null
+            New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -itemtype Directory -ErrorAction Ignore | Out-null
+            Set-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -value 'c:\program files (x86)\ReportBuilder\MSReportBuilder.exe "%1"'
+        }
     }
 }
-
 
 Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
 
@@ -205,7 +206,6 @@ Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
 . (Get-MyFilePath "SetupDatabase.ps1")
 
 if ($runningGenericImage -or $buildingImage) {
-
     # run local installers if present
     if (Test-Path "$navDvdPath\Installers" -PathType Container) {
         Get-ChildItem "$navDvdPath\Installers" | Where-Object { $_.PSIsContainer } | % {
@@ -277,92 +277,99 @@ Start-Service -Name $NavServiceName -WarningAction Ignore
 
 $wwwRootPath = Get-WWWRootPath
 $httpPath = Join-Path $wwwRootPath "http"
+
 if ($runningGenericImage -or $runningSpecificImage) {
 
-    # Remove Default Web Site
-    Get-WebSite | Remove-WebSite
-    Get-WebBinding | Remove-WebBinding
-    
-    $certparam = @{}
-    if ($servicesUseSSL) {
-        $certparam += @{CertificateThumbprint = $certificateThumbprint}
-    }
+    if ($webClient -ne "N") {
 
-    if (Test-Path "C:\Program Files\dotnet\shared\Microsoft.NETCore.App" -PathType Container) {
+        # Remove Default Web Site
+        Get-WebSite | Remove-WebSite
+        Get-WebBinding | Remove-WebBinding
         
-        Write-Host "Create DotNetCore NAV Web Server Instance"
-        #$webClientFolder = (Get-Item "$NavDvdPath\WebClient\Microsoft Dynamics NAV\*\Web Client").FullName
-        $publishFolder = "$webClientFolder\WebPublish"
-
-# Fix bug in NAVWebClientManagement.psm1
-$scriptname = "$webClientFolder\Scripts\NAVWebClientManagement.psm1"
-$script = Get-Content $scriptname
-$script = $script.Replace('Remove-Website -Name $SiteName -ErrorAction Ignore','Get-WebSite -Name $SiteName | Remove-WebSite')
-$script = $script.Replace('Remove-WebAppPool $AppPoolName -ErrorAction Ignore','if (Test-Path "IIS:\AppPools\$AppPoolName") { Remove-WebAppPool $AppPoolName }')
-$script = $script.Replace('Remove-WebApplication -Site $ContainerName -Name $WebServerInstance -ErrorAction Ignore','Get-WebApplication -Site $ContainerName -Name $WebServerInstance | Remove-WebApplication')
-Set-Content -Path $scriptname -Value $script
-
-        Import-Module "$webClientFolder\Scripts\NAVWebClientManagement.psm1"
-        New-NAVWebServerInstance -PublishFolder $publishFolder `
-                                 -WebServerInstance "NAV" `
-                                 -Server "localhost" `
-                                 -ServerInstance "NAV" `
-                                 -ClientServicesCredentialType $Auth `
-                                 -ClientServicesPort "7046" `
-                                 -WebSitePort $webClientPort @certparam
-
-        $navsettingsFile = Join-Path $wwwRootPath "nav\navsettings.json"
-        $config = Get-Content $navSettingsFile | ConvertFrom-Json
-        Add-Member -InputObject $config.NAVWebSettings -NotePropertyName "Designer" -NotePropertyValue "true" -ErrorAction SilentlyContinue
-        $config.NAVWebSettings.Designer = $true
-        $config | ConvertTo-Json | set-content $navSettingsFile
-
-    } else {
-        # Create Web Client
-        Write-Host "Create Web Site"
-        New-NavWebSite -WebClientFolder $WebClientFolder `
-                       -inetpubFolder (Join-Path $runPath "inetpub") `
-                       -AppPoolName "NavWebClientAppPool" `
-                       -SiteName "NavWebClient" `
-                       -Port $webClientPort `
-                       -Auth $Auth @certparam
-
-        Write-Host "Create NAV Web Server Instance"
-        New-NAVWebServerInstance -Server "localhost" `
-                                 -ClientServicesCredentialType $auth `
-                                 -ClientServicesPort 7046 `
-                                 -ServerInstance "NAV" `
-                                 -WebServerInstance "NAV"
-
-        # Give Everyone access to resources
-        $ResourcesFolder = "$WebClientFolder".Replace('C:\Program Files\', 'C:\ProgramData\Microsoft\')
-        $user = New-Object System.Security.Principal.NTAccount("NT AUTHORITY\Everyone")
-        $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($user, "ReadAndExecute", "ContainerInherit, ObjectInherit", "None", "Allow")
-        $acl = Get-Acl -Path $ResourcesFolder
-        Set-Acl -Path $ResourcesFolder $acl
-        $acl = $null
-        $acl = Get-Acl -Path $ResourcesFolder
-        $acl.AddAccessRule($rule)
-        Set-Acl -Path $ResourcesFolder $acl
-        $acl = $null
+        $certparam = @{}
+        if ($servicesUseSSL) {
+            $certparam += @{CertificateThumbprint = $certificateThumbprint}
+        }
+    
+        if (Test-Path "C:\Program Files\dotnet\shared\Microsoft.NETCore.App" -PathType Container) {
+            
+            Write-Host "Create DotNetCore NAV Web Server Instance"
+            #$webClientFolder = (Get-Item "$NavDvdPath\WebClient\Microsoft Dynamics NAV\*\Web Client").FullName
+            $publishFolder = "$webClientFolder\WebPublish"
+    
+            # TEMP: Fix bug in NAVWebClientManagement.psm1
+            $scriptname = "$webClientFolder\Scripts\NAVWebClientManagement.psm1"
+            $script = Get-Content $scriptname
+            $script = $script.Replace('Remove-Website -Name $SiteName -ErrorAction Ignore','Get-WebSite -Name $SiteName | Remove-WebSite')
+            $script = $script.Replace('Remove-WebAppPool $AppPoolName -ErrorAction Ignore','if (Test-Path "IIS:\AppPools\$AppPoolName") { Remove-WebAppPool $AppPoolName }')
+            $script = $script.Replace('Remove-WebApplication -Site $ContainerName -Name $WebServerInstance -ErrorAction Ignore','Get-WebApplication -Site $ContainerName -Name $WebServerInstance | Remove-WebApplication')
+            Set-Content -Path $scriptname -Value $script
+    
+            Import-Module "$webClientFolder\Scripts\NAVWebClientManagement.psm1"
+            New-NAVWebServerInstance -PublishFolder $publishFolder `
+                                     -WebServerInstance "NAV" `
+                                     -Server "localhost" `
+                                     -ServerInstance "NAV" `
+                                     -ClientServicesCredentialType $Auth `
+                                     -ClientServicesPort "7046" `
+                                     -WebSitePort $webClientPort @certparam
+    
+            $navsettingsFile = Join-Path $wwwRootPath "nav\navsettings.json"
+            $config = Get-Content $navSettingsFile | ConvertFrom-Json
+            Add-Member -InputObject $config.NAVWebSettings -NotePropertyName "Designer" -NotePropertyValue "true" -ErrorAction SilentlyContinue
+            $config.NAVWebSettings.Designer = $true
+            $config | ConvertTo-Json | set-content $navSettingsFile
+    
+        } else {
+            # Create Web Client
+            Write-Host "Create Web Site"
+            New-NavWebSite -WebClientFolder $WebClientFolder `
+                           -inetpubFolder (Join-Path $runPath "inetpub") `
+                           -AppPoolName "NavWebClientAppPool" `
+                           -SiteName "NavWebClient" `
+                           -Port $webClientPort `
+                           -Auth $Auth @certparam
+    
+            Write-Host "Create NAV Web Server Instance"
+            New-NAVWebServerInstance -Server "localhost" `
+                                     -ClientServicesCredentialType $auth `
+                                     -ClientServicesPort 7046 `
+                                     -ServerInstance "NAV" `
+                                     -WebServerInstance "NAV"
+    
+            # Give Everyone access to resources
+            $ResourcesFolder = "$WebClientFolder".Replace('C:\Program Files\', 'C:\ProgramData\Microsoft\')
+            $user = New-Object System.Security.Principal.NTAccount("NT AUTHORITY\Everyone")
+            $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($user, "ReadAndExecute", "ContainerInherit, ObjectInherit", "None", "Allow")
+            $acl = Get-Acl -Path $ResourcesFolder
+            Set-Acl -Path $ResourcesFolder $acl
+            $acl = $null
+            $acl = Get-Acl -Path $ResourcesFolder
+            $acl.AddAccessRule($rule)
+            Set-Acl -Path $ResourcesFolder $acl
+            $acl = $null
+        }
+    
+        . (Get-MyFilePath "SetupWebConfiguration.ps1")
     }
 
-    . (Get-MyFilePath "SetupWebConfiguration.ps1")
-
-    Write-Host "Create http download site"
-    New-Item -Path $httpPath -ItemType Directory | Out-Null
-    New-Website -Name http -Port $publicFileSharePort -PhysicalPath $httpPath | Out-Null
-
-    $webConfigFile = Join-Path $httpPath "web.config"
-    Copy-Item -Path (Join-Path $runPath "web.config") -Destination $webConfigFile
-    get-item -Path $webConfigFile | % { $_.Attributes = "Hidden" }
-
-    if ($clickOnce -eq "Y") {
-        Write-Host "Create ClickOnce Manifest"
-        . (Get-MyFilePath "SetupClickOnce.ps1")
+    if ($httpSite -ne "N") {
+        Write-Host "Create http download site"
+        New-Item -Path $httpPath -ItemType Directory | Out-Null
+        New-Website -Name http -Port $publicFileSharePort -PhysicalPath $httpPath | Out-Null
+    
+        $webConfigFile = Join-Path $httpPath "web.config"
+        Copy-Item -Path (Join-Path $runPath "web.config") -Destination $webConfigFile
+        get-item -Path $webConfigFile | % { $_.Attributes = "Hidden" }
+    
+        if ($clickOnce -eq "Y") {
+            Write-Host "Create ClickOnce Manifest"
+            . (Get-MyFilePath "SetupClickOnce.ps1")
+        }
+    
+        . (Get-MyFilePath "SetupFileShare.ps1")
     }
 
-    . (Get-MyFilePath "SetupFileShare.ps1")
     . (Get-MyFilePath "SetupSqlUsers.ps1")
     . (Get-MyFilePath "SetupNavUsers.ps1")
     . (Get-MyFilePath "AdditionalSetup.ps1")
@@ -372,24 +379,29 @@ if (!$buildingImage) {
     $ip = (Get-NetIPAddress | Where-Object { $_.AddressFamily -eq "IPv4" -and $_.IPAddress -ne "127.0.0.1" })[0].IPAddress
     Write-Host "Container IP Address: $ip"
     Write-Host "Container Hostname  : $hostname"
-    Write-Host "Web Client          : $publicWebBaseUrl"
-
-    if (Test-Path -Path (Join-Path $httpPath "*.vsix")) {
-        Write-Host "Dev. Server         : $protocol$hostname"
-        Write-Host "Dev. ServerInstance : NAV"
+    if ($webClient -ne "N") {
+        Write-Host "Web Client          : $publicWebBaseUrl"
     }
-    if (Test-Path -Path "$httpPath/NAV" -PathType Container) {
-        Write-Host "ClickOnce Manifest  : http://${hostname}:$publicFileSharePort/NAV"
+    if ($httpSite -ne "N") {
+        if (Test-Path -Path (Join-Path $httpPath "*.vsix")) {
+            Write-Host "Dev. Server         : $protocol$hostname"
+            Write-Host "Dev. ServerInstance : NAV"
+        }
+        if (Test-Path -Path "$httpPath/NAV" -PathType Container) {
+            Write-Host "ClickOnce Manifest  : http://${hostname}:$publicFileSharePort/NAV"
+        }
     }
 
     . (Get-MyFilePath "AdditionalOutput.ps1")
 
     Write-Host 
-    Write-Host "Files:"
-    Get-ChildItem -Path $httpPath -file | % {
-        Write-Host "http://${hostname}:$publicFileSharePort/$($_.Name)"
+    if ($httpSite -ne "N") {
+        Write-Host "Files:"
+        Get-ChildItem -Path $httpPath -file | % {
+            Write-Host "http://${hostname}:$publicFileSharePort/$($_.Name)"
+        }
+        Write-Host 
     }
-    Write-Host 
 
     Write-Host "Ready for connections!"
 }

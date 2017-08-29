@@ -49,7 +49,9 @@ Copy-Item "$roleTailoredClientFolder\NSObjectXProxy.dll"                        
 Copy-Item "$roleTailoredClientFolder\fin.etx"                                                        -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-Item "$roleTailoredClientFolder\ROTAccess.dll"                                                  -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-Item "$roleTailoredClientFolder\System.Reflection.Metadata.dll"                                 -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
-Copy-Item "$roleTailoredClientFolder\System.Spatial.dll"                                             -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
+if (Test-Path "$roleTailoredClientFolder\System.Spatial.dll") {
+    Copy-Item "$roleTailoredClientFolder\System.Spatial.dll"                                         -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
+}
 Copy-Item "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.DotNetBridge.dll"                        -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-Item "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Language.dll"                            -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-Item "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Types.dll"                               -Destination "$ClickOnceApplicationFilesDirectoryFinsql"

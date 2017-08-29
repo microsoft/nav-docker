@@ -30,6 +30,8 @@ if ($bakfile -ne "") {
 
 $useSSL = "$env:UseSSL"
 $clickOnce = "$env:ClickOnce"
+$webClient = "$env:WebClient"
+$httpSite = "$env:HttpSite"
 $SqlTimeout = "$env:SqlTimeout"
 if ($SqlTimeout -eq "") {
     $SqlTimeout = "300"
