@@ -303,6 +303,7 @@ if ($runningGenericImage -or $runningSpecificImage) {
             $script = $script.Replace('Remove-Website -Name $SiteName -ErrorAction Ignore','Get-WebSite -Name $SiteName | Remove-WebSite')
             $script = $script.Replace('Remove-WebAppPool $AppPoolName -ErrorAction Ignore','if (Test-Path "IIS:\AppPools\$AppPoolName") { Remove-WebAppPool $AppPoolName }')
             $script = $script.Replace('Remove-WebApplication -Site $ContainerName -Name $WebServerInstance -ErrorAction Ignore','Get-WebApplication -Site $ContainerName -Name $WebServerInstance | Remove-WebApplication')
+            $script = $script.Replace('[bool]$AddFirewallException = $true,','[bool]$AddFirewallException = $false,')
             Set-Content -Path $scriptname -Value $script
     
             Import-Module "$webClientFolder\Scripts\NAVWebClientManagement.psm1"
