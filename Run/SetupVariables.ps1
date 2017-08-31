@@ -43,3 +43,12 @@ $publicFileSharePort = "$env:publicFileSharePort"
 $publicSoapPort = "$env:publicSoapPort"
 $publicODataPort = "$env:publicODataPort"
 $publicWinClientPort = "$env:publicWinClientPort"
+
+$locale = "$env:locale"
+if ($locale)  {
+    $cultureInfo = new-object System.Globalization.CultureInfo $locale
+    $regionInfo = new-object System.Globalization.RegionInfo $locale
+    Set-WinHomeLocation -GeoId $regionInfo.GeoId
+    Set-WinSystemLocale -SystemLocale $cultureInfo
+    Set-Culture -CultureInfo $cultureInfo
+}

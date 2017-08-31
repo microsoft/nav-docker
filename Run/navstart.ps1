@@ -297,7 +297,6 @@ if ($runningGenericImage -or $runningSpecificImage) {
         if (Test-Path "C:\Program Files\dotnet\shared\Microsoft.NETCore.App" -PathType Container) {
             
             Write-Host "Create DotNetCore NAV Web Server Instance"
-            #$webClientFolder = (Get-Item "$NavDvdPath\WebClient\Microsoft Dynamics NAV\*\Web Client").FullName
             $publishFolder = "$webClientFolder\WebPublish"
     
             # TEMP: Fix bug in NAVWebClientManagement.psm1
