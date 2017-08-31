@@ -17,7 +17,7 @@ $licensefile = "$env:licensefile"
 $bakfile = "$env:bakfile"
 if ($bakfile -ne "") {
     $databaseServer = "localhost"
-    $databaseInstance = ""
+    $databaseInstance = "SQLEXPRESS"
     $databaseName = ""
 } else {
     $databaseServer = "$env:databaseServer"
