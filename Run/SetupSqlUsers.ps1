@@ -7,11 +7,10 @@
 # OUTPUT
 #
 
-if ($databaseServer -eq "localhost") {
-    if ($password -ne "") {
-        $sqlcmd = "ALTER LOGIN sa with password=" +"'" + $password + "'" + ",CHECK_POLICY = OFF;ALTER LOGIN sa ENABLE;"
-        & sqlcmd -Q $sqlcmd
-    }
+if ($databaseServer -eq "localhost" -and $databaseInstance -eq "SQLEXPRESS") {
+
+    $sqlcmd = "ALTER LOGIN sa with password=" +"'" + $password + "'" + ",CHECK_POLICY = OFF;ALTER LOGIN sa ENABLE;"
+    & sqlcmd -S 'localhost\SQLEXPRESS' -Q $sqlcmd
     
     if ($username.Contains('\') -and $auth -eq "Windows") {
         $sqlcmd = 
@@ -27,6 +26,6 @@ if ($databaseServer -eq "localhost") {
             ALTER LOGIN [$username] ENABLE
             GO"
             
-        & sqlcmd -Q $sqlcmd
+        & sqlcmd -S 'localhost\SQLEXPRESS' -Q $sqlcmd
     }
 }

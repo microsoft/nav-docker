@@ -7,7 +7,7 @@
 #
 
 if ($auth -eq "Windows") {
-    if (($password -ne "") -and ($username -ne "")) {
+    if ($passwordSpecified -and ($username -ne "")) {
         Write-Host "Create Windows user"
         New-LocalUser -AccountNeverExpires -FullName $username -Name $username -Password (ConvertTo-SecureString -AsPlainText -String $password -Force) -ErrorAction Ignore | Out-Null
         Add-LocalGroupMember -Group administrators -Member $username -ErrorAction Ignore
@@ -22,13 +22,12 @@ if ($auth -eq "Windows") {
 } else {
     if ($username -eq "") { $username = "admin" }
     if (!(Get-NAVServerUser -ServerInstance NAV | Where-Object { $_.UserName -eq $username })) {
-        $pwd = $password
-        if ($pwd -eq "") { $pwd = Get-RandomPassword }
-        New-NavServerUser -ServerInstance NAV -Username $username -Password (ConvertTo-SecureString -String $pwd -AsPlainText -Force)
+        New-NavServerUser -ServerInstance NAV -Username $username -Password (ConvertTo-SecureString -String $password -AsPlainText -Force)
         New-NavServerUserPermissionSet -ServerInstance NAV -username $username -PermissionSetId SUPER
-        if ($password -eq "") {
+        if (!$passwordSpecified) {
             Write-Host "NAV Admin Username  : $username"
-            Write-Host "NAV Admin Password  : $pwd"
+            Write-Host "NAV Admin Password  : $password"
         }
     }
 }
+21304068

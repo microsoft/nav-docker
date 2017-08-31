@@ -202,7 +202,7 @@ function Restore-BacpacWithRetry
     )
 
     Add-Type -path "C:\Program Files (x86)\Microsoft SQL Server\130\DAC\bin\Microsoft.SqlServer.Dac.dll"
-    $conn = "Data Source=localhost;Initial Catalog=master;Connection Timeout=0;Integrated Security=True;"
+    $conn = "Data Source=localhost\SQLEXPRESS;Initial Catalog=master;Connection Timeout=0;Integrated Security=True;"
 
     $attempt = 0
     while ($true) {
@@ -226,7 +226,7 @@ function Restore-BacpacWithRetry
 
 function Get-NavDatabaseFiles([string]$DatabaseName)
 {
-    Invoke-sqlcmd -ea stop  -QueryTimeout 0 -Query "SELECT f.physical_name FROM sys.sysdatabases db INNER JOIN sys.master_files f ON f.database_id = db.dbid WHERE db.name = '$DatabaseName'" | % {
+    Invoke-sqlcmd -ea stop -ServerInstance 'localhost\SQLEXPRESS' -QueryTimeout 0 -Query "SELECT f.physical_name FROM sys.sysdatabases db INNER JOIN sys.master_files f ON f.database_id = db.dbid WHERE db.name = '$DatabaseName'" | % {
         $file = $_.physical_name
         if (Test-Path $file)
         {

@@ -47,7 +47,7 @@ if ($restartingInstance) {
     $databaseFile = $bak.FullName
     $restoreDb = $true
 
-} elseif ($databaseServer -ne "localhost" -or $databaseName -ne "") {
+} elseif ($databaseServer -ne "localhost" -or $databaseInstance -ne "SQLEXPRESS" -or $databaseName -ne "") {
 
     Write-Host "Using Database Connection $DatabaseServer/$DatabaseInstance [$DatabaseName]"
 

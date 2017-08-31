@@ -11,6 +11,8 @@ if ($username -eq "ContainerAdministrator") {
     $username = ""
 }
 $password = "$env:password"
+$passwordSpecified = ($password -ne "")
+if (!$passwordSpecified) { $password = Get-RandomPassword }    
 
 $licensefile = "$env:licensefile"
 
