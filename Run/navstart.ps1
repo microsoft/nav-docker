@@ -373,8 +373,8 @@ if ($runningGenericImage -or $runningSpecificImage) {
         . (Get-MyFilePath "SetupFileShare.ps1")
     }
 
-    . (Get-MyFilePath "SetupSqlUsers.ps1")
     . (Get-MyFilePath "SetupNavUsers.ps1")
+    . (Get-MyFilePath "SetupSqlUsers.ps1")
     . (Get-MyFilePath "AdditionalSetup.ps1")
 }
 

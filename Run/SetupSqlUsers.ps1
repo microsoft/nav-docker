@@ -10,7 +10,13 @@
 if ($databaseServer -eq "localhost") {
     if ($password -ne "") {
         $sqlcmd = "ALTER LOGIN sa with password=" +"'" + $password + "'" + ",CHECK_POLICY = OFF;ALTER LOGIN sa ENABLE;"
-        & sqlcmd -Q $sqlcmd
+
+        if ($databaseInstance) {
+            & sqlcmd -S "$databaseServer\$databaseInstance" -Q $sqlcmd
+        } else {
+            & sqlcmd -S $databaseServer -Q $sqlcmd
+        }
+
     }
     
     if ($username.Contains('\') -and $auth -eq "Windows") {
@@ -27,6 +33,10 @@ if ($databaseServer -eq "localhost") {
             ALTER LOGIN [$username] ENABLE
             GO"
             
-        & sqlcmd -Q $sqlcmd
+            if ($databaseInstance) {
+                & sqlcmd -S "$databaseServer\$databaseInstance" -Q $sqlcmd
+            } else {
+                & sqlcmd -S $databaseServer -Q $sqlcmd
+            }
     }
 }
