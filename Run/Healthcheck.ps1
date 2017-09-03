@@ -1,13 +1,5 @@
-try {
-    $CustomConfigFile = Join-Path (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName "CustomSettings.config"
-    $CustomConfig = [xml](Get-Content $CustomConfigFile)
-    $publicWebBaseUrl = $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value
-    
-    $result = Invoke-WebRequest -Uri "$publicWebBaseUrl/Health/System" -UseBasicParsing -TimeoutSec 10
-    if ($result.StatusCode -eq 200 -and ((ConvertFrom-Json $result.Content).result)) {
-        # Web Client Health Check Endpoint will test Web Client, Service Tier and Database Connection
-        exit 0
-    }
-} catch {
+if ((Test-Path "$PSScriptRoot\my" -PathType Container) -and (Test-Path "$PSScriptRoot\my\CheckHealth.ps1" -PathType Leaf)) {
+    . "$PSScriptRoot\my\CheckHealth.ps1"
+} else {
+    . "$PSScriptRoot\CheckHealth.ps1"
 }
-exit 1
