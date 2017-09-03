@@ -47,6 +47,8 @@ Copy-Item (Join-Path $runPath "NAVClientInstallation.html") -Destination $clickO
 # Save config file and copy the relevant WinClient files to the Deployment\ApplicationFiles folder
 $clickOnceApplicationFilesDirectoryWin = Join-Path $ClickOnceDirectory 'Win\Deployment\ApplicationFiles'
 $clickOnceApplicationFilesDirectoryFinsql = Join-Path $ClickOnceDirectory 'Finsql\Deployment\ApplicationFiles'
+$clientUserSettingsFile = Join-Path $ClickOnceApplicationFilesDirectoryFinsql 'ClientUserSettings.config'
+$ClientUserSettings.Save($clientUserSettingsFile)
 $clientUserSettingsFile = Join-Path $clickOnceApplicationFilesDirectoryWin 'ClientUserSettings.config'
 $ClientUserSettings.Save($clientUserSettingsFile)
 . (Get-MyFilePath "SetupClickOnceDirectory.ps1")

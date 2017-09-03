@@ -236,3 +236,21 @@ function Get-NavDatabaseFiles([string]$DatabaseName)
     }
 }
 
+function Copy-ItemMultiDest()
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$True)]
+        [string]$Source,
+        [Parameter(Mandatory=$true)]
+        [string[]]$Destination,
+        [Parameter(Mandatory=$false)]
+        [switch]$Confirm=$false,
+        [Parameter(Mandatory=$false)]
+        [switch]$Force=$false,
+        [Parameter(Mandatory=$false)]
+        [switch]$Recurse=$false
+    )
+
+    $Destination | ForEach-Object { Microsoft.PowerShell.Management\Copy-Item $Source -Destination $_ -Confirm:$Confirm -Force:$Force -Recurse:$Recurse }
+}
