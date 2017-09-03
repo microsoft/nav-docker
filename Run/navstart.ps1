@@ -336,10 +336,15 @@ if ($runningGenericImage -or $runningSpecificImage) {
 }
 
 if (!$buildingImage) {
+
+    $CustomConfigFile =  Join-Path $ServiceTierFolder "CustomSettings.config"
+    $CustomConfig = [xml](Get-Content $CustomConfigFile)
+
     $ip = (Get-NetIPAddress | Where-Object { $_.AddressFamily -eq "IPv4" -and $_.IPAddress -ne "127.0.0.1" })[0].IPAddress
     Write-Host "Container IP Address: $ip"
     Write-Host "Container Hostname  : $hostname"
     if ($webClient -ne "N") {
+        $publicWebBaseUrl = $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value
         Write-Host "Web Client          : $publicWebBaseUrl"
     }
     if ($httpSite -ne "N") {
