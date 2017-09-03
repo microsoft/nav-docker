@@ -2,7 +2,6 @@
 #     $auth
 #     $protocol
 #     $hostname
-#     $publicWebBaseUrl
 #     $ServiceTierFolder
 #     $navUseSSL
 #     $servicesUseSSL
@@ -14,8 +13,11 @@
 Write-Host "Modify NAV Service Tier Config File with Instance Specific Settings"
 $CustomConfigFile =  Join-Path $ServiceTierFolder "CustomSettings.config"
 $CustomConfig = [xml](Get-Content $CustomConfigFile)
+
 $customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesCredentialType']").Value = $auth
-$CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value = $PublicWebBaseUrl
+if ($WebClient -ne "N") {
+    $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value = "$protocol$hostname$publicwebClientPort/NAV/WebClient/"
+}
 $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicSOAPBaseUrl']").Value = "$protocol${hostname}:$publicSoapPort/NAV/WS"
 $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicODataBaseUrl']").Value = "$protocol${hostname}:$publicODataPort/NAV/OData"
 $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWinBaseUrl']").Value = "DynamicsNAV://${hostname}:$publicWinClientPort/NAV/"

@@ -32,6 +32,7 @@ $NavServiceName = 'MicrosoftDynamicsNavServer$NAV'
 $SqlServiceName = 'MSSQL$SQLEXPRESS'
 $SqlWriterServiceName = "SQLWriter"
 $SqlBrowserServiceName = "SQLBrowser"
+$IisServiceName = "W3SVC"
 
 if ($WindowsAuth) {
     $navUseSSL = $false
@@ -71,25 +72,26 @@ if ($publicODataPort     -eq "") { $publicODataPort     = "7048" }
 # $runningGenericImage is true when running a generic image with NAVDVD on share
 # $runningSpecificImage is true when running a specific image (which had buildingImage set true true during image build)
 #
+
 if ($buildingImage) { Write-Host "Building Image" }
 
-$ExpectedPublicWebBaseUrl = "$protocol$hostname$publicwebClientPort/NAV/WebClient/"
-
-$restartingInstance = $false
+$hostnameFile = "$RunPath\hostname.txt"
 $hostnameChanged = $false
-if (Test-Path "C:\Program Files\Microsoft Dynamics NAV" -PathType Container) {
-    $CustomConfigFile = Join-Path (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName "CustomSettings.config"
-    $CustomConfig = [xml](Get-Content $CustomConfigFile)
-    $CurrentPublicWebBaseUrl = $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value
-    $restartingInstance = ($CurrentPublicWebBaseUrl -ne "")
-    $hostnameChanged = ($CurrentPublicWebBaseUrl -ne $ExpectedPublicWebBaseUrl)
-}
-$PublicWebBaseUrl = $ExpectedPublicWebBaseUrl
-if ($restartingInstance) { 
-    if ($hostnameChanged) { Write-Host "Restarting Instance (hostname changed)" } else { Write-Host "Restarting Instance" }
+$restartingInstance = Test-Path -Path $hostnameFile -PathType Leaf
+if ($restartingInstance) {
+    Write-Host "Restarting Instance"
+    $prevHostname = Get-Content -Path $hostnameFile
+    if ($prevHostname -ne $hostname) {
+        $hostnameChanged = $true
+        Write-Host "Hostname changed"
+    }
 }
 
-$runningGenericImage = !$restartingInstance -and !$buildingImage -and (!(Test-Path "C:\Program Files\Microsoft Dynamics NAV" -PathType Container))
+if (!$buildingImage) {
+    Set-Content -Path $hostnameFile -Value $hostname
+}
+
+$runningGenericImage = $restartingInstance -and !$buildingImage -and (!(Test-Path "C:\Program Files\Microsoft Dynamics NAV" -PathType Container))
 if ($runningGenericImage) { Write-Host "Running Generic Image" }
 
 $runningSpecificImage = (!$restartingInstance) -and (!$runningGenericImage) -and (!$buildingImage)
@@ -106,6 +108,12 @@ if ($databaseServer -eq 'localhost') {
     Start-Service -Name $SqlBrowserServiceName -ErrorAction Ignore
     Start-Service -Name $SqlWriterServiceName -ErrorAction Ignore
     Start-Service -Name $SqlServiceName -ErrorAction Ignore
+}
+
+if (($webClient -ne "N") -or ($httpSite -ne "N")) {
+    # start IIS services
+    Write-Host "Starting Internet Information Server"
+    Start-Service -name $IisServiceName
 }
 
 if ($runningGenericImage -or $runningSpecificImage) {
@@ -130,35 +138,37 @@ if ($runningSpecificImage -and $Accept_eula -ne "Y")
 # Prerequisites
 if ($runningGenericImage -or $buildingImage) 
 {
-    Write-Host "Installing Url Rewrite"
-    start-process "$NavDvdPath\Prerequisite Components\IIS URL Rewrite Module\rewrite_2.0_rtw_x64.msi" -ArgumentList "/quiet /qn /passive" -Wait
-
-    Write-Host "Installing ReportViewer"
-    if (Test-Path "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer" -PathType Container) {
-        start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer\SQLSysClrTypes.msi" -ArgumentList "/quiet /qn /passive" -Wait
-        start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer\ReportViewer.msi" -ArgumentList "/quiet /qn /passive" -Wait
-    }
-
-    if (Test-Path "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2015" -PathType Container) {
-        start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2015\SQLSysClrTypes.msi" -ArgumentList "/quiet /qn /passive" -Wait
-        start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2015\ReportViewer.msi" -ArgumentList "/quiet /qn /passive" -Wait
+    if ($webClient -ne "N") {
+        Write-Host "Installing Url Rewrite"
+        start-process "$NavDvdPath\Prerequisite Components\IIS URL Rewrite Module\rewrite_2.0_rtw_x64.msi" -ArgumentList "/quiet /qn /passive" -Wait
+    
+        Write-Host "Installing ReportViewer"
+        if (Test-Path "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer" -PathType Container) {
+            start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer\SQLSysClrTypes.msi" -ArgumentList "/quiet /qn /passive" -Wait
+            start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer\ReportViewer.msi" -ArgumentList "/quiet /qn /passive" -Wait
+        }
+    
+        if (Test-Path "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2015" -PathType Container) {
+            start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2015\SQLSysClrTypes.msi" -ArgumentList "/quiet /qn /passive" -Wait
+            start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2015\ReportViewer.msi" -ArgumentList "/quiet /qn /passive" -Wait
+        }
+    
+        if (Test-Path "$NavDvdPath\Prerequisite Components\DotNetCore" -PathType Container) {
+            Write-Host "Installing DotNetCore"
+            start-process (Get-ChildItem -Path "$NavDvdPath\Prerequisite Components\DotNetCore" -Filter "*.exe").FullName -ArgumentList "/quiet" -Wait
+        }
     }
 
     Write-Host "Installing OpenXML"
     start-process "$NavDvdPath\Prerequisite Components\Open XML SDK 2.5 for Microsoft Office\OpenXMLSDKv25.msi" -ArgumentList "/quiet /qn /passive" -Wait
-
-    if (Test-Path "$NavDvdPath\Prerequisite Components\DotNetCore" -PathType Container) {
-        Write-Host "Installing DotNetCore"
-        start-process (Get-ChildItem -Path "$NavDvdPath\Prerequisite Components\DotNetCore" -Filter "*.exe").FullName -ArgumentList "/quiet" -Wait
-    }
 }
 
 # Copy Service Tier in place if we are running a Generic Image or Building a specific image
 if ($runningGenericImage -or $buildingImage) {
-    Write-Host "Copy Service Tier"
+    Write-Host "Copy Service Tier Files"
     Copy-Item -Path "$NavDvdPath\ServiceTier\Program Files" -Destination "C:\" -Recurse -Force
 
-    Write-Host "Copy Web Client"
+    Write-Host "Copy Web Client Files"
     Copy-Item -Path "$NavDvdPath\WebClient\Microsoft Dynamics NAV" -Destination "C:\Program Files\" -Recurse -Force
     Copy-Item -Path "$navDvdPath\WebClient\inetpub" -Destination $runPath -Recurse -Force
 
@@ -207,6 +217,16 @@ Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
 # Setup Database Connection
 . (Get-MyFilePath "SetupDatabase.ps1")
 
+if ($databaseServer -ne 'localhost') {
+    if ((Get-service -name $SqlServiceName).Status -eq 'Running') {
+        Write-Host "Stopping local SQL Server"
+        Stop-Service -Name $SqlServiceName -ErrorAction Ignore
+        Stop-Service -Name $SqlWriterServiceName -ErrorAction Ignore
+        Stop-Service -Name $SqlBrowserServiceName -ErrorAction Ignore
+    }
+}
+
+
 if ($runningGenericImage -or $buildingImage) {
     # run local installers if present
     if (Test-Path "$navDvdPath\Installers" -PathType Container) {
@@ -248,14 +268,7 @@ if ($runningGenericImage -or $runningSpecificImage -or $buildingImage) {
     $CustomConfig.Save($CustomConfigFile)
 }
 
-if ($runningGenericImage -or $runningSpecificImage) {
-
-    if ($databaseServer -ne 'localhost') {
-        Write-Host "Stopping local SQL Server"
-        Stop-Service -Name $SqlServiceName -ErrorAction Ignore
-        Stop-Service -Name $SqlWriterServiceName -ErrorAction Ignore
-        Stop-Service -Name $SqlBrowserServiceName -ErrorAction Ignore
-    }
+if ($runningGenericImage -or $runningSpecificImage -or $hostnameChanged) {
 
     # Certificate
     if ($navUseSSL -or $servicesUseSSL) {
@@ -263,6 +276,10 @@ if ($runningGenericImage -or $runningSpecificImage) {
     }
     
     . (Get-MyFilePath "SetupConfiguration.ps1")
+}
+
+if ($runningGenericImage -or $runningSpecificImage) {
+
     . (Get-MyFilePath "SetupAddIns.ps1")
 }
 
@@ -281,80 +298,17 @@ Start-Service -Name $NavServiceName -WarningAction Ignore
 $wwwRootPath = Get-WWWRootPath
 $httpPath = Join-Path $wwwRootPath "http"
 
-if ($runningGenericImage -or $runningSpecificImage) {
+if ($runningGenericImage -or $runningSpecificImage -or $hostnameChanged) {
 
     if ($webClient -ne "N") {
 
-        # Remove Default Web Site
-        Get-WebSite | Remove-WebSite
-        Get-WebBinding | Remove-WebBinding
-        
-        $certparam = @{}
-        if ($servicesUseSSL) {
-            $certparam += @{CertificateThumbprint = $certificateThumbprint}
-        }
-    
-        if (Test-Path "C:\Program Files\dotnet\shared\Microsoft.NETCore.App" -PathType Container) {
-            
-            Write-Host "Create DotNetCore NAV Web Server Instance"
-            $publishFolder = "$webClientFolder\WebPublish"
-    
-            # TEMP: Fix bug in NAVWebClientManagement.psm1
-            $scriptname = "$webClientFolder\Scripts\NAVWebClientManagement.psm1"
-            $script = Get-Content $scriptname
-            $script = $script.Replace('Remove-Website -Name $SiteName -ErrorAction Ignore','Get-WebSite -Name $SiteName | Remove-WebSite')
-            $script = $script.Replace('Remove-WebAppPool $AppPoolName -ErrorAction Ignore','if (Test-Path "IIS:\AppPools\$AppPoolName") { Remove-WebAppPool $AppPoolName }')
-            $script = $script.Replace('Remove-WebApplication -Site $ContainerName -Name $WebServerInstance -ErrorAction Ignore','Get-WebApplication -Site $ContainerName -Name $WebServerInstance | Remove-WebApplication')
-            $script = $script.Replace('[bool]$AddFirewallException = $true,','[bool]$AddFirewallException = $false,')
-            Set-Content -Path $scriptname -Value $script
-    
-            Import-Module "$webClientFolder\Scripts\NAVWebClientManagement.psm1"
-            New-NAVWebServerInstance -PublishFolder $publishFolder `
-                                     -WebServerInstance "NAV" `
-                                     -Server "localhost" `
-                                     -ServerInstance "NAV" `
-                                     -ClientServicesCredentialType $Auth `
-                                     -ClientServicesPort "7046" `
-                                     -WebSitePort $webClientPort @certparam
-    
-            $navsettingsFile = Join-Path $wwwRootPath "nav\navsettings.json"
-            $config = Get-Content $navSettingsFile | ConvertFrom-Json
-            Add-Member -InputObject $config.NAVWebSettings -NotePropertyName "Designer" -NotePropertyValue "true" -ErrorAction SilentlyContinue
-            $config.NAVWebSettings.Designer = $true
-            $config | ConvertTo-Json | set-content $navSettingsFile
-    
-        } else {
-            # Create Web Client
-            Write-Host "Create Web Site"
-            New-NavWebSite -WebClientFolder $WebClientFolder `
-                           -inetpubFolder (Join-Path $runPath "inetpub") `
-                           -AppPoolName "NavWebClientAppPool" `
-                           -SiteName "NavWebClient" `
-                           -Port $webClientPort `
-                           -Auth $Auth @certparam
-    
-            Write-Host "Create NAV Web Server Instance"
-            New-NAVWebServerInstance -Server "localhost" `
-                                     -ClientServicesCredentialType $auth `
-                                     -ClientServicesPort 7046 `
-                                     -ServerInstance "NAV" `
-                                     -WebServerInstance "NAV"
-    
-            # Give Everyone access to resources
-            $ResourcesFolder = "$WebClientFolder".Replace('C:\Program Files\', 'C:\ProgramData\Microsoft\')
-            $user = New-Object System.Security.Principal.NTAccount("NT AUTHORITY\Everyone")
-            $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($user, "ReadAndExecute", "ContainerInherit, ObjectInherit", "None", "Allow")
-            $acl = Get-Acl -Path $ResourcesFolder
-            Set-Acl -Path $ResourcesFolder $acl
-            $acl = $null
-            $acl = Get-Acl -Path $ResourcesFolder
-            $acl.AddAccessRule($rule)
-            Set-Acl -Path $ResourcesFolder $acl
-            $acl = $null
-        }
-    
+        . (Get-MyFilePath "SetupWebClient.ps1")
         . (Get-MyFilePath "SetupWebConfiguration.ps1")
     }
+
+}
+
+if ($runningGenericImage -or $runningSpecificImage) {
 
     if ($httpSite -ne "N") {
         Write-Host "Create http download site"
@@ -365,16 +319,19 @@ if ($runningGenericImage -or $runningSpecificImage) {
         Copy-Item -Path (Join-Path $runPath "web.config") -Destination $webConfigFile
         get-item -Path $webConfigFile | % { $_.Attributes = "Hidden" }
     
-        if ($clickOnce -eq "Y") {
-            Write-Host "Create ClickOnce Manifest"
-            . (Get-MyFilePath "SetupClickOnce.ps1")
-        }
-    
         . (Get-MyFilePath "SetupFileShare.ps1")
     }
 
     . (Get-MyFilePath "SetupSqlUsers.ps1")
     . (Get-MyFilePath "SetupNavUsers.ps1")
+}
+
+if (($runningGenericImage -or $runningSpecificImage -or $hostnameChanged) -and ($httpSite -ne "N") -and ($clickOnce -eq "Y")) {
+    Write-Host "Create ClickOnce Manifest"
+    . (Get-MyFilePath "SetupClickOnce.ps1")
+}
+
+if ($runningGenericImage -or $runningSpecificImage) {
     . (Get-MyFilePath "AdditionalSetup.ps1")
 }
 
@@ -390,7 +347,7 @@ if (!$buildingImage) {
             Write-Host "Dev. Server         : $protocol$hostname"
             Write-Host "Dev. ServerInstance : NAV"
         }
-        if (Test-Path -Path "$httpPath/NAV" -PathType Container) {
+        if ($clickOnce -eq "Y") {
             Write-Host "ClickOnce Manifest  : http://${hostname}:$publicFileSharePort/NAV"
         }
     }

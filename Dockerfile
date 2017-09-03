@@ -11,10 +11,12 @@ RUN Add-WindowsFeature Web-Server,web-AppInit,web-Asp-Net45,web-Windows-Auth,web
     Start-Process -Wait -FilePath .\sqlexpress.exe -ArgumentList /qs, /x:setup ; \
     .\setup\setup.exe /q /ACTION=Install /INSTANCENAME=SQLEXPRESS /FEATURES=SQLEngine /UPDATEENABLED=0 /SQLSVCACCOUNT='NT AUTHORITY\System' /SQLSYSADMINACCOUNTS='BUILTIN\ADMINISTRATORS' /TCPENABLED=1 /NPENABLED=0 /IACCEPTSQLSERVERLICENSETERMS ; \
     Remove-Item -Recurse -Force sqlexpress.exe, setup ; \
-    Stop-Service MSSQL`$SQLEXPRESS ; \
+    Stop-Service 'W3SVC' ; \
+    Stop-Service 'MSSQL$SQLEXPRESS' ; \
     Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql13.SQLEXPRESS\mssqlserver\supersocketnetlib\tcp\ipall' -name tcpdynamicports -value '' ; \
     Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql13.SQLEXPRESS\mssqlserver\supersocketnetlib\tcp\ipall' -name tcpport -value 1433 ; \
     Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql13.SQLEXPRESS\mssqlserver\' -name LoginMode -value 2 ; \
+    Set-Service 'W3SVC' -startuptype "manual" ; \
     Set-Service 'MSSQL$SQLEXPRESS' -startuptype "manual" ; \
     Set-Service 'SQLTELEMETRY$SQLEXPRESS' -startuptype "manual" ; \
     Set-Service 'SQLWriter' -startuptype "manual" ; \
