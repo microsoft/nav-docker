@@ -322,6 +322,7 @@ if ($runningGenericImage -or $runningSpecificImage) {
         . (Get-MyFilePath "SetupFileShare.ps1")
     }
 
+    . (Get-MyFilePath "SetupWindowsUsers.ps1")
     . (Get-MyFilePath "SetupSqlUsers.ps1")
     . (Get-MyFilePath "SetupNavUsers.ps1")
 }
@@ -346,6 +347,10 @@ if (!$buildingImage) {
     if ($webClient -ne "N") {
         $publicWebBaseUrl = $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value
         Write-Host "Web Client          : $publicWebBaseUrl"
+    }
+    if ($auth -ne "Windows" -and !$passwordSpecified) {
+        Write-Host "NAV Admin Username  : $username"
+        Write-Host "NAV Admin Password  : $password"
     }
     if ($httpSite -ne "N") {
         if (Test-Path -Path (Join-Path $httpPath "*.vsix")) {

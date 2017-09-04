@@ -9,10 +9,12 @@
 
 if ($databaseServer -eq "localhost" -and $databaseInstance -eq "SQLEXPRESS") {
 
-    $sqlcmd = "ALTER LOGIN sa with password=" +"'" + $password + "'" + ",CHECK_POLICY = OFF;ALTER LOGIN sa ENABLE;"
-    & sqlcmd -S 'localhost\SQLEXPRESS' -Q $sqlcmd
+    if ($password -ne "") {
+        $sqlcmd = "ALTER LOGIN sa with password=" +"'" + $password + "'" + ",CHECK_POLICY = OFF;ALTER LOGIN sa ENABLE;"
+        & sqlcmd -S 'localhost\SQLEXPRESS' -Q $sqlcmd
+    }
     
-    if ($username.Contains('\') -and $auth -eq "Windows") {
+    if ($auth -eq "Windows" -and $username -ne "" -and $password -eq "") {
         $sqlcmd = 
             "IF NOT EXISTS 
                 (SELECT name  
