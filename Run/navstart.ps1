@@ -249,7 +249,7 @@ if ($runningGenericImage -or $buildingImage) {
 
 if ($runningGenericImage -or $runningSpecificImage -or $buildingImage) {
 
-    Write-Host "Modify NAV Service Tier Config File for Docker"
+    Write-Host "Modifying NAV Service Tier Config File for Docker"
     $CustomConfigFile =  Join-Path $serviceTierFolder "CustomSettings.config"
     $CustomConfig = [xml](Get-Content $CustomConfigFile)
     $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseServer']").Value = $databaseServer
@@ -284,8 +284,8 @@ if ($runningGenericImage -or $runningSpecificImage) {
 }
 
 if ($runningGenericImage -or $buildingImage) {
-    # Create NAV Service
-    Write-Host "Create NAV Service Tier"
+    # Creating NAV Service
+    Write-Host "Creating NAV Service Tier"
     $serviceCredentials = New-Object System.Management.Automation.PSCredential ("NT AUTHORITY\SYSTEM", (new-object System.Security.SecureString))
     New-Service -Name $NavServiceName -BinaryPathName """$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe"" `$NAV /config ""$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe.config""" -DisplayName '"Microsoft Dynamics NAV Server [NAV]' -Description 'NAV' -StartupType manual -Credential $serviceCredentials -DependsOn @("HTTP") | Out-Null
 }
@@ -311,7 +311,7 @@ if ($runningGenericImage -or $runningSpecificImage -or $hostnameChanged) {
 if ($runningGenericImage -or $runningSpecificImage) {
 
     if ($httpSite -ne "N") {
-        Write-Host "Create http download site"
+        Write-Host "Creating http download site"
         New-Item -Path $httpPath -ItemType Directory | Out-Null
         New-Website -Name http -Port $publicFileSharePort -PhysicalPath $httpPath | Out-Null
     
@@ -328,7 +328,7 @@ if ($runningGenericImage -or $runningSpecificImage) {
 }
 
 if (($runningGenericImage -or $runningSpecificImage -or $hostnameChanged) -and ($httpSite -ne "N") -and ($clickOnce -eq "Y")) {
-    Write-Host "Create ClickOnce Manifest"
+    Write-Host "Creating ClickOnce Manifest"
     . (Get-MyFilePath "SetupClickOnce.ps1")
 }
 

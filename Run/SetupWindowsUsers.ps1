@@ -7,7 +7,7 @@
 #
 
 if ($password -ne "" -and $username -ne "") { 
-    Write-Host "Create Windows user"
+    Write-Host "Creating Windows user"
     New-LocalUser -AccountNeverExpires -FullName $username -Name $username -Password (ConvertTo-SecureString -AsPlainText -String $password -Force) -ErrorAction Ignore | Out-Null
     Add-LocalGroupMember -Group administrators -Member $username -ErrorAction Ignore
 }

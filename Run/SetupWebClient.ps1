@@ -24,7 +24,7 @@
     Write-Verbose "Write web client registry keys"
     Set-WebClientRegistryKeys -WebClientFolder $WebClientFolder -AppPoolName $AppPoolName -SiteName $SiteName
 
-    Write-Verbose "Create the application pool $AppPoolName"
+    Write-Verbose "Creating the application pool $AppPoolName"
     $appPool = New-WebAppPool -Name $AppPoolName -Force
     $appPool.managedRuntimeVersion = 'v4.0'
     $appPool.managedPipelineMode = "Integrated"
@@ -60,14 +60,14 @@
     $acl = $null
 
     if ($CertificateThumbprint) {
-        Write-Verbose "Create web site: $SiteName"
+        Write-Verbose "Creating web site: $SiteName"
         New-Website -Name $SiteName -PhysicalPath $appContainerFullPath -ApplicationPool $AppPoolName -Port $Port -Ssl | Out-Null
 
         $sslBindingPath = "IIS:\SslBindings\0.0.0.0!$Port"
         $certificate = Get-Item Cert:\LocalMachine\My\$CertificateThumbprint -ErrorAction SilentlyContinue
         New-Item $sslBindingPath -Value $certificate | Out-Null
     } else {
-        Write-Verbose "Create web site: $SiteName"
+        Write-Verbose "Creating web site: $SiteName"
         New-Website -Name $SiteName -PhysicalPath $appContainerFullPath -ApplicationPool $AppPoolName -Port $Port | Out-Null
     }
 
@@ -142,7 +142,7 @@ if ($servicesUseSSL) {
 
 if (Test-Path "C:\Program Files\dotnet\shared\Microsoft.NETCore.App" -PathType Container) {
     
-    Write-Host "Create DotNetCore NAV Web Server Instance"
+    Write-Host "Creating DotNetCore NAV Web Server Instance"
     $publishFolder = "$webClientFolder\WebPublish"
 
     Import-Module "$webClientFolder\Scripts\NAVWebClientManagement.psm1"
@@ -161,8 +161,8 @@ if (Test-Path "C:\Program Files\dotnet\shared\Microsoft.NETCore.App" -PathType C
     $config | ConvertTo-Json | set-content $navSettingsFile
 
 } else {
-    # Create Web Client
-    Write-Host "Create Web Site"
+    # Creating Web Client
+    Write-Host "Creating Web Site"
     New-NavWebSite -WebClientFolder $WebClientFolder `
                    -inetpubFolder (Join-Path $runPath "inetpub") `
                    -AppPoolName "NavWebClientAppPool" `
@@ -170,7 +170,7 @@ if (Test-Path "C:\Program Files\dotnet\shared\Microsoft.NETCore.App" -PathType C
                    -Port $webClientPort `
                    -Auth $Auth @certparam
 
-    Write-Host "Create NAV Web Server Instance"
+    Write-Host "Creating NAV Web Server Instance"
     New-NAVWebServerInstance -Server "localhost" `
                              -ClientServicesCredentialType $auth `
                              -ClientServicesPort 7046 `

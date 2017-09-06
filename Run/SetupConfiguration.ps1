@@ -10,7 +10,7 @@
 # OUTPUT
 #
 
-Write-Host "Modify NAV Service Tier Config File with Instance Specific Settings"
+Write-Host "Modifying NAV Service Tier Config File with Instance Specific Settings"
 $CustomConfigFile =  Join-Path $ServiceTierFolder "CustomSettings.config"
 $CustomConfig = [xml](Get-Content $CustomConfigFile)
 

@@ -10,11 +10,13 @@
 if ($databaseServer -eq "localhost" -and $databaseInstance -eq "SQLEXPRESS") {
 
     if ($password -ne "") {
+        Write-Host "Enabling SA"
         $sqlcmd = "ALTER LOGIN sa with password=" +"'" + $password + "'" + ",CHECK_POLICY = OFF;ALTER LOGIN sa ENABLE;"
         & sqlcmd -S 'localhost\SQLEXPRESS' -Q $sqlcmd
     }
     
     if ($auth -eq "Windows" -and $username -ne "" -and $password -eq "") {
+        Write-Host "Adding $username to sysadmin"
         $sqlcmd = 
             "IF NOT EXISTS 
                 (SELECT name  

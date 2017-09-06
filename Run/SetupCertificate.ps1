@@ -7,7 +7,7 @@
 #     $dnsIdentity
 #
 
-Write-Host "Create Self Signed Certificate"
+Write-Host "Creating Self Signed Certificate"
 $certificatePfxFile = Join-Path $runPath "certificate.pfx"
 $certificateCerFile = Join-Path $runPath "certificate.cer"
 $certificatePfxPassword = Get-RandomPassword
