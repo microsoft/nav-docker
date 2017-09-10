@@ -1,7 +1,7 @@
 ﻿# INPUT
 #     $auth
 #     $protocol
-#     $hostname
+#     $publicDnsName
 #     $ServiceTierFolder
 #     $navUseSSL
 #     $servicesUseSSL
@@ -16,11 +16,11 @@ $CustomConfig = [xml](Get-Content $CustomConfigFile)
 
 $customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesCredentialType']").Value = $auth
 if ($WebClient -ne "N") {
-    $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value = "$protocol$hostname$publicwebClientPort/NAV/WebClient/"
+    $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value = "$protocol$publicDnsName$publicwebClientPort/NAV/WebClient/"
 }
-$CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicSOAPBaseUrl']").Value = "$protocol${hostname}:$publicSoapPort/NAV/WS"
-$CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicODataBaseUrl']").Value = "$protocol${hostname}:$publicODataPort/NAV/OData"
-$CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWinBaseUrl']").Value = "DynamicsNAV://${hostname}:$publicWinClientPort/NAV/"
+$CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicSOAPBaseUrl']").Value = "$protocol${publicDnsName}:$publicSoapPort/NAV/WS"
+$CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicODataBaseUrl']").Value = "$protocol${publicDnsName}:$publicODataPort/NAV/OData"
+$CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWinBaseUrl']").Value = "DynamicsNAV://${publicDnsName}:$publicWinClientPort/NAV/"
 if ($navUseSSL) {
     $CustomConfig.SelectSingleNode("//appSettings/add[@key='ServicesCertificateThumbprint']").Value = "$certificateThumbprint"
     $CustomConfig.SelectSingleNode("//appSettings/add[@key='ServicesCertificateValidationEnabled']").Value = "false"

@@ -1,5 +1,11 @@
 ﻿$Accept_eula = "$env:Accept_eula"
 
+$hostname = hostname
+$publicDnsName = "$env:PublicDnsName"
+if ($publicDnsName -eq "") {
+    $publicDnsName = $hostname
+}
+
 $auth = "$env:Auth"
 if ($auth -eq "") {
     if ("$env:WindowsAuth" -eq "Y") {

@@ -1,8 +1,5 @@
 Write-Host "Initializing..."
 
-$hostname = hostname
-Write-Host "Hostname is $hostname"
-
 $runPath = "c:\Run"
 $myPath = Join-Path $runPath "my"
 $navDvdPath = "C:\NAVDVD"
@@ -16,9 +13,14 @@ function Get-MyFilePath([string]$FileName)
     }
 }
 
+$hostname = hostname
+
 . (Get-MyFilePath "HelperFunctions.ps1")
 . (Get-MyFilePath "New-SelfSignedCertificateEx.ps1")
 . (Get-MyFilePath "SetupVariables.ps1")
+
+Write-Host "Hostname is $hostname"
+Write-Host "PublicDnsName is $publicDnsName"
 
 # Ensure correct casing
 if ($auth -eq "" -or $auth -eq "navuserpassword") {
@@ -75,20 +77,20 @@ if ($publicODataPort     -eq "") { $publicODataPort     = "7048" }
 
 if ($buildingImage) { Write-Host "Building Image" }
 
-$hostnameFile = "$RunPath\hostname.txt"
-$hostnameChanged = $false
-$restartingInstance = Test-Path -Path $hostnameFile -PathType Leaf
+$publicDnsNameFile = "$RunPath\PublicDnsName.txt"
+$publicDnsNameChanged = $false
+$restartingInstance = Test-Path -Path $publicDnsNameFile -PathType Leaf
 if ($restartingInstance) {
     Write-Host "Restarting Instance"
-    $prevHostname = Get-Content -Path $hostnameFile
-    if ($prevHostname -ne $hostname) {
-        $hostnameChanged = $true
-        Write-Host "Hostname changed"
+    $prevPublicDnsName = Get-Content -Path $publicDnsNameFile
+    if ($prevPublicDnsName -ne $publicDnsName) {
+        $publicDnsNameChanged = $true
+        Write-Host "PublicDnsName changed"
     }
 }
 
 if (!$buildingImage) {
-    Set-Content -Path $hostnameFile -Value $hostname
+    Set-Content -Path $publicDnsNameFile -Value $publicDnsName
 }
 
 $runningGenericImage = $restartingInstance -and !$buildingImage -and (!(Test-Path "C:\Program Files\Microsoft Dynamics NAV" -PathType Container))
@@ -167,6 +169,7 @@ if ($runningGenericImage -or $buildingImage)
 if ($runningGenericImage -or $buildingImage) {
     Write-Host "Copy Service Tier Files"
     Copy-Item -Path "$NavDvdPath\ServiceTier\Program Files" -Destination "C:\" -Recurse -Force
+    Copy-Item -Path "$NavDvdPath\ServiceTier\System64Folder\NavSip.dll" -Destination "C:\Windows\System32\NavSip.dll" -Force
 
     Write-Host "Copy Web Client Files"
     Copy-Item -Path "$NavDvdPath\WebClient\Microsoft Dynamics NAV" -Destination "C:\Program Files\" -Recurse -Force
@@ -268,7 +271,7 @@ if ($runningGenericImage -or $runningSpecificImage -or $buildingImage) {
     $CustomConfig.Save($CustomConfigFile)
 }
 
-if ($runningGenericImage -or $runningSpecificImage -or $hostnameChanged) {
+if ($runningGenericImage -or $runningSpecificImage -or $publicDnsNameChanged) {
 
     # Certificate
     if ($navUseSSL -or $servicesUseSSL) {
@@ -287,7 +290,18 @@ if ($runningGenericImage -or $buildingImage) {
     # Creating NAV Service
     Write-Host "Creating NAV Service Tier"
     $serviceCredentials = New-Object System.Management.Automation.PSCredential ("NT AUTHORITY\SYSTEM", (new-object System.Security.SecureString))
-    New-Service -Name $NavServiceName -BinaryPathName """$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe"" `$NAV /config ""$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe.config""" -DisplayName '"Microsoft Dynamics NAV Server [NAV]' -Description 'NAV' -StartupType manual -Credential $serviceCredentials -DependsOn @("HTTP") | Out-Null
+    $serverFile = "$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe"
+    $configFile = "$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe.config"
+    New-Service -Name $NavServiceName -BinaryPathName """$serverFile"" `$NAV /config ""$configFile""" -DisplayName 'Microsoft Dynamics NAV Server [NAV]' -Description 'NAV' -StartupType manual -Credential $serviceCredentials -DependsOn @("HTTP") | Out-Null
+
+    $serverVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($serverFile)
+    $versionFolder = ("{0}{1}" -f $serverVersion.FileMajorPart,$serverVersion.FileMinorPart)
+    $registryPath = "HKLM:\SOFTWARE\Microsoft\Microsoft Dynamics NAV\$versionFolder\Service"
+    New-Item -Path $registryPath -Force | Out-Null
+    New-ItemProperty -Path $registryPath -Name 'Path' -Value "$serviceTierFolder\" -Force | Out-Null
+    New-ItemProperty -Path $registryPath -Name 'Installed' -Value 1 -Force | Out-Null
+
+    Install-NAVSipCryptoProvider
 }
 
 Write-Host "Start NAV Service Tier"
@@ -298,7 +312,7 @@ Start-Service -Name $NavServiceName -WarningAction Ignore
 $wwwRootPath = Get-WWWRootPath
 $httpPath = Join-Path $wwwRootPath "http"
 
-if ($runningGenericImage -or $runningSpecificImage -or $hostnameChanged) {
+if ($runningGenericImage -or $runningSpecificImage -or $publicDnsNameChanged) {
 
     if ($webClient -ne "N") {
 
@@ -313,7 +327,7 @@ if ($runningGenericImage -or $runningSpecificImage) {
     if ($httpSite -ne "N") {
         Write-Host "Creating http download site"
         New-Item -Path $httpPath -ItemType Directory | Out-Null
-        New-Website -Name http -Port $publicFileSharePort -PhysicalPath $httpPath | Out-Null
+        New-Website -Name http -Port 8080 -PhysicalPath $httpPath | Out-Null
     
         $webConfigFile = Join-Path $httpPath "web.config"
         Copy-Item -Path (Join-Path $runPath "web.config") -Destination $webConfigFile
@@ -327,7 +341,7 @@ if ($runningGenericImage -or $runningSpecificImage) {
     . (Get-MyFilePath "SetupNavUsers.ps1")
 }
 
-if (($runningGenericImage -or $runningSpecificImage -or $hostnameChanged) -and ($httpSite -ne "N") -and ($clickOnce -eq "Y")) {
+if (($runningGenericImage -or $runningSpecificImage -or $publicDnsNameChanged) -and ($httpSite -ne "N") -and ($clickOnce -eq "Y")) {
     Write-Host "Creating ClickOnce Manifest"
     . (Get-MyFilePath "SetupClickOnce.ps1")
 }
@@ -344,6 +358,7 @@ if (!$buildingImage) {
     $ip = (Get-NetIPAddress | Where-Object { $_.AddressFamily -eq "IPv4" -and $_.IPAddress -ne "127.0.0.1" })[0].IPAddress
     Write-Host "Container IP Address: $ip"
     Write-Host "Container Hostname  : $hostname"
+    Write-Host "Container Dns Name  : $publicDnsName"
     if ($webClient -ne "N") {
         $publicWebBaseUrl = $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value
         Write-Host "Web Client          : $publicWebBaseUrl"
@@ -354,11 +369,11 @@ if (!$buildingImage) {
     }
     if ($httpSite -ne "N") {
         if (Test-Path -Path (Join-Path $httpPath "*.vsix")) {
-            Write-Host "Dev. Server         : $protocol$hostname"
+            Write-Host "Dev. Server         : $protocol$publicDnsName"
             Write-Host "Dev. ServerInstance : NAV"
         }
         if ($clickOnce -eq "Y") {
-            Write-Host "ClickOnce Manifest  : http://${hostname}:$publicFileSharePort/NAV"
+            Write-Host "ClickOnce Manifest  : http://${publicDnsName}:$publicFileSharePort/NAV"
         }
     }
 
@@ -368,7 +383,7 @@ if (!$buildingImage) {
     if ($httpSite -ne "N") {
         Write-Host "Files:"
         Get-ChildItem -Path $httpPath -file | % {
-            Write-Host "http://${hostname}:$publicFileSharePort/$($_.Name)"
+            Write-Host "http://${publicDnsName}:$publicFileSharePort/$($_.Name)"
         }
         Write-Host 
     }
