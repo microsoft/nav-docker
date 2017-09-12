@@ -346,6 +346,10 @@ if (($runningGenericImage -or $runningSpecificImage -or $publicDnsNameChanged) -
     . (Get-MyFilePath "SetupClickOnce.ps1")
 }
 
+if (($runningGenericImage -or $runningSpecificImage -or $publicDnsNameChanged) -and ($exportClientFolder -eq "Y")) {
+    . (Get-MyFilePath "ExportClientFolder.ps1")
+}
+
 if ($runningGenericImage -or $runningSpecificImage) {
     . (Get-MyFilePath "AdditionalSetup.ps1")
 }

@@ -164,3 +164,33 @@ function Install-NAVSipCryptoProvider
     New-ItemProperty -Path $registryPath -PropertyType string -Name 'Dll' -Value $sipPath -Force | Out-Null
     New-ItemProperty -Path $registryPath -PropertyType string -Name 'FuncName' -Value 'NavSIPVerifyIndirectData' -Force | Out-Null
 }
+
+function New-FinSqlExeRunner
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$True)]
+        [string]$FileFullPath,
+        [Parameter(Mandatory=$True)]
+        [string]$SqlServerName,
+        [Parameter(Mandatory=$True)]
+        [string]$DbName,
+        [Parameter(Mandatory=$True)]
+        [bool]$NtAuth,
+        [Parameter(Mandatory=$True)]
+        [string]$Id
+    )
+
+    $useNtAuth = if ($NtAuth) { 1 } else { 0 }
+    $fileName = Split-Path $FileFullPath -Leaf
+    $buildFolder = Join-Path $PSScriptRoot '_buildfinsqlrunner'
+
+    New-Item -ItemType Directory -Path $buildFolder -Force | Out-Null
+
+    Set-Content "$buildFolder\$fileName.ps1" "Start-Process 'finsql.exe' -ArgumentList ""servername=$SqlServerName, database=$DbName, ntauthentication=$useNtAuth, id=$Id""" -Force
+    & (Join-Path $PSScriptRoot 'ps2exe.ps1') -inputFile "$buildFolder\$fileName.ps1" -outputFile "$buildFolder\$fileName" -noconsole -runtime40 -wait -end *>$null
+
+    Copy-Item "$buildFolder\$fileName" $FileFullPath -Force | Out-Null
+
+    Remove-Item $buildFolder -Recurse -Force | Out-Null
+}

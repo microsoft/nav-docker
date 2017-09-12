@@ -64,3 +64,6 @@ if ($locale)  {
     Set-WinSystemLocale -SystemLocale $cultureInfo
     Set-Culture -CultureInfo $cultureInfo
 }
+
+$exportClientFolder = "$env:exportClientFolder"
+$exportClientFolderPath = "$env:exportClientFolderPath"
