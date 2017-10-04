@@ -173,7 +173,9 @@ if ($runningGenericImage -or $buildingImage) {
 
     Write-Host "Copy Web Client Files"
     Copy-Item -Path "$NavDvdPath\WebClient\Microsoft Dynamics NAV" -Destination "C:\Program Files\" -Recurse -Force
-    Copy-Item -Path "$navDvdPath\WebClient\inetpub" -Destination $runPath -Recurse -Force
+    if (Test-Path "$navDvdPath\WebClient\inetpub" -PathType Container) {
+        Copy-Item -Path "$navDvdPath\WebClient\inetpub" -Destination $runPath -Recurse -Force
+    }
 
     Write-Host "Copy RTC Files"
     Copy-Item -Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force
