@@ -145,7 +145,11 @@ if (Test-Path "C:\Program Files\dotnet\shared\Microsoft.NETCore.App" -PathType C
     Write-Host "Creating DotNetCore NAV Web Server Instance"
     $publishFolder = "$webClientFolder\WebPublish"
 
-    Import-Module "$webClientFolder\Scripts\NAVWebClientManagement.psm1"
+    $NAVWebClientManagementModule = "$webClientFolder\Modules\NAVWebClientManagement\NAVWebClientManagement.psm1"
+    if (!(Test-Path $NAVWebClientManagementModule)) {
+        $NAVWebClientManagementModule = "$webClientFolder\Scripts\NAVWebClientManagement.psm1"
+    }
+    Import-Module $NAVWebClientManagementModule
     New-NAVWebServerInstance -PublishFolder $publishFolder `
                              -WebServerInstance "NAV" `
                              -Server "localhost" `
