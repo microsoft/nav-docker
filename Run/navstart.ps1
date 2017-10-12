@@ -93,7 +93,7 @@ if (!$buildingImage) {
     Set-Content -Path $publicDnsNameFile -Value $publicDnsName
 }
 
-$runningGenericImage = $restartingInstance -and !$buildingImage -and (!(Test-Path "C:\Program Files\Microsoft Dynamics NAV" -PathType Container))
+$runningGenericImage = (!$restartingInstance) -and (!$buildingImage) -and (!(Test-Path "C:\Program Files\Microsoft Dynamics NAV" -PathType Container))
 if ($runningGenericImage) { Write-Host "Running Generic Image" }
 
 $runningSpecificImage = (!$restartingInstance) -and (!$runningGenericImage) -and (!$buildingImage)
