@@ -164,3 +164,17 @@ function Install-NAVSipCryptoProvider
     New-ItemProperty -Path $registryPath -PropertyType string -Name 'Dll' -Value $sipPath -Force | Out-Null
     New-ItemProperty -Path $registryPath -PropertyType string -Name 'FuncName' -Value 'NavSIPVerifyIndirectData' -Force | Out-Null
 }
+
+function GetMsiProductName([string]$path) {
+    try {
+        $installer = New-Object -com WindowsInstaller.Installer
+        $database = $installer.GetType().InvokeMember("OpenDatabase", "InvokeMethod", $null, $installer, @($path, 0))
+        $query = "SELECT * FROM Property WHERE Property = 'ProductName'"
+        $view = $database.GetType().InvokeMember("OpenView", "InvokeMethod", $null, $database, $query)
+        $view.GetType().InvokeMember("Execute", "InvokeMethod", $null, $view, $null)
+        $record = $view.GetType().InvokeMember("Fetch", "InvokeMethod", $null, $view, $null)
+        return $record.GetType().InvokeMember("StringData", "GetProperty", $null, $record, 2)
+    } catch {
+        throw "Failed to get MSI file version the error was: {0}." -f $_
+    }
+}

@@ -1,4 +1,5 @@
 ﻿$Accept_eula = "$env:Accept_eula"
+$Accept_outdated = "$env:Accept_outdated"
 
 $hostname = hostname
 $publicDnsName = "$env:PublicDnsName"
