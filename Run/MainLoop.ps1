@@ -1,4 +1,9 @@
-﻿$lastCheck = (Get-Date).AddSeconds(-2) 
+﻿# clean up the variables (avoid later access)
+$env:password = ""
+$password     = ""
+
+#start the main loop
+$lastCheck = (Get-Date).AddSeconds(-2) 
 while ($true) 
 {
     $thisCheck = Get-Date 
