@@ -399,7 +399,7 @@ if (!$buildingImage) {
     }
     if ($auth -ne "Windows" -and !$passwordSpecified) {
         Write-Host "NAV Admin Username  : $username"
-        Write-Host "NAV Admin Password  : $password"
+        Write-Host ("NAV Admin Password  : "+[System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)))
     }
     if ($httpSite -ne "N") {
         if (Test-Path -Path (Join-Path $httpPath "*.vsix")) {
@@ -424,3 +424,4 @@ if (!$buildingImage) {
 
     Write-Host "Ready for connections!"
 }
+$securePassword = $null

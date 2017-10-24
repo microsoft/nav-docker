@@ -19,10 +19,23 @@ if ($auth -ne "Windows") {
     if ($username -eq "") { $username = "admin" }
 }
  
-$password = "$env:password"
-$passwordSpecified = ($password -ne "")
-if ($auth -ne "Windows") {
-    if (!$passwordSpecified) { $password = Get-RandomPassword }
+$passwordSpecified = $false
+if ("$env:password" -ne "") {
+    $securepassword = ConvertTo-SecureString -String "$env:password" -AsPlainText -Force
+    $env:password = ""
+    $passwordSpecified = $true
+} elseif ("$env:securepassword" -ne "" -and "$env:passwordKeyFile" -ne "") {
+    $securePassword = ConvertTo-SecureString -String $adminPassword -Key (Get-Content -Path "$env:passwordKeyFile")
+    if ($env:RemovePasswordKeyFile -eq "Y") {
+        Remove-Item -Path "$env:passwordKeyFile" -Force
+    }
+    $env:passwordKeyFile = ""
+    $env:securePassword = ""
+    $passwordSpecified = $true
+} else {
+    if ($auth -ne "Windows") {
+        $securePassword = ConvertTo-SecureString -String (Get-RandomPassword) -AsPlainText -Force
+    }
 }
 
 $licensefile = "$env:licensefile"
