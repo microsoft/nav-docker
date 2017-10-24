@@ -115,16 +115,19 @@ You must map a folder on the host with the NAVDVD content to $navDvdPath"
 if ($runningSpecificImage -and $Accept_eula -ne "Y")
 {
     Write-Error "You must accept the End User License Agreement before this container can start.
-Set the environment variable ACCEPT_EULA to 'Y' if you accept the agreement."
+Use Docker inspect to locate the Url for the EULA under Labels/legal.
+set the environment variable ACCEPT_EULA to 'Y' if you accept the agreement."
     exit 1
 }
 
-if (($runningSpecificImage -or $runningGenericImage -or $buildingImage) -and 
-    ([System.DateTime]::Now.Subtract((Get-Item "C:\RUN").CreationTime).Days -gt 90) -and 
-    ($Accept_outdated -ne "Y")) {
-    Write-Error"You are trying to run a container which is more than 90 days old.
-Set the environment variable ACCEPT_OUTDATED to 'Y' if you want to run the image anyway."
-    exit 1
+$containerAge = [System.DateTime]::Now.Subtract((Get-Item "C:\RUN").CreationTime).Days
+if (($runningSpecificImage -or $runningGenericImage -or $buildingImage) -and ($containerAge -gt 90)) {
+    if ($Accept_outdated -ne "Y") {
+        Write-Error "You are trying to run a container which is more than 90 days old.
+Microsoft recommends that you always run the latest version of our containers.
+Set the environment variable ACCEPT_OUTDATED to 'Y' if you want to run this container anyway."
+        exit 1
+    }
 }
 
 if ($runningGenericImage -or $runningSpecificImage) {
@@ -221,10 +224,10 @@ if ($runningGenericImage -or $buildingImage) {
             $msiPath = Join-Path $navDvdPath "Prerequisite Components\Microsoft SQL Server\ReportBuilder3.msi"
             if (Test-Path $msiPath -PathType Leaf) {
                 $productName = GetMsiProductName -Path $msiPath
-                if ($productName = "SQL Server Report Builder 3 for SQL Server 2014") {
+                if ($productName -eq "SQL Server Report Builder 3 for SQL Server 2014") {
                     $reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder'
                 }
-                if ($productName = "Microsoft SQL Server 2016 Report Builder" {
+                if ($productName -eq "Microsoft SQL Server 2016 Report Builder") {
                     $reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder2016'
                 }
             }
@@ -420,6 +423,12 @@ if (!$buildingImage) {
             Write-Host "http://${publicDnsName}:$publicFileSharePort/$($_.Name)"
         }
         Write-Host 
+    }
+
+    if ($containerAge -gt 60) {
+        Write-Host "You are running a container which is $containerAge days old.
+Microsoft recommends that you always run the latest version of our containers."
+        Write-Host
     }
 
     Write-Host "Ready for connections!"
