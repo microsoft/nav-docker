@@ -221,7 +221,7 @@ if ($runningGenericImage -or $buildingImage) {
         if (Test-Path "$navDvdPath\Prerequisite Components\Microsoft SQL Server 2014 Express" -PathType Container) {
             $reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder'
         } elseif (Test-Path "$navDvdPath\Prerequisite Components\Microsoft SQL Server" -PathType Container) {
-            $msiPath = Join-Path $navDvdPath "Prerequisite Components\Microsoft SQL Server\ReportBuilder3.msi"
+            $msiPath = "$navDvdPath\Prerequisite Components\Microsoft SQL Server\ReportBuilder3.msi"
             if (Test-Path $msiPath -PathType Leaf) {
                 $productName = GetMsiProductName -Path $msiPath
                 if ($productName -eq "SQL Server Report Builder 3 for SQL Server 2014") {
@@ -233,7 +233,7 @@ if ($runningGenericImage -or $buildingImage) {
             }
         }
         if ($reportBuilderSrc -eq "") {
-            Write-Error "Cannot determine Report Builder Dependency"
+            Write-Error "Cannot determine Report Builder Dependency ($msiPath - $productName)"
             exit 1
         }
         if (!(Test-Path $reportBuilderSrc -PathType Container)) {

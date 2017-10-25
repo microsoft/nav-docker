@@ -171,9 +171,10 @@ function GetMsiProductName([string]$path) {
         $database = $installer.GetType().InvokeMember("OpenDatabase", "InvokeMethod", $null, $installer, @($path, 0))
         $query = "SELECT * FROM Property WHERE Property = 'ProductName'"
         $view = $database.GetType().InvokeMember("OpenView", "InvokeMethod", $null, $database, $query)
-        $view.GetType().InvokeMember("Execute", "InvokeMethod", $null, $view, $null)
+        $view.GetType().InvokeMember("Execute", "InvokeMethod", $null, $view, $null) | Out-Null
         $record = $view.GetType().InvokeMember("Fetch", "InvokeMethod", $null, $view, $null)
-        return $record.GetType().InvokeMember("StringData", "GetProperty", $null, $record, 2)
+        $name = $record.GetType().InvokeMember("StringData", "GetProperty", $null, $record, 2)
+        return $name.Trim()
     } catch {
         throw "Failed to get MSI file version the error was: {0}." -f $_
     }

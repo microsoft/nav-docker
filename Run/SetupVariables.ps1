@@ -25,8 +25,8 @@ if ("$env:password" -ne "") {
     $env:password = ""
     $passwordSpecified = $true
 } elseif ("$env:securepassword" -ne "" -and "$env:passwordKeyFile" -ne "") {
-    $securePassword = ConvertTo-SecureString -String $adminPassword -Key (Get-Content -Path "$env:passwordKeyFile")
-    if ($env:RemovePasswordKeyFile -eq "Y") {
+    $securePassword = ConvertTo-SecureString -String "$env:securepassword" -Key (Get-Content -Path "$env:passwordKeyFile")
+    if ($env:RemovePasswordKeyFile -ne "N") {
         Remove-Item -Path "$env:passwordKeyFile" -Force
     }
     $env:passwordKeyFile = ""
