@@ -11,7 +11,7 @@ if ($databaseServer -eq "localhost" -and $databaseInstance -eq "SQLEXPRESS") {
 
     if ($securePassword) {
         Write-Host "Enabling SA"
-        $sqlcmd = "ALTER LOGIN sa with password='" + [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)) + "',CHECK_POLICY = OFF;ALTER LOGIN sa ENABLE;"
+        $sqlcmd = "ALTER LOGIN sa with password='" + ([System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)).Replace('"','""').Replace('''','''''')) + "',CHECK_POLICY = OFF;ALTER LOGIN sa ENABLE;"
         & sqlcmd -S 'localhost\SQLEXPRESS' -Q $sqlcmd
     }
     
