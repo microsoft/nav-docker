@@ -22,15 +22,15 @@ if ($auth -ne "Windows") {
 $passwordSpecified = $false
 if ("$env:password" -ne "") {
     $securepassword = ConvertTo-SecureString -String "$env:password" -AsPlainText -Force
-    $env:password = ""
+    Remove-Item env:\password -ErrorAction Ignore
     $passwordSpecified = $true
 } elseif ("$env:securepassword" -ne "" -and "$env:passwordKeyFile" -ne "") {
     $securePassword = ConvertTo-SecureString -String "$env:securepassword" -Key (Get-Content -Path "$env:passwordKeyFile")
     if ($env:RemovePasswordKeyFile -ne "N") {
         Remove-Item -Path "$env:passwordKeyFile" -Force
     }
-    $env:passwordKeyFile = ""
-    $env:securePassword = ""
+    Remove-Item env:\passwordKeyFile -ErrorAction Ignore
+    Remove-Item env:\securePassword -ErrorAction Ignore
     $passwordSpecified = $true
 } else {
     if ($auth -ne "Windows") {
