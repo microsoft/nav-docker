@@ -8,9 +8,9 @@ https://channel9.msdn.com/Search?term=containers#ch9Search&lang-en=en&pubDate=ye
 
 ## Get started – prepare your environment
 Docker only runs on Windows Server 2016 (or later) or Windows 10.
-When using Windows 10, Docker always uses Hyper-V isolation with a very thin layer. When using Windows Server 2016, you can choose between Hyper-V isolation or process isolation. Read more about this here: https://docs.microsoft.com/en-us/virtualization/windowscontainers/about/ (same link as above)
+When using Windows 10, Docker always uses Hyper-V isolation with a very thin layer. When using Windows Server 2016, you can choose between Hyper-V isolation or process isolation. Read more about this [here](https://docs.microsoft.com/en-us/virtualization/windowscontainers/about/) (same link as above).
 I will describe 3 ways to get started with Containers. If you have a laptop/machine running Windows Server 2016 or Windows 10 – you can use this one. If not, you can deploy a Windows Server 2016 with Containers on Azure, which will give you everything to get started.
-After you have created a Docker environment, you can install the Docker Powershell CmdLets, which are on GitHub here: https://github.com/Microsoft/Docker-PowerShell
+After you have created a Docker environment, you can install the Docker Powershell CmdLets, which are on GitHub [here] (https://github.com/Microsoft/Docker-PowerShell):
 Run:
 ```
 Register-PSRepository -Name DockerPS-Dev -SourceLocation https://ci.appveyor.com/nuget/docker-powershell-dev
@@ -19,8 +19,8 @@ Install-Module -Name Docker -Repository DockerPS-Dev -Scope CurrentUser
 In Appendix 2 you will see some samples on how to use these CmdLets.
 
 ### Windows Server 2016 with Containers on Azure
-In the Azure Gallery, you will find an image with Windows Server 2016 and Docker installed and pre-configured. You can deploy this image by clicking this link:
-https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FMicrosoft%2FVirtualization-Documentation%2Flive%2Fwindows-server-container-tools%2Fcontainers-azure-template%2Fazuredeploy.json
+In the Azure Gallery, you will find an image with Windows Server 2016 and Docker installed and pre-configured. You can deploy this image by clicking this [link]
+(https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FMicrosoft%2FVirtualization-Documentation%2Flive%2Fwindows-server-container-tools%2Fcontainers-azure-template%2Fazuredeploy.json):
 Note, do not select Standard_D1 (simply not powerful enough) – use Standard_D2 or Standard_D3.
 In this VM, you can now run all the docker commands, described in this document.
 
@@ -34,8 +34,10 @@ https://docs.microsoft.com/en-us/virtualization/windowscontainers/quick-start/qu
 
 ## Get started – run your first NAV docker container
 On your machine with Docker, open a command prompt and type this command (please obtain username and password from Microsoft):
+```
 docker login navdocker.azurecr.io -u <username> -p <password>
-This will ensure that you have access to a private docker registry called navdocker.azurecr.io, and can pull images from this registry.
+```
+This will ensure that you have access to a private docker registry called `navdocker.azurecr.io, and can pull images from this registry.
 Now run this command:
 ```
 docker run -e ACCEPT_EULA=Y navdocker.azurecr.io/dynamics-nav:2017
@@ -63,8 +65,8 @@ All specific images are tagged with the version number of NAV, which is installe
 •	navdocker.azurecr.io/dynamics-nav:2017-cu8-dk will give you NAV 2017 CU8 DK version.
 •	navdocker.azurecr.io/dynamics-nav:10.0.17501.0 will give you a specific build of NAV (in this case, NAV 2017 CU8 W1).
 •	navdocker.azurecr.io/dynamics-nav:10.0.17501.0-dk will give you a specific DK build of NAV (in this case, NAV 2017 CU8 DK).
-T
-here is no such thing as dynamics-nav:latest at this time, instead you can get the latest NAV 2016, the latest NAV 2017 etc.
+
+There is no such thing as dynamics-nav:latest at this time, instead you can get the latest NAV 2016, the latest NAV 2017 etc.
 For this test period, the navdocker.azurecr.io registry contains the following images:
 
 •	NAV 2017 CU8 all languages
@@ -85,7 +87,9 @@ In the following, I will go through a number of scenarios, you might find useful
 
 ### Skip self-signed certificates for local docker containers
 The parameter you need to specify to setup the NAV Container without SSL is:
+```
 -e UseSSL=N
+```
 The default for UseSSL is Y when using NavUserPassword authentication and N when using Windows authentication.
 Example:
 ```
@@ -95,19 +99,23 @@ Note, if you are planning to expose your container outside the boundaries of you
 
 ### Specify username and password for your NAV SUPER user
 The parameters needed to specify username and password for your NAV SUPER user are:
--e username=username -e password=password
+`-e username=username -e password=password`
 Example:
 ```
 docker run -e ACCEPT_EULA=Y -e username=admin -e password=P@ssword1 navdocker.azurecr.io/dynamics-nav:2017
 ```
 If you do NOT specify a username and a password, the NAV Docker Image will create a user called admin with a random password. This password is shown in the output of the Docker Container:
+```
 NAV Admin Username: admin
 NAV Admin Password: Fewe8407
+```
 Please remember to write it down.
 
 ### Use Windows Authentication for NAV
 The parameters used to specify that you want to use Windows Authentication are:
+```
 -e auth=Windows -e username=username -e password=password
+```
 A container doesn’t have its own Active Directory, but you can still setup Windows Authentication.
 With the current Windows AD user on the host computer.
 This is done by specifying the credentials of your Windows AD user (without the domain name) and our Windows AD password.
@@ -131,8 +139,11 @@ We strongly recommend to use gMSA if you are using Windows Authentication.
 Note that network settings on Docker can be setup in a lot of different ways. Please consult the Docker documentation or this blog post:
 https://docs.microsoft.com/en-us/virtualization/windowscontainers/manage-containers/container-networking
 to learn more about container networking. When installing Docker, by default it creates a NAT network. This scenario explains how to publish ports using NAT network settings only. Publishing ports enables you to access the Container from outside the host computer. The parameters used for publishing ports on the host and specifying a hostname are not specific to the NAV container image, but are generic Docker parameters:
+```
 -p <PortOnHost>:<PortInDocker> -h hostname
+```
 In order for a port to be published on the host, the port needs to be exposed in the container. By default, the NAV container image exposes the following ports:
+```
 8080	file share
 80	http
 443	https
@@ -142,15 +153,19 @@ In order for a port to be published on the host, the port needs to be exposed in
 7047	soap
 7048	odata
 7049	development
-If you want to publish all exposed ports on the host, you can use: --publish-all or -P (capital P).
+```
+If you want to publish all exposed ports on the host, you can use: `--publish-all` or `-P` (capital P).
 Note, publishing port 1433 on an internet host might cause your computer to be vulnerable for attacks.
 Example:
+```
 docker run -h dockertest.navdemo.net -e ACCEPT_EULA=Y -p 8080:8080 -p 80:80 -p 443:443 -p 7045-7049:7045-7049 navdocker.azurecr.io/dynamics-nav:2017
-In this example, dockertest.navdemo.net is a DNS name, which points to the IP address of the host computer (A or CNAME record) and the ports 8080, 80, 443, 7045, 7046, 7047, 7048 and 7049 are all bound to the host computer, meaning that I can navigate to http://dockertest.navdemo.net:8080 to download files from the NAV container file share.
+```
+docker run -h dockertest.navdemo.net -e ACCEPT_EULA=Y -p 8080:8080 -p 80:80 -p 443:443 -p 7045-7049:7045-7049 navdocker.azurecr.io/dynamics-nav:2017
+In this example, `dockertest.navdemo.net` is a DNS name, which points to the IP address of the host computer (A or CNAME record) and the ports `8080, 80, 443, 7045, 7046, 7047, 7048` and `7049` are all bound to the host computer, meaning that I can navigate to http://dockertest.navdemo.net:8080 to download files from the NAV container file share.
 
 ### Adding ClickOnce deployment of the Windows Client
 The parameter needed to specify that you want to have use the RTC Client via ClickOnce is:
--e ClickOnce=Y
+`-e ClickOnce=Y`
 Example:
 ```
 docker run -e ACCEPT_EULA=Y -e ClickOnce=Y navdocker.azurecr.io/dynamics-nav:2017
@@ -161,9 +176,11 @@ Launch this URL in a browser, download and start the Windows Client.
 
 ### Use a certificate, issued by a trusted authority
 There are no parameters in which you can specify a certificate directly. Instead, you will have to override the SetupCertificate script in the Docker image. Overriding scripts is done by placing a script in a folder on the host computer and sharing this folder to the NAV Container as a folder called c:\run\my. The parameter used to achieve this is:
+```
 -v c:\myfolder:c:\run\my
-When the NAV Container starts, it will look for scripts in the c:\run\my folder to override scripts, which are placed in c:\run.
-You should place your certificate pfx file in c:\myfolder together with this script:
+```
+When the NAV Container starts, it will look for scripts in the `c:\run\my folder` to override scripts, which are placed in `c:\run`.
+You should place your certificate pfx file in `c:\myfolder` together with this script:
 ```
 $certificatePfxFile = Join-Path $PSScriptRoot "<Certificate Pfx Filename>"
 $certificatePfxPassword = "<Certificate Pfx Password>"
@@ -178,10 +195,11 @@ if (!(Get-Item Cert:\LocalMachine\my\$certificateThumbprint -ErrorAction Silentl
 }
 ```
 
-If the certificate you use isn’t issued by an authority, which is in the Trusted Root Certification Authorities, then you will have to import the pfx file to LocalMachine\root as well as LocalMachine\my, using this line:
+If the certificate you use isn’t issued by an authority, which is in the Trusted Root Certification Authorities, then you will have to import the pfx file to `LocalMachine\root` as well as `LocalMachine\my`, using this line:
+```
     Import-PfxCertificate -FilePath $certificatePfxFile -CertStoreLocation cert:\localMachine\root -Password (ConvertTo-SecureString -String $certificatePfxPassword -AsPlainText -Force) | Out-Null
-
-And then use Docker run with the -v parameter explained above.
+```
+And then use Docker run with the `-v` parameter explained above.
 Example:
 ```
 docker run -v c:\myfolder:c:\run\my -h dockertest.navdemo.net -e ACCEPT_EULA=Y -p 8080:8080 -p 80:80 -p 443:443 -p 7045-7049:7045-7049 navdocker.azurecr.io/dynamics-nav:2017
@@ -213,11 +231,11 @@ TODO
 TODO
 
 # Appendix 1 – Scripts
-When building, running or restarting the NAV Docker image, the c:\run\navstart.ps1 script is being run. This script will launch a number of other scripts (listed below in the order in which they are called from navstart.ps1). Each of these scripts exists in the c:\run folder. If a folder called c:\run\my exists and a script with the same name is found in that folder, then that script will be executed instead of the script in c:\run (called overriding scripts).
-Overriding scripts is done by creating the script, placing it in a folder (like c:\myfolder) on the host, and sharing this folder to the Docker container in c:\run\my. You can try to create a script called AdditionalOutput.ps1 in c:\myfolder with this line:
+When building, running or restarting the NAV Docker image, the `c:\run\navstart.ps1` script is being run. This script will launch a number of other scripts (listed below in the order in which they are called from navstart.ps1). Each of these scripts exists in the `c:\run` folder. If a folder called `c:\run\my` exists and a script with the same name is found in that folder, then that script will be executed instead of the script in `c:\run` (called overriding scripts).
+Overriding scripts is done by creating the script, placing it in a folder (like `c:\myfolder`) on the host, and sharing this folder to the Docker container in `c:\run\my`. You can try to create a script called AdditionalOutput.ps1 in `c:\myfolder` with this line:
 Write-Host "This is a message from AdditionalOutput"
  
-and run NAV on Docker with -v c:\myfolder:c:\run\my. You should see something like this in the output:
+and run NAV on Docker with `-v c:\myfolder:c:\run\my`. You should see something like this in the output:
 ... 
 Container IP Address: 172.25.25.115
 Container Hostname  : ec54b7a5756a
@@ -232,9 +250,9 @@ When overriding the scripts, there are a number of variables you can/should use.
 -	$runningGenericImage – this variable is true when you are running the generic image with a shared NAVDVD.
 -	$runningSpecificImage – this variable is true when you are running a specific image.
 The following variables are used to indicate locations of stuff in the image:
--	$runPath – this variable points to the location of the run folder (C:\RUN)
--	$myPath – this variable points to the location of my scripts (C:\RUN\MY)
--	$NavDvdPath – this variable points to the location of the NAV DVD (C:\NAVDVD)
+-	$runPath – this variable points to the location of the run folder (`C:\RUN`)
+-	$myPath – this variable points to the location of my scripts (`C:\RUN\MY`)
+-	$NavDvdPath – this variable points to the location of the NAV DVD (`C:\NAVDVD`)
 The following variables are parameters, which are defined when running the image:
 -	$Auth – this variable is set to the NAV authentication mechanism based on the environment variable of the same name. Supported values at this time is Windows and NavUserPassword.
 -	$serviceTierFolder – this variable is set to the folder in which the Service Tier is installed.
@@ -245,7 +263,7 @@ Please go through the navstart.ps1 script to understand how this works and how t
 ## SetupVariables.ps1
 
 ### Responsibility
-When running the NAV Docker Image, most parameters are specified by using -e parameter=value. This will actually set the environment variable parameter to value and in the SetupVariables script, these environment variables are transferred to PowerShell variables.
+When running the NAV Docker Image, most parameters are specified by using `-e parameter=value`. This will actually set the environment variable parameter to value and in the SetupVariables script, these environment variables are transferred to PowerShell variables.
 
 ### Default behavior
 The script will transfer all known parameters from environment variables to PowerShell variables, and make sure that default values are correct.
@@ -264,7 +282,7 @@ This script will be executed as the very first thing in navstart.ps1 and you sho
 ### Reasons to override
 
 #### Hardcode variables.
-Call the default SetupVariables.ps1 and then set the PowerShell variables you need afterwards (authentication, default usernames, passwords, database servers etc.)
+Call the default SetupVariables.ps1 and then set the PowerShell variables you need afterwards (authentication, default usernames, passwords, database servers, etc.)
 
 ## SetupDatabase.ps1
 
@@ -339,7 +357,7 @@ $CustomConfig.Save($CustomConfigFile)
 The responsibility of this script is, to make sure that custom add-ins are available to the Service Tier and in the RoleTailored Client folder.
 
 ### Default Behavior
-Copy the content of the C:\Run\Add-ins folder (if it exists) to the Add-ins folder under the Service Tier and the RoleTailored Client folder.
+Copy the content of the `C:\Run\Add-ins` folder (if it exists) to the Add-ins folder under the Service Tier and the RoleTailored Client folder.
 
 ### Override
 If you override this script, you should execute the default behavior before doing what you need to do. In your script you should use the $serviceTierFolder and $roleTailoredClientFolder variables to determine the location of the folders.
@@ -401,8 +419,9 @@ If you need to change settings in ClientUserSettings.config for the ClickOnceMan
 
 #### Copy additional files
 If you need to copy additional files, invoke the default behavior and perform copy-item cmdlets like:
+```
 Copy-Item "$roleTailoredClientFolder\Newtonsoft.Json.dll" -Destination "$ClickOnceApplicationFilesDirectory"
-
+```
 ## SetupFileShare.ps1
 
 ### Responsibility
@@ -505,7 +524,7 @@ Override the MainLoop and sleep for a 100 years😊
 # Appendix 2 – Example of usage of the Docker CmdLets
 
 If you need to automate the creation of Docker environments, there is nothing like PowerShell.
-For this, you can install the Docker Powershell CmdLets, which are on GitHub here: https://github.com/Microsoft/Docker-PowerShell
+For this, you can install the Docker Powershell CmdLets, which are on GitHub [here](https://github.com/Microsoft/Docker-PowerShell):
 Run:
 ```
 Register-PSRepository -Name DockerPS-Dev -SourceLocation https://ci.appveyor.com/nuget/docker-powershell-dev
