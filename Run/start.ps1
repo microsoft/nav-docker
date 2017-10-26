@@ -20,10 +20,12 @@ try {
 } catch {
 
     Write-Host -ForegroundColor Red $_.Exception.Message
-    Write-Host -ForegroundColor Red $_.ScriptStackTrace
 
     if ("$env:ExitOnError" -ne "N") {
         return
     }
+
+    Write-Host -ForegroundColor Red $_.ScriptStackTrace
+
 }
 . (Get-MyFilePath "MainLoop.ps1")
