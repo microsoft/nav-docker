@@ -433,4 +433,4 @@ Microsoft recommends that you always run the latest version of our containers."
 
     Write-Host "Ready for connections!"
 }
-$securePassword = $null
+Clear-Variable -Name "securePassword"
