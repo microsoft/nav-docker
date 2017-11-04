@@ -24,7 +24,7 @@ if ("$env:password" -ne "") {
     $securepassword = ConvertTo-SecureString -String "$env:password" -AsPlainText -Force
     Remove-Item env:\password -ErrorAction Ignore
     $passwordSpecified = $true
-} elseif ("$env:securepassword" -ne "" -and "$env:passwordKeyFile" -ne "") {
+} elseif ("$env:securepassword" -ne "" -and "$env:passwordKeyFile" -ne "" -and $restartingInstance -eq $false) {
     $securePassword = ConvertTo-SecureString -String "$env:securepassword" -Key (Get-Content -Path "$env:passwordKeyFile")
     if ($env:RemovePasswordKeyFile -ne "N") {
         Remove-Item -Path "$env:passwordKeyFile" -Force
