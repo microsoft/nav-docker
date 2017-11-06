@@ -167,7 +167,7 @@ function Install-NAVSipCryptoProvider
 
 function GetMsiProductName([string]$path) {
     try {
-        $installer = New-Object -com WindowsInstaller.Installer
+        $installer = New-Object -ComObject WindowsInstaller.Installer
         $database = $installer.GetType().InvokeMember("OpenDatabase", "InvokeMethod", $null, $installer, @($path, 0))
         $query = "SELECT * FROM Property WHERE Property = 'ProductName'"
         $view = $database.GetType().InvokeMember("OpenView", "InvokeMethod", $null, $database, $query)
@@ -177,5 +177,7 @@ function GetMsiProductName([string]$path) {
         return $name.Trim()
     } catch {
         throw "Failed to get MSI file version the error was: {0}." -f $_
+    } finally {
+        [Void][System.Runtime.InteropServices.Marshal]::ReleaseComObject($installer)
     }
 }
