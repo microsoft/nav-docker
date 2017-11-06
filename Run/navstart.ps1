@@ -401,7 +401,7 @@ if (!$buildingImage) {
         $publicWebBaseUrl = $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value
         Write-Host "Web Client          : $publicWebBaseUrl"
     }
-    if ($auth -ne "Windows" -and !$passwordSpecified) {
+    if ($auth -ne "Windows" -and !$passwordSpecified -and !$restartingInstance) {
         Write-Host "NAV Admin Username  : $username"
         Write-Host ("NAV Admin Password  : "+[System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)))
     }
