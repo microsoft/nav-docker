@@ -4,6 +4,10 @@ $runPath = "c:\Run"
 $myPath = Join-Path $runPath "my"
 $navDvdPath = "C:\NAVDVD"
 
+$publicDnsNameFile = "$RunPath\PublicDnsName.txt"
+$publicDnsNameChanged = $false
+$restartingInstance = Test-Path -Path $publicDnsNameFile -PathType Leaf
+
 function Get-MyFilePath([string]$FileName)
 {
     if ((Test-Path $myPath -PathType Container) -and (Test-Path (Join-Path $myPath $FileName) -PathType Leaf)) {
@@ -77,9 +81,6 @@ if ($publicODataPort     -eq "") { $publicODataPort     = "7048" }
 
 if ($buildingImage) { Write-Host "Building Image" }
 
-$publicDnsNameFile = "$RunPath\PublicDnsName.txt"
-$publicDnsNameChanged = $false
-$restartingInstance = Test-Path -Path $publicDnsNameFile -PathType Leaf
 if ($restartingInstance) {
     Write-Host "Restarting Instance"
     $prevPublicDnsName = Get-Content -Path $publicDnsNameFile
@@ -433,4 +434,6 @@ Microsoft recommends that you always run the latest version of our containers."
 
     Write-Host "Ready for connections!"
 }
-Clear-Variable -Name "securePassword"
+if ("$securepassword") {
+    Clear-Variable -Name "securePassword"
+}
