@@ -162,6 +162,7 @@ if (Test-Path "C:\Program Files\dotnet\shared\Microsoft.NETCore.App" -PathType C
     $config = Get-Content $navSettingsFile | ConvertFrom-Json
     Add-Member -InputObject $config.NAVWebSettings -NotePropertyName "Designer" -NotePropertyValue "true" -ErrorAction SilentlyContinue
     $config.NAVWebSettings.Designer = $true
+    $config.NAVWebSettings.PersonalizationEnabled = $true
     $config | ConvertTo-Json | set-content $navSettingsFile
 
 } else {
