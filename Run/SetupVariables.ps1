@@ -78,3 +78,5 @@ if ($locale)  {
     Set-WinSystemLocale -SystemLocale $cultureInfo
     Set-Culture -CultureInfo $cultureInfo
 }
+
+$enableSymbolLoadingAtServerStartup = ($env:enableSymbolLoading -eq "Y")
