@@ -79,6 +79,4 @@ if ($locale)  {
     Set-Culture -CultureInfo $cultureInfo
 }
 
-if ($env:symbolLoading -eq "Y") {
-    $enableSymbolLoadingAtServerStartup = $true
-}
+$enableSymbolLoadingAtServerStartup = ($env:enableSymbolLoading -eq "Y")
