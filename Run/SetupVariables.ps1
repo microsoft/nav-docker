@@ -1,4 +1,5 @@
 ﻿$Accept_eula = "$env:Accept_eula"
+$Accept_outdated = "$env:Accept_outdated"
 
 $hostname = hostname
 $publicDnsName = "$env:PublicDnsName"
@@ -18,10 +19,23 @@ if ($auth -ne "Windows") {
     if ($username -eq "") { $username = "admin" }
 }
  
-$password = "$env:password"
-$passwordSpecified = ($password -ne "")
-if ($auth -ne "Windows") {
-    if (!$passwordSpecified) { $password = Get-RandomPassword }
+$passwordSpecified = $false
+if ("$env:password" -ne "") {
+    $securepassword = ConvertTo-SecureString -String "$env:password" -AsPlainText -Force
+    Remove-Item env:\password -ErrorAction Ignore
+    $passwordSpecified = $true
+} elseif ("$env:securepassword" -ne "" -and "$env:passwordKeyFile" -ne "" -and $restartingInstance -eq $false) {
+    $securePassword = ConvertTo-SecureString -String "$env:securepassword" -Key (Get-Content -Path "$env:passwordKeyFile")
+    if ($env:RemovePasswordKeyFile -ne "N") {
+        Remove-Item -Path "$env:passwordKeyFile" -Force
+    }
+    Remove-Item env:\passwordKeyFile -ErrorAction Ignore
+    Remove-Item env:\securePassword -ErrorAction Ignore
+    $passwordSpecified = $true
+} else {
+    if ($auth -ne "Windows") {
+        $securePassword = ConvertTo-SecureString -String (Get-RandomPassword) -AsPlainText -Force
+    }
 }
 
 $licensefile = "$env:licensefile"
@@ -64,6 +78,8 @@ if ($locale)  {
     Set-WinSystemLocale -SystemLocale $cultureInfo
     Set-Culture -CultureInfo $cultureInfo
 }
+
+$enableSymbolLoadingAtServerStartup = ($env:enableSymbolLoading -eq "Y")
 
 $exportClientFolder = "$env:exportClientFolder"
 $exportClientFolderPath = "$env:exportClientFolderPath"

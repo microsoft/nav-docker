@@ -4,6 +4,10 @@ $runPath = "c:\Run"
 $myPath = Join-Path $runPath "my"
 $navDvdPath = "C:\NAVDVD"
 
+$publicDnsNameFile = "$RunPath\PublicDnsName.txt"
+$publicDnsNameChanged = $false
+$restartingInstance = Test-Path -Path $publicDnsNameFile -PathType Leaf
+
 function Get-MyFilePath([string]$FileName)
 {
     if ((Test-Path $myPath -PathType Container) -and (Test-Path (Join-Path $myPath $FileName) -PathType Leaf)) {
@@ -77,9 +81,6 @@ if ($publicODataPort     -eq "") { $publicODataPort     = "7048" }
 
 if ($buildingImage) { Write-Host "Building Image" }
 
-$publicDnsNameFile = "$RunPath\PublicDnsName.txt"
-$publicDnsNameChanged = $false
-$restartingInstance = Test-Path -Path $publicDnsNameFile -PathType Leaf
 if ($restartingInstance) {
     Write-Host "Restarting Instance"
     $prevPublicDnsName = Get-Content -Path $publicDnsNameFile
@@ -93,15 +94,45 @@ if (!$buildingImage) {
     Set-Content -Path $publicDnsNameFile -Value $publicDnsName
 }
 
-$runningGenericImage = $restartingInstance -and !$buildingImage -and (!(Test-Path "C:\Program Files\Microsoft Dynamics NAV" -PathType Container))
+$runningGenericImage = (!$restartingInstance) -and (!$buildingImage) -and (!(Test-Path "C:\Program Files\Microsoft Dynamics NAV" -PathType Container))
 if ($runningGenericImage) { Write-Host "Running Generic Image" }
 
 $runningSpecificImage = (!$restartingInstance) -and (!$runningGenericImage) -and (!$buildingImage)
 if ($runningSpecificImage) { Write-Host "Running Specific Image" }
 
 if ($buildingImage + $restartingInstance + $runningGenericImage + $runningSpecificImage -ne 1) {
-    Write-Error "ERROR: Cannot determine reason for running script."
+    Write-Error "Cannot determine reason for running script."
     exit 1
+}
+
+if ($runningGenericImage -or $buildingImage) {
+    if (!(Test-Path $navDvdPath -PathType Container)) {
+        Write-Error "NAVDVD folder not found
+You must map a folder on the host with the NAVDVD content to $navDvdPath"
+        exit 1
+    }
+}
+
+if ($runningSpecificImage -and $Accept_eula -ne "Y")
+{
+    Write-Error "You must accept the End User License Agreement before this container can start.
+Use Docker inspect to locate the Url for the EULA under Labels/legal.
+set the environment variable ACCEPT_EULA to 'Y' if you accept the agreement."
+    exit 1
+}
+
+$containerAge = [System.DateTime]::Now.Subtract((Get-Item "C:\RUN").CreationTime).Days
+if (($runningSpecificImage -or $runningGenericImage -or $buildingImage) -and ($containerAge -gt 90)) {
+    if ($Accept_outdated -ne "Y") {
+        Write-Error "You are trying to run a container which is more than 90 days old.
+Microsoft recommends that you always run the latest version of our containers.
+Set the environment variable ACCEPT_OUTDATED to 'Y' if you want to run this container anyway."
+        exit 1
+    }
+}
+
+if ($runningGenericImage -or $runningSpecificImage) {
+    Write-Host "Using $auth Authentication"
 }
 
 if ($databaseServer -eq 'localhost') {
@@ -116,25 +147,6 @@ if (($webClient -ne "N") -or ($httpSite -ne "N")) {
     # start IIS services
     Write-Host "Starting Internet Information Server"
     Start-Service -name $IisServiceName
-}
-
-if ($runningGenericImage -or $runningSpecificImage) {
-    Write-Host "Using $auth Authentication"
-}
-
-if ($runningGenericImage -or $buildingImage) {
-    if (!(Test-Path $navDvdPath -PathType Container)) {
-        Write-Error "ERROR: NAVDVD folder not found"
-        Write-Error "You must map a folder on the host with the NAVDVD content to $navDvdPath"
-        exit 1
-    }
-}
-
-if ($runningSpecificImage -and $Accept_eula -ne "Y")
-{
-    Write-Error "ERROR: You must accept the End User License Agreement before this container can start."
-    Write-Error "Set the environment variable ACCEPT_EULA to 'Y' if you accept the agreement."
-    exit 1 
 }
 
 # Prerequisites
@@ -169,14 +181,17 @@ if ($runningGenericImage -or $buildingImage)
 if ($runningGenericImage -or $buildingImage) {
     Write-Host "Copy Service Tier Files"
     Copy-Item -Path "$NavDvdPath\ServiceTier\Program Files" -Destination "C:\" -Recurse -Force
-    Copy-Item -Path "$NavDvdPath\ServiceTier\System64Folder\NavSip.dll" -Destination "C:\Windows\System32\NavSip.dll" -Force
+    Copy-Item -Path "$NavDvdPath\ServiceTier\System64Folder\NavSip.dll" -Destination "C:\Windows\System32\NavSip.dll" -Force -ErrorAction Ignore
 
     Write-Host "Copy Web Client Files"
     Copy-Item -Path "$NavDvdPath\WebClient\Microsoft Dynamics NAV" -Destination "C:\Program Files\" -Recurse -Force
-    Copy-Item -Path "$navDvdPath\WebClient\inetpub" -Destination $runPath -Recurse -Force
+    if (Test-Path "$navDvdPath\WebClient\inetpub" -PathType Container) {
+        Copy-Item -Path "$navDvdPath\WebClient\inetpub" -Destination $runPath -Recurse -Force
+    }
 
     Write-Host "Copy RTC Files"
     Copy-Item -Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force
+    Copy-Item -Path "$navDvdPath\RoleTailoredClient\systemFolder\NavSip.dll" -Destination "C:\Windows\SysWow64\NavSip.dll" -Force -ErrorAction Ignore
     Copy-Item -Path "$navDvdPath\ClickOnceInstallerTools\Program Files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force
     Copy-Item -Path "$navDvdPath\*.vsix" -Destination $runPath
 
@@ -194,24 +209,47 @@ $WebClientFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Web Clie
 $NAVAdministrationScriptsFolder = (Get-Item "$runPath\NAVAdministration").FullName
 
 if ($runningGenericImage -or $buildingImage) {
+    # Due to dependencies from finsql.exe, we have to copy hlink.dll and ReportBuilder in place inside the container
     if (!(Test-Path (Join-Path $roleTailoredClientFolder 'hlink.dll'))) {
         Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path $roleTailoredClientFolder 'hlink.dll')
     }
     if (!(Test-Path (Join-Path $serviceTierFolder 'hlink.dll'))) {
         Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path $serviceTierFolder 'hlink.dll')
     }
-    if (!(Test-Path "C:\Program Files (x86)\ReportBuilder" -PathType Container)) {
-        $reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder'
-        if (Test-Path $reportBuilderSrc -PathType Container) {
-            Write-Host "Copy ReportBuilder"
-            Copy-Item -Path $reportBuilderSrc -Destination 'C:\Program Files (x86)' -Recurse
-            New-PSDrive -Name HKCR -PSProvider Registry -Root HKEY_CLASSES_ROOT -ErrorAction Ignore | Out-null
-            New-Item "HKCR:\MSReportBuilder_ReportFile_32" -itemtype Directory -ErrorAction Ignore | Out-null
-            New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell" -itemtype Directory -ErrorAction Ignore | Out-null
-            New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open" -itemtype Directory -ErrorAction Ignore | Out-null
-            New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -itemtype Directory -ErrorAction Ignore | Out-null
-            Set-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -value 'c:\program files (x86)\ReportBuilder\MSReportBuilder.exe "%1"'
+    $reportBuilderPath = "C:\Program Files (x86)\ReportBuilder"
+    if (!(Test-Path $reportBuilderPath -PathType Container)) {
+        $reportBuilderSrc = ""
+        if (Test-Path "$navDvdPath\Prerequisite Components\Microsoft SQL Server 2014 Express" -PathType Container) {
+            $reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder'
+        } elseif (Test-Path "$navDvdPath\Prerequisite Components\Microsoft SQL Server" -PathType Container) {
+            $msiPath = "$navDvdPath\Prerequisite Components\Microsoft SQL Server\ReportBuilder3.msi"
+            if (Test-Path $msiPath -PathType Leaf) {
+                $productName = GetMsiProductName -Path $msiPath
+                if ($productName -eq "SQL Server Report Builder 3 for SQL Server 2014") {
+                    $reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder'
+                }
+                if ($productName -eq "Microsoft SQL Server 2016 Report Builder") {
+                    $reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder2016'
+                }
+            }
         }
+        if ($reportBuilderSrc -eq "") {
+            Write-Error "Cannot determine Report Builder Dependency ($msiPath - $productName)"
+            exit 1
+        }
+        if (!(Test-Path $reportBuilderSrc -PathType Container)) {
+            Write-Error "$reportBuilderSrc not present"
+            exit 1
+        }
+        Write-Host "Copy ReportBuilder"
+        New-Item $reportBuilderPath -ItemType Directory | Out-Null
+        Copy-Item -Path "$reportBuilderSrc\*" -Destination "$reportBuilderPath\" -Recurse
+        New-PSDrive -Name HKCR -PSProvider Registry -Root HKEY_CLASSES_ROOT -ErrorAction Ignore | Out-null
+        New-Item "HKCR:\MSReportBuilder_ReportFile_32" -itemtype Directory -ErrorAction Ignore | Out-null
+        New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell" -itemtype Directory -ErrorAction Ignore | Out-null
+        New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open" -itemtype Directory -ErrorAction Ignore | Out-null
+        New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -itemtype Directory -ErrorAction Ignore | Out-null
+        Set-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -value "$reportBuilderPath\MSReportBuilder.exe ""%1"""
     }
 }
 
@@ -367,9 +405,9 @@ if (!$buildingImage) {
         $publicWebBaseUrl = $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value
         Write-Host "Web Client          : $publicWebBaseUrl"
     }
-    if ($auth -ne "Windows" -and !$passwordSpecified) {
+    if ($auth -ne "Windows" -and !$passwordSpecified -and !$restartingInstance) {
         Write-Host "NAV Admin Username  : $username"
-        Write-Host "NAV Admin Password  : $password"
+        Write-Host ("NAV Admin Password  : "+[System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)))
     }
     if ($httpSite -ne "N") {
         if (Test-Path -Path (Join-Path $httpPath "*.vsix")) {
@@ -392,5 +430,14 @@ if (!$buildingImage) {
         Write-Host 
     }
 
+    if ($containerAge -gt 60) {
+        Write-Host "You are running a container which is $containerAge days old.
+Microsoft recommends that you always run the latest version of our containers."
+        Write-Host
+    }
+
     Write-Host "Ready for connections!"
+}
+if ("$securepassword") {
+    Clear-Variable -Name "securePassword"
 }

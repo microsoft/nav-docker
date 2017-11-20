@@ -13,6 +13,12 @@ if ("$env:VSIXURL" -ne "") {
 . (Join-Path $PSScriptRoot "navstart.ps1")
 
 if ("$env:NAVDVDURL" -ne "") {
-    Remove-Item -Path "C:\NAVDVD" -Force -Recurse
+    while (Test-Path -Path "C:\NAVDVD" -PathType Container) {
+        try {
+            Remove-Item -Path "C:\NAVDVD" -Force -Recurse
+        } catch {
+            Start-sleep -Seconds 5
+        }
+    }
 }
 $BuildingImage = $false

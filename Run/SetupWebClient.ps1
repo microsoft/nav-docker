@@ -145,7 +145,11 @@ if (Test-Path "C:\Program Files\dotnet\shared\Microsoft.NETCore.App" -PathType C
     Write-Host "Creating DotNetCore NAV Web Server Instance"
     $publishFolder = "$webClientFolder\WebPublish"
 
-    Import-Module "$webClientFolder\Scripts\NAVWebClientManagement.psm1"
+    $NAVWebClientManagementModule = "$webClientFolder\Modules\NAVWebClientManagement\NAVWebClientManagement.psm1"
+    if (!(Test-Path $NAVWebClientManagementModule)) {
+        $NAVWebClientManagementModule = "$webClientFolder\Scripts\NAVWebClientManagement.psm1"
+    }
+    Import-Module $NAVWebClientManagementModule
     New-NAVWebServerInstance -PublishFolder $publishFolder `
                              -WebServerInstance "NAV" `
                              -Server "localhost" `
@@ -158,6 +162,10 @@ if (Test-Path "C:\Program Files\dotnet\shared\Microsoft.NETCore.App" -PathType C
     $config = Get-Content $navSettingsFile | ConvertFrom-Json
     Add-Member -InputObject $config.NAVWebSettings -NotePropertyName "Designer" -NotePropertyValue "true" -ErrorAction SilentlyContinue
     $config.NAVWebSettings.Designer = $true
+    Add-Member -InputObject $config.NAVWebSettings -NotePropertyName "RequireSSL" -NotePropertyValue "true" -ErrorAction SilentlyContinue
+    $config.NAVWebSettings.RequireSSL = $false
+    Add-Member -InputObject $config.NAVWebSettings -NotePropertyName "PersonalizationEnabled" -NotePropertyValue "true" -ErrorAction SilentlyContinue
+    $config.NAVWebSettings.PersonalizationEnabled = $true
     $config | ConvertTo-Json | set-content $navSettingsFile
 
 } else {
