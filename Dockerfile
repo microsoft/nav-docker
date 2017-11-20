@@ -24,10 +24,6 @@ RUN Add-WindowsFeature Web-Server,web-AppInit,web-Asp-Net45,web-Windows-Auth,web
     
 COPY Run /Run/
 
-# Copy Powershell config in place (for various NAV CmdLets to use SQL v13 DLLs)
-RUN Copy-Item -Path C:\Run\powershell.exe.config -Destination C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe.Config -Force; \
-    Copy-Item -Path C:\Run\powershell.exe.config -Destination C:\Windows\SysWOW64\Windowspowershell\v1.0\powershell.exe.Config -Force
-
 HEALTHCHECK --interval=30s --timeout=10s CMD [ "powershell", ".\\Run\\HealthCheck.ps1" ]
 
 EXPOSE 1433 80 8080 443 7045-7049

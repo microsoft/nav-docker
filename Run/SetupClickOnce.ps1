@@ -91,7 +91,10 @@ Set-DeploymentManifestSettings `
 # Finsql
 Rename-Item (Join-Path $clickOnceApplicationFilesDirectoryFinsql 'Microsoft.Dynamics.Nav.Client.exe.manifest') (Join-Path $clickOnceApplicationFilesDirectoryFinsql 'finsql.exe.manifest')
 $applicationManifestFile = Join-Path $clickOnceApplicationFilesDirectoryFinsql 'finsql.exe.manifest'
-(Get-Content $applicationManifestFile).replace('"msil"', '"x86"') | Set-Content $applicationManifestFile
+(Get-Content $applicationManifestFile).
+    Replace('"msil"', '"x86"').
+    Replace('<commandLine file="Microsoft.Dynamics.Nav.Client.exe" parameters="" />','<commandLine file="finsql.exe" parameters="" />').
+    Replace('name="Microsoft.Dynamics.Nav.Client" version="8.0.0.0"','name="finsql" version="0.0.0.0"') | Set-Content $applicationManifestFile
 $applicationIdentityName = "$publicDnsName Finsql ClickOnce"
 $applicationIdentityVersion = (Get-Item -Path (Join-Path $clickOnceApplicationFilesDirectoryFinsql 'finsql.exe')).VersionInfo.FileVersion
 

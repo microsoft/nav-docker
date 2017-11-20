@@ -1,4 +1,10 @@
-﻿function randomchar([string]$str)
+﻿$NavServiceName = 'MicrosoftDynamicsNavServer$NAV'
+$SqlServiceName = 'MSSQL$SQLEXPRESS'
+$SqlWriterServiceName = "SQLWriter"
+$SqlBrowserServiceName = "SQLBrowser"
+$IisServiceName = "W3SVC"
+
+function randomchar([string]$str)
 {
     $rnd = Get-Random -Maximum $str.length
     [string]$str[$rnd]
@@ -119,7 +125,7 @@ function Copy-ItemMultiDest()
         [switch]$Recurse=$false
     )
 
-    $Destination | ForEach-Object { Microsoft.PowerShell.Management\Copy-Item $Source -Destination $_ -Confirm:$Confirm -Force:$Force -Recurse:$Recurse }
+    $Destination | ForEach-Object { Microsoft.PowerShell.Management\Copy-Item $Source -Destination $_ -Confirm:$Confirm -Force:$Force -Recurse:$Recurse -ErrorAction Ignore }
 }
 
 function Install-NAVSipCryptoProvider

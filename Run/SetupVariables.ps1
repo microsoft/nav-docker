@@ -11,8 +11,15 @@ $auth = "$env:Auth"
 if ($auth -eq "") {
     if ("$env:WindowsAuth" -eq "Y") {
         $auth = "Windows"
+    } else {
+        $auth = "NavUserPassword"
     }
+} elseif ($auth -eq "windows") {
+    $auth = "Windows"
+} else {
+    $auth = "NavUserPassword"
 }
+
 $username = "$env:username"
 if ($username -eq "ContainerAdministrator") { $username = "" }
 if ($auth -ne "Windows") {
@@ -48,14 +55,37 @@ if ($bakfile -ne "") {
 } else {
     $databaseServer = "$env:databaseServer"
     $databaseInstance = "$env:databaseInstance"
-    $databaseName = "$env:databaseName"
     if ($databaseServer -eq "" -and $databaseInstance -eq "") {
         $databaseServer = "localhost"
         $databaseInstance = "SQLEXPRESS"
     }
+    $databaseName = "$env:databaseName"
+    if ($databaseName -eq "") {
+        $databaseName = "CRONUS"
+    }
 }
 
 $useSSL = "$env:UseSSL"
+if ($auth -eq "Windows") {
+    $navUseSSL = $false
+} else {
+    $navUseSSL = $true
+}
+if ($useSSL -eq "Y") {
+    $servicesUseSSL = $true
+} elseif ($useSSL -eq "N") {
+    $servicesUseSSL = $false
+} else {
+    $servicesUseSSL = $navUseSSL
+}
+if ($servicesUseSSL) {
+    $protocol = "https://"
+    $webClientPort = 443
+} else {
+    $protocol = "http://"
+    $webClientPort = 80
+}
+
 $clickOnce = "$env:ClickOnce"
 $webClient = "$env:WebClient"
 $httpSite = "$env:HttpSite"
@@ -64,11 +94,19 @@ if ($SqlTimeout -eq "") {
     $SqlTimeout = "300"
 }
 
+# Set public ports
 $publicWebClientPort = "$env:publicWebClientPort"
 $publicFileSharePort = "$env:publicFileSharePort"
-$publicSoapPort = "$env:publicSoapPort"
-$publicODataPort = "$env:publicODataPort"
 $publicWinClientPort = "$env:publicWinClientPort"
+$publicSoapPort      = "$env:publicSoapPort"
+$publicODataPort     = "$env:publicODataPort"
+
+# Default public ports
+if ($publicWebClientPort -ne "") { $publicWebClientPort = ":$publicWebClientPort" }
+if ($publicFileSharePort -eq "") { $publicFileSharePort = "8080" }
+if ($publicWinClientPort -eq "") { $publicWinClientPort = "7046" }
+if ($publicSoapPort      -eq "") { $publicSoapPort      = "7047" }
+if ($publicODataPort     -eq "") { $publicODataPort     = "7048" }
 
 $locale = "$env:locale"
 if ($locale)  {
