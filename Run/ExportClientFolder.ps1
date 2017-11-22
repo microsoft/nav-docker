@@ -1,7 +1,3 @@
-if ([System.String]::IsNullOrEmpty($exportClientFolderPath)) {
-    $exportClientFolderPath = $myPath;
-}
-
 if (!(Test-Path "$exportClientFolderPath\RoleTailored Client" -PathType Container)) {
     Write-Host "Copying RoleTailoted Client files"
     Copy-Item -path $roleTailoredClientFolder -destination $exportClientFolderPath -force -Recurse -ErrorAction Ignore
@@ -22,7 +18,12 @@ if (!(Test-Path "$exportClientFolderPath\RoleTailored Client" -PathType Containe
     $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ACSUri']").value = ""
     $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='DnsIdentity']").value = "$dnsIdentity"
     $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ClientServicesCredentialType']").value = "$Auth"
-    $clientUserSettings.Save("$exportClientFolderPath\RoleTailored Client\ClientUserSettings.config")
+    $clientUserSettings.Save("$exportClientFolderPath\RoleTailored Client\ClientUserSettings.config")        
 
-    New-FinSqlExeRunner -FileFullPath "$exportClientFolderPath\RoleTailored Client\_runfinsql.exe" -SqlServerName $sqlServerName -DbName "$databaseName" -NtAuth $ntAuth -Id "docker_$hostname"
+    New-FinSqlExeRunner -FileFullPath "$exportClientFolderPath\RoleTailored Client\_finsql-on-docker.exe" `
+        -SqlServerName $sqlServerName `
+        -DbName "$databaseName" `
+        -NtAuth $ntAuth `
+        -Id "docker_$hostname" `
+        -GenerateSymbolRef $enableSymbolLoadingAtServerStartup
 }
