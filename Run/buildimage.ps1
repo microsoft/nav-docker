@@ -1,6 +1,4 @@
-﻿$BuildingImage = $true
-
-if ("$env:NAVDVDURL" -ne "") {
+﻿if ("$env:NAVDVDURL" -ne "") {
     (New-Object System.Net.WebClient).DownloadFile("$env:NAVDVDURL", "C:\NAVDVD.zip")
     [Reflection.Assembly]::LoadWithPartialName("System.IO.Compression.Filesystem") | Out-Null
     [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\NAVDVD.zip","C:\NAVDVD\")
@@ -10,7 +8,17 @@ if ("$env:VSIXURL" -ne "") {
     (New-Object System.Net.WebClient).DownloadFile("$env:VSIXURL", ("C:\NAVDVD\"+"$env:VSIXURL".Substring("$env:VSIXURL".LastIndexOf("/")+1)))
 }
 
-. (Join-Path $PSScriptRoot "navstart.ps1")
+$setupVersion = (Get-Item -Path "c:\navdvd\setup.exe").VersionInfo.FileVersion
+$versionFolder = $setupVersion.Split('.')[0]+$setupVersion.Split('.')[1]
+Copy-Item -Path (Join-Path $PSScriptRoot "$versionFolder\*.*") -Destination $PSScriptRoot -Force
+
+# Remove version specific folders
+Remove-Item (Join-Path $PSScriptRoot "80") -Recurse -Force
+Remove-Item (Join-Path $PSScriptRoot "90") -Recurse -Force
+Remove-Item (Join-Path $PSScriptRoot "100") -Recurse -Force
+Remove-Item (Join-Path $PSScriptRoot "110") -Recurse -Force
+
+. (Join-Path $PSScriptRoot "navinstall.ps1")
 
 if ("$env:NAVDVDURL" -ne "") {
     while (Test-Path -Path "C:\NAVDVD" -PathType Container) {
@@ -21,4 +29,6 @@ if ("$env:NAVDVDURL" -ne "") {
         }
     }
 }
-$BuildingImage = $false
+
+Remove-Item "c:\run\navinstall.ps1" -Force
+Remove-Item "c:\run\buildimage.ps1" -Force
