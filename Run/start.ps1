@@ -14,6 +14,18 @@ function Get-MyFilePath([string]$FileName)
 
 try {
 
+    if (!(Test-Path "C:\Program Files\Microsoft Dynamics NAV" -PathType Container)) {
+        if (!(Test-Path "C:\NAVDVD" -PathType Container)) {
+            throw "You must share a DVD folder to C:\NAVDVD to run the generic image"
+        }
+        
+        $setupVersion = (Get-Item -Path "c:\navdvd\setup.exe").VersionInfo.FileVersion
+        $versionFolder = $setupVersion.Split('.')[0]+$setupVersion.Split('.')[1]
+        Copy-Item -Path (Join-Path $PSScriptRoot "$versionFolder\*.*") -Destination $PSScriptRoot -Force
+        
+        . (Join-Path $PSScriptRoot "navinstall.ps1")
+    }
+
     . (Get-MyFilePath "HelperFunctions.ps1")
     . (Get-MyFilePath "navstart.ps1")
 
