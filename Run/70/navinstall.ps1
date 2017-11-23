@@ -7,10 +7,25 @@ $navDvdPath = "C:\NAVDVD"
 . (Join-Path $runPath "HelperFunctions.ps1")
 
 if (!(Test-Path $navDvdPath -PathType Container)) {
-    Write-Error "NAVDVD folder not found
+    Write-Error "NAVDVD folder not found.
 You must map a folder on the host with the NAVDVD content to $navDvdPath"
     exit 1
 }
+
+if (!(Test-Path -Path "c:\navdvd\Prerequisite Components\microsoft-windows-netfx3-ondemand-package.cab")) {
+    Write-Error "This NAV version requires .NET 3 which is not on WindowsServerCore.
+If you download microsoft-windows-netfx3-ondemand-package.cab from a Windows Server 2016 media and place it in the Prerequisite Components folder on the NAV DVD, then it will be installed automatically."
+    Exit 1
+}
+
+Write-Host "Installing .NET 3"
+Dism /online /enable-feature /all /featurename:NetFX3 /Source:"C:\NAVDVD\Prerequisite Components" | Out-Null
+
+Write-Host "Installing VC Redist"
+Start-Process "C:\navdvd\Prerequisite Components\Microsoft Visual C++ 2010\vcredist_x64.exe" -ArgumentList "/passive /norestart" -Wait
+Start-Process "C:\navdvd\Prerequisite Components\Microsoft Visual C++ 2010\vcredist_x86.exe" -ArgumentList "/passive /norestart" -Wait
+
+$env:WebClient = "N"
 
 # start the SQL Server
 Write-Host "Starting Local SQL Server"
@@ -23,19 +38,14 @@ Write-Host "Starting Internet Information Server"
 Start-Service -name $IisServiceName
 
 # Prerequisites
-Write-Host "Installing Url Rewrite"
-start-process "$NavDvdPath\Prerequisite Components\IIS URL Rewrite Module\rewrite_2.0_rtw_x64.msi" -ArgumentList "/quiet /qn /passive" -Wait
-
 Write-Host "Installing Report Viewer"
-start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer\SQLSysClrTypes.msi" -ArgumentList "/quiet /qn /passive" -Wait
-start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer\ReportViewer.msi" -ArgumentList "/quiet /qn /passive" -Wait
+#start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2010\ReportViewer.exe" -ArgumentList "/q" -Wait
 
 Write-Host "Installing OpenXML"
-start-process "$NavDvdPath\Prerequisite Components\Open XML SDK 2.5 for Microsoft Office\OpenXMLSDKv25.msi" -ArgumentList "/quiet /qn /passive" -Wait
+start-process "$NavDvdPath\Prerequisite Components\Open XML SDK 2.0 for Microsoft Office\OpenXMLSDKv2.msi" -ArgumentList "/quiet /qn /passive" -Wait
 
 Write-Host "Copying Service Tier Files"
 Copy-Item -Path "$NavDvdPath\ServiceTier\Program Files" -Destination "C:\" -Recurse -Force
-Copy-Item -Path "$NavDvdPath\ServiceTier\System64Folder\NavSip.dll" -Destination "C:\Windows\System32\NavSip.dll" -Force -ErrorAction Ignore
 
 Write-Host "Copying Web Client Files"
 Copy-Item -Path "$NavDvdPath\WebClient\Microsoft Dynamics NAV" -Destination "C:\Program Files\" -Recurse -Force
@@ -43,7 +53,6 @@ Copy-Item -Path "$navDvdPath\WebClient\inetpub" -Destination $runPath -Recurse -
 
 Write-Host "Copying Windows Client Files"
 Copy-Item -Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force
-Copy-Item -Path "$navDvdPath\RoleTailoredClient\systemFolder\NavSip.dll" -Destination "C:\Windows\SysWow64\NavSip.dll" -Force -ErrorAction Ignore
 Copy-Item -Path "$navDvdPath\ClickOnceInstallerTools\Program Files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force
 
 Write-Host "Copying PowerShell Scripts"
@@ -61,7 +70,6 @@ Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path
 
 $reportBuilderPath = "C:\Program Files (x86)\ReportBuilder"
 $reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder'
-
 Write-Host "Copying ReportBuilder"
 New-Item $reportBuilderPath -ItemType Directory | Out-Null
 Copy-Item -Path "$reportBuilderSrc\*" -Destination "$reportBuilderPath\" -Recurse
@@ -72,7 +80,7 @@ New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open" -itemtype Directory -E
 New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -itemtype Directory -ErrorAction Ignore | Out-null
 Set-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -value "$reportBuilderPath\MSReportBuilder.exe ""%1"""
 
-Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
+Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.dll"
 
 # Restore CRONUS Demo database to databases folder
 Write-Host "Restoring CRONUS Demo Database"
@@ -142,8 +150,6 @@ $registryPath = "HKLM:\SOFTWARE\Microsoft\Microsoft Dynamics NAV\$versionFolder\
 New-Item -Path $registryPath -Force | Out-Null
 New-ItemProperty -Path $registryPath -Name 'Path' -Value "$serviceTierFolder\" -Force | Out-Null
 New-ItemProperty -Path $registryPath -Name 'Installed' -Value 1 -Force | Out-Null
-
-Install-NAVSipCryptoProvider
 
 Write-Host "Starting NAV Service Tier"
 Start-Service -Name $NavServiceName -WarningAction Ignore

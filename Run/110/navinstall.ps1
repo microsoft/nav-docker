@@ -32,23 +32,23 @@ start-process (Get-ChildItem -Path "$NavDvdPath\Prerequisite Components\DotNetCo
 Write-Host "Installing OpenXML"
 start-process "$NavDvdPath\Prerequisite Components\Open XML SDK 2.5 for Microsoft Office\OpenXMLSDKv25.msi" -ArgumentList "/quiet /qn /passive" -Wait
 
-Write-Host "Copy Service Tier Files"
+Write-Host "Copying Service Tier Files"
 Copy-Item -Path "$NavDvdPath\ServiceTier\Program Files" -Destination "C:\" -Recurse -Force
 Copy-Item -Path "$NavDvdPath\ServiceTier\System64Folder\NavSip.dll" -Destination "C:\Windows\System32\NavSip.dll" -Force -ErrorAction Ignore
 
-Write-Host "Copy Web Client Files"
+Write-Host "Copying Web Client Files"
 Copy-Item -Path "$NavDvdPath\WebClient\Microsoft Dynamics NAV" -Destination "C:\Program Files\" -Recurse -Force
 
-Write-Host "Copy RTC Files"
+Write-Host "Copying Windows Client Files"
 Copy-Item -Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force
 Copy-Item -Path "$navDvdPath\RoleTailoredClient\systemFolder\NavSip.dll" -Destination "C:\Windows\SysWow64\NavSip.dll" -Force -ErrorAction Ignore
 Copy-Item -Path "$navDvdPath\ClickOnceInstallerTools\Program Files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force
 Copy-Item -Path "$navDvdPath\*.vsix" -Destination $runPath
 
-Write-Host "Copy PowerShell Scripts"
+Write-Host "Copying PowerShell Scripts"
 Copy-Item -Path "$navDvdPath\WindowsPowerShellScripts\Cloud\NAVAdministration\" -Destination $runPath -Recurse -Force
 
-Write-Host "Copy ClientUserSettings"
+Write-Host "Copying ClientUserSettings"
 Copy-Item (Join-Path (Get-ChildItem -Path "$NavDvdPath\RoleTailoredClient\CommonAppData\Microsoft\Microsoft Dynamics NAV" -Directory | Select-Object -Last 1).FullName "ClientUserSettings.config") $runPath
 
 $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName
@@ -60,7 +60,7 @@ Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path
 
 $reportBuilderPath = "C:\Program Files (x86)\ReportBuilder"
 $reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder2016'
-Write-Host "Copy ReportBuilder"
+Write-Host "Copying ReportBuilder"
 New-Item $reportBuilderPath -ItemType Directory | Out-Null
 Copy-Item -Path "$reportBuilderSrc\*" -Destination "$reportBuilderPath\" -Recurse
 New-PSDrive -Name HKCR -PSProvider Registry -Root HKEY_CLASSES_ROOT -ErrorAction Ignore | Out-null
@@ -73,7 +73,7 @@ Set-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -value "$repor
 Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
 
 # Restore CRONUS Demo database to databases folder
-Write-Host "Restore CRONUS Demo Database"
+Write-Host "Restoring CRONUS Demo Database"
 $bak = (Get-ChildItem -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\*.bak")[0]
 
 # Restore database

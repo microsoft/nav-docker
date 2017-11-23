@@ -57,8 +57,8 @@ Set the environment variable ACCEPT_OUTDATED to 'Y' if you want to run this cont
 }
 
 Write-Host "Using $auth Authentication"
-
-if ($databaseServer -eq 'localhost') {
+$usingLocalSQLServer = ($databaseServer -eq "localhost")
+if ($usingLocalSQLServer) {
     if ((Get-Service -name $SqlServiceName).Status -ne "Running") {
         # start the SQL Server
         Write-Host "Starting Local SQL Server"
@@ -82,12 +82,17 @@ $clickOnceInstallerToolsFolder = (Get-Item "C:\Program Files (x86)\Microsoft Dyn
 $WebClientFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Web Client")[0]
 $NAVAdministrationScriptsFolder = (Get-Item "$runPath\NAVAdministration").FullName
 
-Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
+if (Test-Path "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1") {
+    Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1" -wa SilentlyContinue
+} else {
+    Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.dll" -wa SilentlyContinue
+}
 
 # Setup Database Connection
 . (Get-MyFilePath "SetupDatabase.ps1")
 
-if ($databaseServer -ne 'localhost') {
+$usingLocalSQLServer = ($databaseServer -eq "localhost")
+if (!$usingLocalSQLServer) {
     if ((Get-service -name $SqlServiceName).Status -eq 'Running') {
         Write-Host "Stopping local SQL Server"
         Stop-Service -Name $SqlServiceName -ErrorAction Ignore
@@ -116,7 +121,9 @@ if ((Get-Service -name $NavServiceName).Status -ne "Running") {
     Restart-Service -Name $NavServiceName -WarningAction Ignore
 }
 
-. (Get-MyFilePath "SetupLicense.ps1")
+if ($usingLocalSQLServer) {
+    . (Get-MyFilePath "SetupLicense.ps1")
+}
 
 $wwwRootPath = Get-WWWRootPath
 $httpPath = Join-Path $wwwRootPath "http"
@@ -140,8 +147,11 @@ if (!$restartingInstance) {
     }
     
     . (Get-MyFilePath "SetupWindowsUsers.ps1")
-    . (Get-MyFilePath "SetupSqlUsers.ps1")
-    . (Get-MyFilePath "SetupNavUsers.ps1")
+
+    if ($usingLocalSQLServer) {
+        . (Get-MyFilePath "SetupSqlUsers.ps1")
+        . (Get-MyFilePath "SetupNavUsers.ps1")
+    }
 }
 
 if ($newPublicDnsName -and $httpSite -ne "N" -and $clickOnce -eq "Y") {
@@ -162,7 +172,7 @@ if ($webClient -ne "N") {
     $publicWebBaseUrl = $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value
     Write-Host "Web Client          : $publicWebBaseUrl"
 }
-if ($auth -ne "Windows" -and !$passwordSpecified -and !$restartingInstance) {
+if ($auth -ne "Windows" -and $usingLocalSQLServer -and !$passwordSpecified -and !$restartingInstance) {
     Write-Host "NAV Admin Username  : $username"
     Write-Host ("NAV Admin Password  : "+[System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)))
 }

@@ -7,9 +7,25 @@ $navDvdPath = "C:\NAVDVD"
 . (Join-Path $runPath "HelperFunctions.ps1")
 
 if (!(Test-Path $navDvdPath -PathType Container)) {
-    Write-Error "NAVDVD folder not found
+    Write-Error "NAVDVD folder not found.
 You must map a folder on the host with the NAVDVD content to $navDvdPath"
     exit 1
+}
+
+$buildno = $setupVersion.Split('.')[2]
+if ($buildno -le "40938") {
+    if (!(Test-Path -Path "c:\navdvd\Prerequisite Components\microsoft-windows-netfx3-ondemand-package.cab")) {
+        Write-Error "This NAV version requires .NET 3 which is not on WindowsServerCore.
+If you download microsoft-windows-netfx3-ondemand-package.cab from a Windows Server 2016 media and place it in the Prerequisite Components folder on the NAV DVD, then it will be installed automatically."
+        Exit 1
+    }
+
+    $env:WebClient = "N"
+}
+
+if (Test-Path -Path "c:\navdvd\Prerequisite Components\microsoft-windows-netfx3-ondemand-package.cab") {
+    Write-Host "Installing .NET 3"
+    Dism /online /enable-feature /all /featurename:NetFX3 /Source:"C:\NAVDVD\Prerequisite Components" | Out-Null
 }
 
 # start the SQL Server
@@ -33,21 +49,21 @@ start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2014\
 Write-Host "Installing OpenXML"
 start-process "$NavDvdPath\Prerequisite Components\Open XML SDK 2.5 for Microsoft Office\OpenXMLSDKv25.msi" -ArgumentList "/quiet /qn /passive" -Wait
 
-Write-Host "Copy Service Tier Files"
+Write-Host "Copying Service Tier Files"
 Copy-Item -Path "$NavDvdPath\ServiceTier\Program Files" -Destination "C:\" -Recurse -Force
 
-Write-Host "Copy Web Client Files"
+Write-Host "Copying Web Client Files"
 Copy-Item -Path "$NavDvdPath\WebClient\Microsoft Dynamics NAV" -Destination "C:\Program Files\" -Recurse -Force
 Copy-Item -Path "$navDvdPath\WebClient\inetpub" -Destination $runPath -Recurse -Force
 
-Write-Host "Copy RTC Files"
+Write-Host "Copying Windows Client Files"
 Copy-Item -Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force
 Copy-Item -Path "$navDvdPath\ClickOnceInstallerTools\Program Files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force
 
-Write-Host "Copy PowerShell Scripts"
+Write-Host "Copying PowerShell Scripts"
 Copy-Item -Path "$navDvdPath\WindowsPowerShellScripts\Cloud\NAVAdministration\" -Destination $runPath -Recurse -Force
 
-Write-Host "Copy ClientUserSettings"
+Write-Host "Copying ClientUserSettings"
 Copy-Item (Join-Path (Get-ChildItem -Path "$NavDvdPath\RoleTailoredClient\CommonAppData\Microsoft\Microsoft Dynamics NAV" -Directory | Select-Object -Last 1).FullName "ClientUserSettings.config") $runPath
 
 $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName
@@ -59,7 +75,7 @@ Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path
 
 $reportBuilderPath = "C:\Program Files (x86)\ReportBuilder"
 $reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder'
-Write-Host "Copy ReportBuilder"
+Write-Host "Copying ReportBuilder"
 New-Item $reportBuilderPath -ItemType Directory | Out-Null
 Copy-Item -Path "$reportBuilderSrc\*" -Destination "$reportBuilderPath\" -Recurse
 New-PSDrive -Name HKCR -PSProvider Registry -Root HKEY_CLASSES_ROOT -ErrorAction Ignore | Out-null
@@ -72,7 +88,7 @@ Set-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -value "$repor
 Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
 
 # Restore CRONUS Demo database to databases folder
-Write-Host "Restore CRONUS Demo Database"
+Write-Host "Restoring CRONUS Demo Database"
 $bak = (Get-ChildItem -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\*.bak")[0]
 
 # Restore database
