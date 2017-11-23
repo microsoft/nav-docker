@@ -10,13 +10,12 @@ if ("$env:VSIXURL" -ne "") {
 
 $setupVersion = (Get-Item -Path "c:\navdvd\setup.exe").VersionInfo.FileVersion
 $versionFolder = $setupVersion.Split('.')[0]+$setupVersion.Split('.')[1]
-Copy-Item -Path (Join-Path $PSScriptRoot "$versionFolder\*.*") -Destination $PSScriptRoot -Force
+Copy-Item -Path (Join-Path $PSScriptRoot "Install-$versionFolder\*.*") -Destination $PSScriptRoot -Force
 
 # Remove version specific folders
-Remove-Item (Join-Path $PSScriptRoot "80") -Recurse -Force
-Remove-Item (Join-Path $PSScriptRoot "90") -Recurse -Force
-Remove-Item (Join-Path $PSScriptRoot "100") -Recurse -Force
-Remove-Item (Join-Path $PSScriptRoot "110") -Recurse -Force
+Remove-Item (Join-Path $PSScriptRoot "Install-90") -Recurse -Force
+Remove-Item (Join-Path $PSScriptRoot "Install-100") -Recurse -Force
+Remove-Item (Join-Path $PSScriptRoot "Install-110") -Recurse -Force
 
 . (Join-Path $PSScriptRoot "navinstall.ps1")
 
