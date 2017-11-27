@@ -49,6 +49,9 @@ Copy-Item -Path "$navDvdPath\ClickOnceInstallerTools\Program Files\Microsoft Dyn
 Write-Host "Copying PowerShell Scripts"
 Copy-Item -Path "$navDvdPath\WindowsPowerShellScripts\Cloud\NAVAdministration\" -Destination $runPath -Recurse -Force
 
+Write-Host "Copying TestToolkit"
+Copy-Item -Path "$navDvdPath\TestToolkit" -Destination "c:\" -Recurse -Force -ErrorAction Ignore
+
 Write-Host "Copying ClientUserSettings"
 Copy-Item (Join-Path (Get-ChildItem -Path "$NavDvdPath\RoleTailoredClient\CommonAppData\Microsoft\Microsoft Dynamics NAV" -Directory | Select-Object -Last 1).FullName "ClientUserSettings.config") $runPath
 

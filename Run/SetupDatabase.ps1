@@ -49,4 +49,26 @@ if ($restartingInstance) {
                     -DestinationPath "$databaseFolder" `
                     -Timeout $SqlTimeout | Out-Null
 
+} elseif ($databaseCredentials) {
+
+    $EncryptionKeyFile = Join-Path $myPath 'DynamicsNAV.key'
+    if (!(Test-Path $EncryptionKeyFile -PathType Leaf)) {
+        New-NAVEncryptionKey -KeyPath $EncryptionKeyFile -Password $EncryptionSecurePassword -Force | Out-Null
+    }
+
+    Set-NAVServerConfiguration -ServerInstance "NAV" -KeyName "EnableSqlConnectionEncryption" -KeyValue "true" -WarningAction SilentlyContinue
+    Set-NAVServerConfiguration -ServerInstance "NAV" -KeyName "TrustSQLServerCertificate" -KeyValue "true" -WarningAction SilentlyContinue
+
+    Write-Host "Import Encryption Key"
+    Import-NAVEncryptionKey -ServerInstance NAV `
+                            -ApplicationDatabaseServer $databaseServer `
+                            -ApplicationDatabaseCredentials $DatabaseCredentials `
+                            -ApplicationDatabaseName $DatabaseName `
+                            -KeyPath $EncryptionKeyFile `
+                            -Password $EncryptionSecurePassword `
+                            -WarningAction SilentlyContinue `
+                            -Force
+    
+    Set-NavServerConfiguration -serverinstance "NAV" -databaseCredentials $DatabaseCredentials -WarningAction SilentlyContinue
 }
+

@@ -25,7 +25,22 @@ if ($username -eq "ContainerAdministrator") { $username = "" }
 if ($auth -ne "Windows") {
     if ($username -eq "") { $username = "admin" }
 }
- 
+
+$databaseCredentials = $null
+if ("$env:databasePassword" -ne "") {
+    $databaseCredentials = New-Object PSCredential -ArgumentList "$env:databaseUserName", (ConvertTo-SecureString -String "$env:databasePassword" -AsPlainText -Force)
+} elseif ("$env:databaseSecurepassword" -ne "" -and "$env:passwordKeyFile" -ne "" -and $restartingInstance -eq $false) {
+    $databaseCredentials = New-Object PSCredential -ArgumentList "$env:databaseUserName", (ConvertTo-SecureString -String "$env:databaseSecurepassword" -Key (Get-Content -Path "$env:passwordKeyFile"))
+}
+
+if ("$env:encryptionPassword" -ne "") {
+    $EncryptionSecurePassword = ConvertTo-SecureString -String "$env:encryptionPassword" -AsPlainText -Force
+} elseif ("$env:encryptionSecurepassword" -ne "" -and "$env:passwordKeyFile" -ne "") {
+    $EncryptionSecurePassword = ConvertTo-SecureString -String "$env:databaseSecurepassword" -Key (Get-Content -Path "$env:passwordKeyFile")
+} else {
+    $EncryptionSecurePassword = ConvertTo-SecureString -String (Get-RandomPassword) -AsPlainText -Force
+}
+
 $passwordSpecified = $false
 if ("$env:password" -ne "") {
     $securepassword = ConvertTo-SecureString -String "$env:password" -AsPlainText -Force
@@ -33,10 +48,6 @@ if ("$env:password" -ne "") {
     $passwordSpecified = $true
 } elseif ("$env:securepassword" -ne "" -and "$env:passwordKeyFile" -ne "" -and $restartingInstance -eq $false) {
     $securePassword = ConvertTo-SecureString -String "$env:securepassword" -Key (Get-Content -Path "$env:passwordKeyFile")
-    if ($env:RemovePasswordKeyFile -ne "N") {
-        Remove-Item -Path "$env:passwordKeyFile" -Force
-    }
-    Remove-Item env:\passwordKeyFile -ErrorAction Ignore
     Remove-Item env:\securePassword -ErrorAction Ignore
     $passwordSpecified = $true
 } else {
@@ -44,6 +55,11 @@ if ("$env:password" -ne "") {
         $securePassword = ConvertTo-SecureString -String (Get-RandomPassword) -AsPlainText -Force
     }
 }
+
+if ($env:RemovePasswordKeyFile -ne "N" -and "$env:passwordKeyFile" -ne "") {
+    Remove-Item -Path "$env:passwordKeyFile" -Force
+}
+Remove-Item env:\passwordKeyFile -ErrorAction Ignore
 
 $licensefile = "$env:licensefile"
 
