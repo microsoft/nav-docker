@@ -25,8 +25,6 @@ New-NAVWebServerInstance -PublishFolder $publishFolder `
 
 $navsettingsFile = Join-Path $wwwRootPath "nav\navsettings.json"
 $config = Get-Content $navSettingsFile | ConvertFrom-Json
-Add-Member -InputObject $config.NAVWebSettings -NotePropertyName "Designer" -NotePropertyValue "true" -ErrorAction SilentlyContinue
-$config.NAVWebSettings.Designer = $true
 Add-Member -InputObject $config.NAVWebSettings -NotePropertyName "RequireSSL" -NotePropertyValue "true" -ErrorAction SilentlyContinue
 $config.NAVWebSettings.RequireSSL = $false
 Add-Member -InputObject $config.NAVWebSettings -NotePropertyName "PersonalizationEnabled" -NotePropertyValue "true" -ErrorAction SilentlyContinue
