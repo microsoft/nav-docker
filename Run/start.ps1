@@ -20,15 +20,18 @@ try {
         }
         
         $setupVersion = (Get-Item -Path "c:\navdvd\setup.exe").VersionInfo.FileVersion
-        $versionFolder = $setupVersion.Split('.')[0]+$setupVersion.Split('.')[1]
-        Copy-Item -Path (Join-Path $PSScriptRoot "Install-$versionFolder\*.*") -Destination $PSScriptRoot -Force
+        $versionNo = $setupVersion.Split('.')[0]+$setupVersion.Split('.')[1]
+        $versionFolder = Join-Path $PSScriptRoot $versionNo
+        if (Test-Path $versionFolder) {
+            Copy-Item -Path "$versionFolder\*" -Destination $PSScriptRoot -Recurse -Force
+        }
 
         # Remove version specific folders
-        Remove-Item (Join-Path $PSScriptRoot "Install-90") -Recurse -Force
-        Remove-Item (Join-Path $PSScriptRoot "Install-100") -Recurse -Force
-        Remove-Item (Join-Path $PSScriptRoot "Install-110") -Recurse -Force
-        
-        . (Join-Path $PSScriptRoot "navinstall.ps1")
+        "70","71","80","90","100","110" | % {
+            Remove-Item (Join-Path $PSScriptRoot $_) -Recurse -Force -ErrorAction Ignore
+        }
+
+        . (Get-MyFilePath "navinstall.ps1")
     }
 
     . (Get-MyFilePath "HelperFunctions.ps1")

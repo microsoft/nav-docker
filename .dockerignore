@@ -1,2 +1,7 @@
 NAVDVD/*
 *.md
+.git
+*.docx
+*.pdf
+LICENSE
+.gitignore

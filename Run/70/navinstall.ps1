@@ -22,8 +22,8 @@ Write-Host "Installing .NET 3"
 Dism /online /enable-feature /all /featurename:NetFX3 /Source:"C:\NAVDVD\Prerequisite Components" | Out-Null
 
 Write-Host "Installing VC Redist"
-Start-Process "C:\navdvd\Prerequisite Components\Microsoft Visual C++ 2012\vcredist_x64.exe" -ArgumentList "/passive /norestart" -Wait
-Start-Process "C:\navdvd\Prerequisite Components\Microsoft Visual C++ 2012\vcredist_x86.exe" -ArgumentList "/passive /norestart" -Wait
+Start-Process "C:\navdvd\Prerequisite Components\Microsoft Visual C++ 2010\vcredist_x64.exe" -ArgumentList "/passive /norestart" -Wait
+Start-Process "C:\navdvd\Prerequisite Components\Microsoft Visual C++ 2010\vcredist_x86.exe" -ArgumentList "/passive /norestart" -Wait
 
 $env:WebClient = "N"
 
@@ -38,15 +38,11 @@ Write-Host "Starting Internet Information Server"
 Start-Service -name $IisServiceName
 
 # Prerequisites
-Write-Host "Installing Url Rewrite"
-start-process "$NavDvdPath\Prerequisite Components\IIS URL Rewrite Module\rewrite_2.0_rtw_x64.msi" -ArgumentList "/quiet /qn /passive" -Wait
-
 Write-Host "Installing Report Viewer"
-start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2012\SQLSysClrTypes.msi" -ArgumentList "/quiet /qn /passive" -Wait
-start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2012\ReportViewer.msi" -ArgumentList "/quiet /qn /passive" -Wait
+#start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2010\ReportViewer.exe" -ArgumentList "/q" -Wait
 
 Write-Host "Installing OpenXML"
-start-process "$NavDvdPath\Prerequisite Components\Open XML SDK 2.5 for Microsoft Office\OpenXMLSDKv25.msi" -ArgumentList "/quiet /qn /passive" -Wait
+start-process "$NavDvdPath\Prerequisite Components\Open XML SDK 2.0 for Microsoft Office\OpenXMLSDKv2.msi" -ArgumentList "/quiet /qn /passive" -Wait
 
 Write-Host "Copying Service Tier Files"
 Copy-Item -Path "$NavDvdPath\ServiceTier\Program Files" -Destination "C:\" -Recurse -Force
@@ -162,9 +158,11 @@ Write-Host "Importing CRONUS license file"
 $licensefile = "$ServiceTierFolder\Cronus.flf"
 Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance 'NAV' -Database NavDatabase -WarningAction SilentlyContinue
 
-Write-Host "Copying PowerShell.exe.config"
-Copy-Item -Path "$runPath\powershell.exe.config" -Destination C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe.Config -Force
-Copy-Item -Path "$runPath\powershell.exe.config" -Destination C:\Windows\SysWOW64\Windowspowershell\v1.0\powershell.exe.Config -Force
+if (Test-Path -Path "$PSScriptRoot\powershell.exe.config" -PathType Leaf) {
+    Write-Host "Copying PowerShell.exe.config"
+    Copy-Item -Path "$PSScriptRoot\powershell.exe.config" -Destination C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe.Config -Force
+    Copy-Item -Path "$PSScriptRoot\powershell.exe.config" -Destination C:\Windows\SysWOW64\Windowspowershell\v1.0\powershell.exe.Config -Force
+}
 
 $timespend = [Math]::Round([DateTime]::Now.Subtract($startTime).Totalseconds)
 Write-Host "Installation took $timespend seconds"

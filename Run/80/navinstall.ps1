@@ -12,20 +12,21 @@ You must map a folder on the host with the NAVDVD content to $navDvdPath"
     exit 1
 }
 
-if (!(Test-Path -Path "c:\navdvd\Prerequisite Components\microsoft-windows-netfx3-ondemand-package.cab")) {
-    Write-Error "This NAV version requires .NET 3 which is not on WindowsServerCore.
+$buildno = $setupVersion.Split('.')[2]
+if ($buildno -le "40938") {
+    if (!(Test-Path -Path "c:\navdvd\Prerequisite Components\microsoft-windows-netfx3-ondemand-package.cab")) {
+        Write-Error "This NAV version requires .NET 3 which is not on WindowsServerCore.
 If you download microsoft-windows-netfx3-ondemand-package.cab from a Windows Server 2016 media and place it in the Prerequisite Components folder on the NAV DVD, then it will be installed automatically."
-    Exit 1
+        Exit 1
+    }
+
+    $env:WebClient = "N"
 }
 
-Write-Host "Installing .NET 3"
-Dism /online /enable-feature /all /featurename:NetFX3 /Source:"C:\NAVDVD\Prerequisite Components" | Out-Null
-
-Write-Host "Installing VC Redist"
-Start-Process "C:\navdvd\Prerequisite Components\Microsoft Visual C++ 2010\vcredist_x64.exe" -ArgumentList "/passive /norestart" -Wait
-Start-Process "C:\navdvd\Prerequisite Components\Microsoft Visual C++ 2010\vcredist_x86.exe" -ArgumentList "/passive /norestart" -Wait
-
-$env:WebClient = "N"
+if (Test-Path -Path "c:\navdvd\Prerequisite Components\microsoft-windows-netfx3-ondemand-package.cab") {
+    Write-Host "Installing .NET 3"
+    Dism /online /enable-feature /all /featurename:NetFX3 /Source:"C:\NAVDVD\Prerequisite Components" | Out-Null
+}
 
 # start the SQL Server
 Write-Host "Starting Local SQL Server"
@@ -38,11 +39,15 @@ Write-Host "Starting Internet Information Server"
 Start-Service -name $IisServiceName
 
 # Prerequisites
+Write-Host "Installing Url Rewrite"
+start-process "$NavDvdPath\Prerequisite Components\IIS URL Rewrite Module\rewrite_2.0_rtw_x64.msi" -ArgumentList "/quiet /qn /passive" -Wait
+
 Write-Host "Installing Report Viewer"
-#start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2010\ReportViewer.exe" -ArgumentList "/q" -Wait
+start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2014\SQLSysClrTypes.msi" -ArgumentList "/quiet /qn /passive" -Wait
+start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2014\ReportViewer.msi" -ArgumentList "/quiet /qn /passive" -Wait
 
 Write-Host "Installing OpenXML"
-start-process "$NavDvdPath\Prerequisite Components\Open XML SDK 2.0 for Microsoft Office\OpenXMLSDKv2.msi" -ArgumentList "/quiet /qn /passive" -Wait
+start-process "$NavDvdPath\Prerequisite Components\Open XML SDK 2.5 for Microsoft Office\OpenXMLSDKv25.msi" -ArgumentList "/quiet /qn /passive" -Wait
 
 Write-Host "Copying Service Tier Files"
 Copy-Item -Path "$NavDvdPath\ServiceTier\Program Files" -Destination "C:\" -Recurse -Force
@@ -80,7 +85,7 @@ New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open" -itemtype Directory -E
 New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -itemtype Directory -ErrorAction Ignore | Out-null
 Set-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -value "$reportBuilderPath\MSReportBuilder.exe ""%1"""
 
-Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.dll"
+Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
 
 # Restore CRONUS Demo database to databases folder
 Write-Host "Restoring CRONUS Demo Database"
@@ -158,9 +163,11 @@ Write-Host "Importing CRONUS license file"
 $licensefile = "$ServiceTierFolder\Cronus.flf"
 Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance 'NAV' -Database NavDatabase -WarningAction SilentlyContinue
 
-Write-Host "Copying PowerShell.exe.config"
-Copy-Item -Path "$runPath\powershell.exe.config" -Destination C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe.Config -Force
-Copy-Item -Path "$runPath\powershell.exe.config" -Destination C:\Windows\SysWOW64\Windowspowershell\v1.0\powershell.exe.Config -Force
+if (Test-Path -Path "$PSScriptRoot\powershell.exe.config" -PathType Leaf) {
+    Write-Host "Copying PowerShell.exe.config"
+    Copy-Item -Path "$PSScriptRoot\powershell.exe.config" -Destination C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe.Config -Force
+    Copy-Item -Path "$PSScriptRoot\powershell.exe.config" -Destination C:\Windows\SysWOW64\Windowspowershell\v1.0\powershell.exe.Config -Force
+}
 
 $timespend = [Math]::Round([DateTime]::Now.Subtract($startTime).Totalseconds)
 Write-Host "Installation took $timespend seconds"
