@@ -57,7 +57,7 @@ if ("$env:password" -ne "") {
 }
 
 if ($env:RemovePasswordKeyFile -ne "N" -and "$env:passwordKeyFile" -ne "") {
-    Remove-Item -Path "$env:passwordKeyFile" -Force
+    Remove-Item -Path "$env:passwordKeyFile" -Force -ErrorAction Ignore
 }
 Remove-Item env:\passwordKeyFile -ErrorAction Ignore
 
