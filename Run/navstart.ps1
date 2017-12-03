@@ -22,6 +22,13 @@ $hostname = hostname
 . (Get-MyFilePath "HelperFunctions.ps1")
 . (Get-MyFilePath "SetupVariables.ps1")
 
+if (-not (Test-Path $myPath -PathType Container) -and ($myFilesPackage -ne "")) {
+    $myFilesPackageFile = (Join-Path $runPath "myFilesPackage.zip")
+    Write-Host "Downloading package for c:\run\my files '$myFilesPackage'"
+    (New-Object System.Net.WebClient).DownloadFile($myFilesPackage, $myFilesPackageFile)
+    Expand-Archive $myFilesPackageFile -DestinationPath $runPath
+}
+
 $newPublicDnsName = $true
 if ($restartingInstance) {
     Write-Host "Restarting Container"

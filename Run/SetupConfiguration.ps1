@@ -53,6 +53,18 @@ $enableSymbolLoadingAtServerStartupKeyExists = ($customConfig.SelectSingleNode("
 if ($enableSymbolLoadingAtServerStartupKeyExists) {
     $customConfig.SelectSingleNode("//appSettings/add[@key='EnableSymbolLoadingAtServerStartup']").Value = "$($enableSymbolLoadingAtServerStartup -eq $true)"
 }
+
+if ($customNavSettings -ne "") {
+    $customNavSettingsArray = $customNavSettings -split ","
+    foreach ($customNavSetting in $customNavSettingsArray) {
+        $customNavSettingArray = $customNavSetting -split "="
+        $customNavSettingKey = $customNavSettingArray[0]
+        $customNavSettingValue = $customNavSettingArray[1]
+        Write-Host "setting $customNavSettingKey to $customNavSettingValue"
+        $customConfig.SelectSingleNode("//appSettings/add[@key='$customNavSettingKey']").Value = "$customNavSettingValue"
+    }
+}
+
 $CustomConfig.Save($CustomConfigFile)
 
 7045,7047,7048,7049 | % {
