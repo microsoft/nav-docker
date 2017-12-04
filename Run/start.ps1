@@ -32,6 +32,22 @@ try {
         }
 
         . (Get-MyFilePath "navinstall.ps1")
+
+        # run local installers if present
+        if (Test-Path "C:\NAVDVD\Installers" -PathType Container) {
+            Get-ChildItem "C:\NAVDVD\Installers" -Recurse | Where-Object { $_.PSIsContainer } | % {
+                $dir = $_.FullName
+                Get-ChildItem (Join-Path $dir "*.msi") | % {
+                    $filepath = $_.FullName
+                    if ($filepath.Contains('\WebHelp\')) {
+                        Write-Host "Skipping $filepath"
+                    } else {
+                        Write-Host "Installing $filepath"
+                        Start-Process -FilePath $filepath -WorkingDirectory $dir -ArgumentList "/qn /norestart" -Wait
+                    }
+                }
+            }
+        }
     }
 
     . (Get-MyFilePath "HelperFunctions.ps1")
