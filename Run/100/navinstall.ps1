@@ -98,7 +98,7 @@ New-NAVDatabase -DatabaseServer $databaseServer `
 
 # run local installers if present
 if (Test-Path "$navDvdPath\Installers" -PathType Container) {
-    Get-ChildItem "$navDvdPath\Installers" | Where-Object { $_.PSIsContainer } | % {
+    Get-ChildItem "$navDvdPath\Installers" -Recurse | Where-Object { $_.PSIsContainer } | % {
         Get-ChildItem $_.FullName | Where-Object { $_.PSIsContainer } | % {
             $dir = $_.FullName
             Get-ChildItem (Join-Path $dir "*.msi") | % {

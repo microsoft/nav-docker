@@ -14,7 +14,30 @@ function Get-MyFilePath([string]$FileName)
 
 try {
 
+    $folders = "$env:folders"
+    if ($folders -ne "") {
+        $foldersArray = $folders -split ","
+        foreach ($folder in $foldersArray) {
+            $folderValue = $folder -split "="
+            $dir = $folderValue[0]
+            $value = $folderValue[1].Split('\')[0]
+            $subfolder = $folderValue[1].Split('\')[1]
+            Write-Host "Downloading and extracting $value to $dir"
+            if (-not (Test-Path $dir)) {
+                New-Item $dir -ItemType Directory | Out-Null
+            }
+            (New-Object System.Net.WebClient).DownloadFile($value, "download.zip")
+            Expand-Archive "download.zip" -DestinationPath $dir -Force
+            if ($subfolder) {
+                Get-ChildItem -Path "$dir\$subfolder\*" -Recurse | Move-Item -Destination $dir
+                remove-item -Path "$dir\$subfolder" -Force -Recurse -ErrorAction Ignore
+            }
+            Remove-Item "download.zip" -Force
+        }
+    }
+
     if (!(Test-Path "C:\Program Files\Microsoft Dynamics NAV" -PathType Container)) {
+
         if (!(Test-Path "C:\NAVDVD" -PathType Container)) {
             throw "You must share a DVD folder to C:\NAVDVD to run the generic image"
         }
@@ -32,22 +55,6 @@ try {
         }
 
         . (Get-MyFilePath "navinstall.ps1")
-
-        # run local installers if present
-        if (Test-Path "C:\NAVDVD\Installers" -PathType Container) {
-            Get-ChildItem "C:\NAVDVD\Installers" -Recurse | Where-Object { $_.PSIsContainer } | % {
-                $dir = $_.FullName
-                Get-ChildItem (Join-Path $dir "*.msi") | % {
-                    $filepath = $_.FullName
-                    if ($filepath.Contains('\WebHelp\')) {
-                        Write-Host "Skipping $filepath"
-                    } else {
-                        Write-Host "Installing $filepath"
-                        Start-Process -FilePath $filepath -WorkingDirectory $dir -ArgumentList "/qn /norestart" -Wait
-                    }
-                }
-            }
-        }
     }
 
     . (Get-MyFilePath "HelperFunctions.ps1")

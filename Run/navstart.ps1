@@ -22,21 +22,6 @@ $hostname = hostname
 . (Get-MyFilePath "HelperFunctions.ps1")
 . (Get-MyFilePath "SetupVariables.ps1")
 
-if ($folders -ne "") {
-    $foldersArray = $folders -split ","
-    foreach ($folder in $foldersArray) {
-        $keyValue = $folder -split "="
-        $key = $keyValue[0]
-        $value = $keyValue[1]
-        Write-Host "folder $key gets data from $value"
-        if (-not (Test-Path $key)) {
-            New-Item $key -ItemType Directory
-        }
-        (New-Object System.Net.WebClient).DownloadFile($value, "download.zip")
-        Expand-Archive "download.zip" -DestinationPath $key
-    }
-}
-
 $newPublicDnsName = $true
 if ($restartingInstance) {
     Write-Host "Restarting Container"
