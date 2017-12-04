@@ -150,7 +150,7 @@ Write-Host "Starting NAV Service Tier"
 Start-Service -Name $NavServiceName -WarningAction Ignore
 
 Write-Host "Importing CRONUS license file"
-$licensefile = "$ServiceTierFolder\Cronus.flf"
+$licensefile = (Get-Item -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf").FullName
 Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance 'NAV' -Database NavDatabase -WarningAction SilentlyContinue
 
 Write-Host "Copying PowerShell.exe.config"
