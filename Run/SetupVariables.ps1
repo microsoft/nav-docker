@@ -134,3 +134,9 @@ if ($locale)  {
 }
 
 $enableSymbolLoadingAtServerStartup = ($env:enableSymbolLoading -eq "Y")
+
+$exportClientFolder = ("$env:exportClientFolder" -eq $true)
+$exportClientFolderPath = "$env:exportClientFolderPath"
+if (!$exportClientFolderPath) {
+    $exportClientFolderPath = $myPath
+}

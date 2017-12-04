@@ -187,3 +187,58 @@ function GetMsiProductName([string]$path) {
         [Void][System.Runtime.InteropServices.Marshal]::ReleaseComObject($installer)
     }
 }
+
+function New-FinSqlExeRunner
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$True)]
+        [string]$FileFullPath,
+        [Parameter(Mandatory=$True)]
+        [string]$SqlServerName,
+        [Parameter(Mandatory=$True)]
+        [string]$DbName,
+        [Parameter(Mandatory=$True)]
+        [bool]$NtAuth,
+        [Parameter(Mandatory=$True)]
+        [string]$Id,
+        [Parameter()]
+        [bool]$GenerateSymbolRef=$false
+    )
+
+    $useNtAuth = If ($NtAuth) { 1 } Else { 0 }
+    $fileName = Split-Path $FileFullPath -Leaf
+    $buildFolder = Join-Path $PSScriptRoot '_buildfinsqlrunner'
+    $iconFile = 'finsqlicon.ico'
+
+    New-Item -ItemType Directory -Path $buildFolder -Force | Out-Null
+
+    $generateSymbolRefStr = ""
+    if ($GenerateSymbolRef -and (IsEnableSymbolLoadingSupported)) {
+        $generateSymbolRefStr = ', generatesymbolreference=yes '
+    }
+
+    # Extract and prepare icon file
+    $icon = [System.IO.FileStream]::new("$buildFolder\$iconFile", [System.IO.FileMode]::OpenOrCreate)
+    (Get-CsideIcon).Save($icon)
+    $icon.Close()
+    Copy-Item "$buildFolder\$iconFile" "c:\$iconFile"
+    
+    Set-Content "$buildFolder\$fileName.ps1" "Start-Process '.\finsql.exe' -ArgumentList ""servername=$SqlServerName, database=$DbName, ntauthentication=$useNtAuth, id=$Id $generateSymbolRefStr""" -Force
+    & (Join-Path $PSScriptRoot 'ps2exe.ps1') -inputFile "$buildFolder\$fileName.ps1" -outputFile "$buildFolder\$fileName" -iconFile "$iconFile" -noconsole -runtime40 -wait -end *>$null
+
+    Copy-Item "$buildFolder\$fileName" $FileFullPath -Force | Out-Null
+
+    # Cleanup
+    Remove-Item $buildFolder -Recurse -Force | Out-Null
+    Remove-Item "c:\$iconFile" -Force | Out-Null
+}
+
+function Get-CsideIcon {
+    [CmdletBinding()]
+    param(
+    )
+
+    Add-Type -AssemblyName System.Drawing
+    return ([Drawing.Icon]::ExtractAssociatedIcon((Get-ChildItem $roleTailoredClientFolder 'finsql.exe').FullName))
+}

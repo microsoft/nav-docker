@@ -161,6 +161,10 @@ if ($newPublicDnsName -and $httpSite -ne "N" -and $clickOnce -eq "Y") {
 
 . (Get-MyFilePath "AdditionalSetup.ps1")
 
+if (($exportClientFolder -eq "Y") {
+    . (Get-MyFilePath "ExportClientFolder.ps1")
+}
+
 $CustomConfigFile =  Join-Path $ServiceTierFolder "CustomSettings.config"
 $CustomConfig = [xml](Get-Content $CustomConfigFile)
 
