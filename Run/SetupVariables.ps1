@@ -134,3 +134,7 @@ if ($locale)  {
 }
 
 $enableSymbolLoadingAtServerStartup = ($env:enableSymbolLoading -eq "Y")
+
+$customNavSettings = "$env:customNavSettings"
+$customWebSettings = "$env:customWebSettings"
+$customWinSettings = "$env:customWinSettings"
