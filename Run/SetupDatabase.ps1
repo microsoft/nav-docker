@@ -51,7 +51,11 @@ if ($restartingInstance) {
 
 } elseif ($databaseCredentials) {
 
-    $EncryptionKeyFile = Join-Path $myPath 'DynamicsNAV.key'
+    if (Test-Path $myPath -PathType Container) {
+        $EncryptionKeyFile = Join-Path $myPath 'DynamicsNAV.key'
+    } else {
+        $EncryptionKeyFile = Join-Path $runPath 'DynamicsNAV.key'
+    }
     if (!(Test-Path $EncryptionKeyFile -PathType Leaf)) {
         New-NAVEncryptionKey -KeyPath $EncryptionKeyFile -Password $EncryptionSecurePassword -Force | Out-Null
     }
