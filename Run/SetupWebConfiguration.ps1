@@ -11,8 +11,13 @@ if ($customWebSettings -ne "") {
             $customWebSettingArray = $customWebSetting -split "="
             $customWebSettingKey = $customWebSettingArray[0]
             $customWebSettingValue = $customWebSettingArray[1]
-            Write-Host "setting $customWebSettingKey to $customWebSettingValue"
-            $jsonConfig.NAVWebSettings.$customWebSettingKey = $customWebSettingValue
+            if ($jsonConfig.NAVWebSettings.$customWebSettingKey -eq $null) {
+                Write-Host "Creating $customWebSettingKey and setting it to $customWebSettingValue"
+                $jsonConfig.NAVWebSettings | Add-Member $customWebSettingKey $customWebSettingValue
+            } else {
+                Write-Host "Setting $customWebSettingKey to $customWebSettingValue"
+                $jsonConfig.NAVWebSettings.$customWebSettingKey = $customWebSettingValue
+            }
         }
         $jsonConfig | ConvertTo-Json | Set-Content $jsonConfigPath
     } elseif (Test-Path $webConfigPath) {
