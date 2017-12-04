@@ -136,5 +136,3 @@ if ($locale)  {
 $enableSymbolLoadingAtServerStartup = ($env:enableSymbolLoading -eq "Y")
 
 $folders = "$env:folders"
-
-$customNavSettings = "$env:customNavSettings"
