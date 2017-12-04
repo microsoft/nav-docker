@@ -1,0 +1,236 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <title>Microsoft Dynamics NAV Windows Client Installation</title>
+
+    <script type="text/javascript">
+        runtimeVersion = "4.0.0";
+        checkClient = false;
+        directLink = "ConsoleApplication2.application";
+
+        function onInstallNavClicked() {
+            if (document.SampleForm.acceptMicrosoftLicenseCheckbox.checked == false) {
+                alert('You must accept the license terms to continue.');
+            }
+            else {
+                open('Win/Deployment/Microsoft.Dynamics.Nav.Client.application');
+            }
+        }
+
+        function onInstallFinsqlClicked() {
+            if (document.SampleForm.acceptMicrosoftLicenseCheckboxFinsql.checked == false) {
+                alert('You must accept the license terms to continue.');
+            }
+            else {
+                open('Finsql/Deployment/Finsql.application');
+            }
+        }
+    </script>
+
+    <style type="text/css">
+        h1 {
+            font-size: 4em;
+            font-weight: 100;
+            color: #000;
+            margin: 0px;
+        }
+
+        h2 {
+            font-size: 1.2em;
+            margin-top: 2em;
+        }
+
+        .h2sub {
+            font-weight: 100;
+        }
+
+        h3 {
+            font-size: 1.2em;
+            margin: 0px;
+            line-height: 32pt;
+        }
+
+        h4 {
+            font-size: 10pt;
+        }
+
+        h6 {
+            font-size: 10pt;
+            position: relative;
+            left: 10px;
+            top: 120px;
+            margin: 0px;
+        }
+
+        h5 {
+            font-size: 10pt;
+        }
+
+        body {
+            font-family: "Segoe UI","Lucida Grande",Verdana,Arial,Helvetica,sans-serif;
+            font-size: 12px;
+            color: #5f5f5f;
+            margin-left: 20px;
+        }
+
+        table {
+            width: 600px;
+            margin-bottom: 3em;
+        }
+
+        .tile {
+            width: 200px;
+            font-family: inherit;
+            font-size: 1.4em;
+            color: #5f5f5f;
+            background-color: white;
+            border: 2px solid #808080;
+            padding: 4px 0px;
+        }
+
+        .viptile {
+            width: 200px;
+            font-family: inherit;
+            font-size: 1.4em;
+            color: #000;
+            background-color: white;
+            border: 2px solid #000;
+            padding: 4px 0px;
+        }
+
+        .tile-cell {
+            text-align: right;
+            border: 5px solid white;
+        }
+
+        .cell2w {
+            width: 400px;
+        }
+
+        .canvasbutton {
+            font-family: 'Segoe UI', Arial, Verdana;
+            font-size: 10pt;
+            line-height: 10pt;
+            font-weight: bold;
+            background: purple;
+            color: white;
+            margin: 20px 0px;
+            padding: 5px 0px;
+            text-align: center;
+        }
+    </style>
+
+</head>
+
+<body>
+    <form name="SampleForm" action="">
+
+        <h1>Online installation</h1>
+
+        <h2>Microsoft Dynamics NAV <span class="h2sub">| Windows client</span></h2>
+
+        <table>
+            <tr>
+                <td colspan="2">When installation is complete, you can start the Microsoft Dynamics NAV Windows client from the Start menu. Additional software or upgrades may be necessary. Please refer to the optional installations below.
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" class="cell2w">
+                    <input id="acceptMicrosoftLicenseCheckbox" type="checkbox" />
+                    I accept the Microsoft Dynamics NAV 
+                    <a href="Deployment\ApplicationFiles\SLT\1033\License.rtf">Software License Terms</a>
+
+                </td>
+                <td class="tile-cell">
+
+                    <input class="viptile" id="installNavButton" type="button" value="Install now" onclick="onInstallNavClicked()" />
+
+
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <h2>Reporting <span class="h2sub">| Optional installation</span></h2>
+                </td>
+
+            </tr>
+            <tr>
+                <td colspan="2">If you want to be able to print or preview Microsoft Dynamics NAV reports, you need to install prerequisites - CLR types for Microsoft SQL server 2014 (ENU\x86\SQLSysClrTypes.msi) and the Microsoft Report Viewer 2015 or later. </td>
+
+            </tr>
+            <tr>
+                <td></td>
+                <td class="tile-cell">
+                    <input class="tile" id="installClrTypesButton" type="button" value="Install prerequisites" onclick="window.open('http://www.microsoft.com/en-us/download/details.aspx?id=42295', 'Download')" /></td>
+                <td class="tile-cell">
+                    <input class="tile" id="installReportViewerButton" type="button" value="Install Report Viewer" onclick="window.open('http://www.microsoft.com/en-us/download/details.aspx?id=45496', 'Download')" /></td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <h2>System Update <span class="h2sub">| Optional installation</span></h2>
+                </td>
+
+            </tr>
+            <tr>
+                <td colspan="2">Microsoft Dynamics NAV requires Microsoft .NET Framework 4.5.2 You may need to download and install it if you run Windows 7.</td>
+                <td class="tile-cell">
+                    <input class="tile" id="installNetFx452Button" type="button" value="Install .NET 4.5.2" onclick="window.open('http://www.microsoft.com/en-us/download/details.aspx?id=42642', 'Download')" />
+                </td>
+
+            </tr>
+
+        </table>
+
+        <h2>Microsoft Dynamics NAV <span class="h2sub">| C/SIDE Development Environment</span></h2>
+        
+        <table>
+            <tr>
+                <td colspan="2">When installation is complete, you can start the Microsoft Dynamics NAV C/SIDE Development Environment from the Start menu. Additional software or upgrades may be necessary. Please refer to the optional installations below.
+                </td>
+            </tr>
+            
+            <tr>
+                <td colspan="2" class="cell2w">
+                    <input id="acceptMicrosoftLicenseCheckboxFinsql" type="checkbox" />
+                    I accept the Microsoft Dynamics NAV 
+                    <a href="Deployment\ApplicationFiles\SLT\1033\License.rtf">Software License Terms</a>
+
+                </td>
+                <td class="tile-cell">
+
+                    <input class="viptile" id="installFinsqlButton" type="button" value="Install now" onclick="onInstallFinsqlClicked()" />
+
+                </td>
+
+            </tr>
+
+            <tr>
+                <td colspan="2">
+                    <h2>Required component <span class="h2sub">| Optional installation</span></h2>
+                </td>
+
+            </tr>
+            <tr>
+                <td colspan="2">Microsoft Dynamics NAV C/SIDE Development Environment requires the SQL Server Natie Client to connect to a database. If you don't have it installed yet, you need to install it.</td>
+                <td class="tile-cell">
+                    <input class="tile" id="installSqlNativeClient" type="button" value="Install SQL Native Client" onclick="window.open('http://go.microsoft.com/fwlink/?LinkID=239648&clcid=0x409', 'Download')" />
+                </td>
+
+            </tr>
+        </table>
+
+        <p>
+            <a target="_blank" href="http://go.microsoft.com/fwlink/?LinkId=287089">Community</a><label> | </label>
+            <a target="_blank" href="http://go.microsoft.com/fwlink/?LinkId=287090">Feedback</a><label> | </label>
+            <a target="_blank" href="http://go.microsoft.com/fwlink/?LinkId=617571">Privacy & Cookies</a><label> | </label>
+            <a target="_blank" href="http://go.microsoft.com/fwlink/?LinkId=623001">Accessibility</a><label> | </label>
+            <a target="_blank" href="http://go.microsoft.com/fwlink/?LinkId=617572">Terms of Use</a><label> | </label>
+            <a target="_blank" href="http://go.microsoft.com/fwlink/?LinkId=287088">Trademarks</a>
+        </p>
+        <label class="ms-nav-disclaimerlayout">© 2017 Microsoft Corporation. All rights reserved.</label>
+
+    </form>
+</body>
+
+</html>
