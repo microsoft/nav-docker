@@ -34,6 +34,8 @@ if ($restartingInstance) {
     }
 
     # Restore database
+    $databaseFolder = "c:\databases"
+    
     if (!(Test-Path -Path $databaseFolder -PathType Container)) {
         New-Item -Path $databaseFolder -itemtype Directory | Out-Null
     }
