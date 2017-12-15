@@ -67,7 +67,7 @@ $bakfile = "$env:bakfile"
 if ($bakfile -ne "") {
     $databaseServer = "localhost"
     $databaseInstance = "SQLEXPRESS"
-    $databaseName = ""
+    $databaseName = "mydatabase"
 } else {
     $databaseServer = "$env:databaseServer"
     $databaseInstance = "$env:databaseInstance"
