@@ -64,7 +64,7 @@ Remove-Item env:\passwordKeyFile -ErrorAction Ignore
 $licensefile = "$env:licensefile"
 
 $bakfile = "$env:bakfile"
-if ($bakfile -ne "") {        
+if ($bakfile -ne "") {
     $databaseServer = "localhost"
     $databaseInstance = "SQLEXPRESS"
     $databaseName = "mydatabase"    
