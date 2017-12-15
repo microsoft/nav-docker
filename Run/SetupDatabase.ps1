@@ -32,12 +32,8 @@ if ($restartingInstance) {
         }
         $databaseFile = $bakFile
     }
-    $databaseName = "mydatabase"
 
     # Restore database
-    $databaseServer = "localhost"
-    $databaseInstance = "SQLEXPRESS"
-    $databaseFolder = "c:\databases"
     if (!(Test-Path -Path $databaseFolder -PathType Container)) {
         New-Item -Path $databaseFolder -itemtype Directory | Out-Null
     }
