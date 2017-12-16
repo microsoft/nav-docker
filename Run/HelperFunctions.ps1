@@ -187,3 +187,36 @@ function GetMsiProductName([string]$path) {
         [Void][System.Runtime.InteropServices.Marshal]::ReleaseComObject($installer)
     }
 }
+
+function Set-ConfigSetting {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$customSettings,
+        [Parameter(Mandatory=$true)]
+        [string]$parentPath,
+        [Parameter(Mandatory=$true)]
+        [string] $leafName,
+        [Parameter(Mandatory=$true)]
+        [xml]$customConfig
+    )
+
+    $customSettingsArray = $customSettings -split ","
+
+    foreach ($customSetting in $customSettingsArray) {
+        $customSettingArray = $customSetting -split "="
+        $customSettingKey = $customSettingArray[0]
+        $customSettingValue = $customSettingArray[1]
+        
+        if ($customConfig.SelectSingleNode("$parentPath/$leafName[@key='$customSettingKey']") -eq $null) {
+            Write-Host "Creating $customSettingKey and setting it to $customSettingValue"
+            [xml] $tmpDoc = [xml] ""
+            $tmpDoc.LoadXml("<add key='$customSettingKey' value='$customSettingValue' />") | Out-Null
+            $tmpNode = $customConfig.ImportNode($tmpDoc.get_DocumentElement(), $true)
+            $customConfig.SelectSingleNode($parentPath).AppendChild($tmpNode)
+        } else {
+            Write-Host "Setting $customSettingKey to $customSettingValue"
+            $customConfig.SelectSingleNode("$parentPath/$leafName[@key='$customSettingKey']").Value = "$customSettingValue"
+        }
+    }
+}
