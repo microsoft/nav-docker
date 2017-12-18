@@ -53,6 +53,12 @@ $enableSymbolLoadingAtServerStartupKeyExists = ($customConfig.SelectSingleNode("
 if ($enableSymbolLoadingAtServerStartupKeyExists) {
     $customConfig.SelectSingleNode("//appSettings/add[@key='EnableSymbolLoadingAtServerStartup']").Value = "$($enableSymbolLoadingAtServerStartup -eq $true)"
 }
+
+if ($customNavSettings -ne "") {
+    Write-Host "Modifying NAV Service Tier Config File with settings from environment variable"    
+    Set-ConfigSetting -customSettings $customNavSettings -parentPath "//appSettings" -leafName "add" -customConfig $CustomConfig
+}
+
 $CustomConfig.Save($CustomConfigFile)
 
 7045,7047,7048,7049 | % {

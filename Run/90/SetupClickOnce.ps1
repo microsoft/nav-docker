@@ -27,6 +27,11 @@ $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ACSU
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='DnsIdentity']").value = "$dnsIdentity"
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ClientServicesCredentialType']").value = "$Auth"
 
+if ($customWinSettings -ne "") {
+    Write-Host "Modifying Win Client ClickOnce config with settings from environment variable"        
+    Set-ConfigSetting -customSettings $customWinSettings -parentPath "//configuration/appSettings" -leafName "add" -customConfig $clientUserSettings
+}
+
 $applicationName = "NAV Windows Client for $publicDnsName"
 $applicationNameFinSql = "NAV C/SIDE for $publicDnsName"
 $applicationPublisher = "Microsoft Corporation"
