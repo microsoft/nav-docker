@@ -160,7 +160,8 @@ New-NAVWebServerInstance -Server "localhost" `
 
 # Give Everyone access to resources
 $ResourcesFolder = "$WebClientFolder".Replace('C:\Program Files\', 'C:\ProgramData\Microsoft\')
-$user = New-Object System.Security.Principal.NTAccount("NT AUTHORITY\Everyone")
+$objSID = New-Object System.Security.Principal.SecurityIdentifier("S-1-1-0")
+$user = $objSID.Translate( [System.Security.Principal.NTAccount])
 $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($user, "ReadAndExecute", "ContainerInherit, ObjectInherit", "None", "Allow")
 $acl = Get-Acl -Path $ResourcesFolder
 Set-Acl -Path $ResourcesFolder $acl
