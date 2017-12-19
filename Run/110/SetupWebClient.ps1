@@ -29,4 +29,23 @@ Add-Member -InputObject $config.NAVWebSettings -NotePropertyName "RequireSSL" -N
 $config.NAVWebSettings.RequireSSL = $false
 Add-Member -InputObject $config.NAVWebSettings -NotePropertyName "PersonalizationEnabled" -NotePropertyValue "true" -ErrorAction SilentlyContinue
 $config.NAVWebSettings.PersonalizationEnabled = $true
+
+if ($customWebSettings -ne "") {
+    Write-Host "Modifying Web Client config with settings from environment variable"        
+
+    $customWebSettingsArray = $customWebSettings -split ","
+    foreach ($customWebSetting in $customWebSettingsArray) {
+        $customWebSettingArray = $customWebSetting -split "="
+        $customWebSettingKey = $customWebSettingArray[0]
+        $customWebSettingValue = $customWebSettingArray[1]
+        if ($config.NAVWebSettings.$customWebSettingKey -eq $null) {
+            Write-Host "Creating $customWebSettingKey and setting it to $customWebSettingValue"
+            $config.NAVWebSettings | Add-Member $customWebSettingKey $customWebSettingValue
+        } else {
+            Write-Host "Setting $customWebSettingKey to $customWebSettingValue"
+            $config.NAVWebSettings.$customWebSettingKey = $customWebSettingValue
+        }
+    }
+}
+
 $config | ConvertTo-Json | set-content $navSettingsFile

@@ -40,6 +40,7 @@ try {
 
     if (!$restartingInstance) {
         $folders = "$env:folders"
+
         if ($folders -ne "") {
             Write-Host "Setting up folders..."
             $startTime = [DateTime]::Now
@@ -53,15 +54,20 @@ try {
                 if (-not (Test-Path $dir)) {
                     New-Item $dir -ItemType Directory | Out-Null
                 }
-                (New-Object MyWebClient).DownloadFile($value, "download.zip")
+                $temp = [System.Guid]::NewGuid();new-item -type directory -Path c:\run\$temp | Out-Null
+                (New-Object MyWebClient).DownloadFile($value, "c:\run\$temp\download.zip")
 
-                Write-Host "Extracting to $dir"
-                Expand-Archive "download.zip" -DestinationPath $dir -Force
+                Write-Host "Extracting file in temp folder"
+                Expand-Archive "c:\run\$temp\download.zip" -DestinationPath "c:\run\$temp\extract" -Force
+
                 if ($subfolder) {
-                    Get-ChildItem -Path "$dir\$subfolder\*" -Recurse | Move-Item -Destination $dir
-                    remove-item -Path "$dir\$subfolder" -Force -Recurse -ErrorAction Ignore
+                    Write-Host "Moving $subfolder to target folder $dir"
+                    Get-ChildItem -Path "c:\run\$temp\extract\$subfolder\*" -Recurse | Move-Item -Destination $dir -Force
+                } else {
+                    Write-Host "Moving all extracted files to target folder $dir"
+                    Get-ChildItem -Path "c:\run\$temp\extract\*" -Recurse | Move-Item -Destination $dir -Force
                 }
-                Remove-Item "download.zip" -Force
+                Remove-Item "c:\run\$temp" -Recurse -Force
             }
             $timespend = [Math]::Round([DateTime]::Now.Subtract($startTime).Totalseconds)
             Write-Host "Setting up folders took $timespend seconds"
