@@ -138,3 +138,8 @@ $enableSymbolLoadingAtServerStartup = ($env:enableSymbolLoading -eq "Y")
 $customNavSettings = "$env:customNavSettings"
 $customWebSettings = "$env:customWebSettings"
 $customWinSettings = "$env:customWinSettings"
+
+# Optional enable the API Services
+if ($env:enableApiServices -ne $null) {
+    $enableApiServices = ($env:enableApiServices -eq "Y")
+}

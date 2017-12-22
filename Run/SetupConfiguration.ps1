@@ -54,6 +54,12 @@ if ($enableSymbolLoadingAtServerStartupKeyExists) {
     $customConfig.SelectSingleNode("//appSettings/add[@key='EnableSymbolLoadingAtServerStartup']").Value = "$($enableSymbolLoadingAtServerStartup -eq $true)"
 }
 
+# Optional enable the API Services
+$apiServicesEnabledExists = ($customConfig.SelectSingleNode("//appSettings/add[@key='ApiServicesEnabled']") -ne $null)
+if (($enableApiServices -ne $null) -and $apiServicesEnabledExists) {
+    $customConfig.SelectSingleNode("//appSettings/add[@key='ApiServicesEnabled']").Value = "$($enableApiServices -eq $true)"
+}
+
 if ($customNavSettings -ne "") {
     Write-Host "Modifying NAV Service Tier Config File with settings from environment variable"    
     Set-ConfigSetting -customSettings $customNavSettings -parentPath "//appSettings" -leafName "add" -customConfig $CustomConfig
