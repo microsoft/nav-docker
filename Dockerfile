@@ -1,4 +1,4 @@
-FROM microsoft/windowsservercore
+FROM microsoft/dotnet-framework:4.7-windowsservercore
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
@@ -7,7 +7,7 @@ SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPref
 # Remove docker files from Sql server image
 RUN Add-WindowsFeature Web-Server,web-AppInit,web-Asp-Net45,web-Windows-Auth,web-Dyn-Compression ; \
     Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\Dnscache\Parameters' -Name ServerPriorityTimeLimit -Value 0 -Type DWord; \
-    Invoke-WebRequest -Uri "https://download.microsoft.com/download/9/0/7/907AD35F-9F9C-43A5-9789-52470555DB90/ENU/SQLEXPR_x64_ENU.exe" -OutFile sqlexpress.exe ; \
+    Invoke-WebRequest -Uri "https://download.microsoft.com/download/9/0/7/907AD35F-9F9C-43A5-9789-52470555DB90/ENU/SQLEXPR_x64_ENU.exe" -OutFile "sqlexpress.exe" ; \
     Start-Process -Wait -FilePath .\sqlexpress.exe -ArgumentList /qs, /x:setup ; \
     .\setup\setup.exe /q /ACTION=Install /INSTANCENAME=SQLEXPRESS /FEATURES=SQLEngine /UPDATEENABLED=0 /SQLSVCACCOUNT='NT AUTHORITY\System' /SQLSYSADMINACCOUNTS='BUILTIN\ADMINISTRATORS' /TCPENABLED=1 /NPENABLED=0 /IACCEPTSQLSERVERLICENSETERMS ; \
     Remove-Item -Recurse -Force sqlexpress.exe, setup ; \
@@ -23,10 +23,6 @@ RUN Add-WindowsFeature Web-Server,web-AppInit,web-Asp-Net45,web-Windows-Auth,web
     Set-Service 'SQLBrowser' -startuptype "manual" 
     
 COPY Run /Run/
-
-# Copy Powershell config in place (for various NAV CmdLets to use SQL v13 DLLs)
-RUN Copy-Item -Path C:\Run\powershell.exe.config -Destination C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe.Config -Force; \
-    Copy-Item -Path C:\Run\powershell.exe.config -Destination C:\Windows\SysWOW64\Windowspowershell\v1.0\powershell.exe.Config -Force
 
 HEALTHCHECK --interval=30s --timeout=10s CMD [ "powershell", ".\\Run\\HealthCheck.ps1" ]
 

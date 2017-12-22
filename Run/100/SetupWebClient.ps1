@@ -140,56 +140,41 @@ if ($servicesUseSSL) {
     $certparam += @{CertificateThumbprint = $certificateThumbprint}
 }
 
-if (Test-Path "C:\Program Files\dotnet\shared\Microsoft.NETCore.App" -PathType Container) {
+# Creating Web Client
+Write-Host "Creating Web Site"
+New-NavWebSite -WebClientFolder $WebClientFolder `
+               -inetpubFolder (Join-Path $runPath "inetpub") `
+               -AppPoolName "NavWebClientAppPool" `
+               -SiteName "NavWebClient" `
+               -Port $webClientPort `
+               -Auth $Auth @certparam
+
+Write-Host "Creating NAV Web Server Instance"
+New-NAVWebServerInstance -Server "localhost" `
+                         -ClientServicesCredentialType $auth `
+                         -ClientServicesPort 7046 `
+                         -ServerInstance "NAV" `
+                         -WebServerInstance "NAV"
+                        
+if ($customWebSettings -ne "") {
+    Write-Host "Modifying Web Client config with settings from environment variable"        
+    $webConfigPath = "C:\inetpub\wwwroot\NAV\web.config"
     
-    Write-Host "Creating DotNetCore NAV Web Server Instance"
-    $publishFolder = "$webClientFolder\WebPublish"
-
-    $NAVWebClientManagementModule = "$webClientFolder\Modules\NAVWebClientManagement\NAVWebClientManagement.psm1"
-    if (!(Test-Path $NAVWebClientManagementModule)) {
-        $NAVWebClientManagementModule = "$webClientFolder\Scripts\NAVWebClientManagement.psm1"
-    }
-    Import-Module $NAVWebClientManagementModule
-    New-NAVWebServerInstance -PublishFolder $publishFolder `
-                             -WebServerInstance "NAV" `
-                             -Server "localhost" `
-                             -ServerInstance "NAV" `
-                             -ClientServicesCredentialType $Auth `
-                             -ClientServicesPort "7046" `
-                             -WebSitePort $webClientPort @certparam
-
-    $navsettingsFile = Join-Path $wwwRootPath "nav\navsettings.json"
-    $config = Get-Content $navSettingsFile | ConvertFrom-Json
-    Add-Member -InputObject $config.NAVWebSettings -NotePropertyName "Designer" -NotePropertyValue "true" -ErrorAction SilentlyContinue
-    $config.NAVWebSettings.Designer = $true
-    $config | ConvertTo-Json | set-content $navSettingsFile
-
-} else {
-    # Creating Web Client
-    Write-Host "Creating Web Site"
-    New-NavWebSite -WebClientFolder $WebClientFolder `
-                   -inetpubFolder (Join-Path $runPath "inetpub") `
-                   -AppPoolName "NavWebClientAppPool" `
-                   -SiteName "NavWebClient" `
-                   -Port $webClientPort `
-                   -Auth $Auth @certparam
-
-    Write-Host "Creating NAV Web Server Instance"
-    New-NAVWebServerInstance -Server "localhost" `
-                             -ClientServicesCredentialType $auth `
-                             -ClientServicesPort 7046 `
-                             -ServerInstance "NAV" `
-                             -WebServerInstance "NAV"
-
-    # Give Everyone access to resources
-    $ResourcesFolder = "$WebClientFolder".Replace('C:\Program Files\', 'C:\ProgramData\Microsoft\')
-    $user = New-Object System.Security.Principal.NTAccount("NT AUTHORITY\Everyone")
-    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($user, "ReadAndExecute", "ContainerInherit, ObjectInherit", "None", "Allow")
-    $acl = Get-Acl -Path $ResourcesFolder
-    Set-Acl -Path $ResourcesFolder $acl
-    $acl = $null
-    $acl = Get-Acl -Path $ResourcesFolder
-    $acl.AddAccessRule($rule)
-    Set-Acl -Path $ResourcesFolder $acl
-    $acl = $null
+    $webConfig = [xml](Get-Content $webConfigPath)
+    Set-ConfigSetting -customSettings $customWebSettings -parentPath "//configuration/DynamicsNAVSettings" -leafName "add" -customConfig $webConfig
+    $webConfig.Save($webConfigPath)
 }
+
+# Give Everyone access to resources
+$ResourcesFolder = "$WebClientFolder".Replace('C:\Program Files\', 'C:\ProgramData\Microsoft\')
+$objSID = New-Object System.Security.Principal.SecurityIdentifier("S-1-1-0")
+$user = $objSID.Translate( [System.Security.Principal.NTAccount])
+$rule = New-Object System.Security.AccessControl.FileSystemAccessRule($user, "ReadAndExecute", "ContainerInherit, ObjectInherit", "None", "Allow")
+$acl = Get-Acl -Path $ResourcesFolder
+Set-Acl -Path $ResourcesFolder $acl
+$acl = $null
+$acl = Get-Acl -Path $ResourcesFolder
+$acl.AddAccessRule($rule)
+Set-Acl -Path $ResourcesFolder $acl
+$acl = $null
+

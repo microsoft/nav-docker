@@ -1,6 +1,5 @@
 ﻿# INPUT
 #     $bakFile (optional)
-#     $runningGenericImage or $runningSpecificImage (not building or restarting)
 #
 # OUTPUT
 #     $databaseServer
@@ -8,7 +7,6 @@
 #     $databaseName
 #
 
-$restoreDb = $false
 if ($restartingInstance) {
 
     # Nothing to do
@@ -34,36 +32,10 @@ if ($restartingInstance) {
         }
         $databaseFile = $bakFile
     }
-    $databaseName = "mydatabase"
-    $restoreDb = $true
-
-} elseif ($buildingImage -or $runningGenericImage) {
-
-    # Restore CRONUS Demo database to databases folder
-
-    Write-Host "Restore CRONUS Demo Database"
-    $databaseName = "CRONUS"
-    $bak = (Get-ChildItem -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\*.bak")[0]
-    $databaseFile = $bak.FullName
-    $restoreDb = $true
-
-} elseif ($databaseServer -ne "localhost" -or $databaseInstance -ne "SQLEXPRESS" -or $databaseName -ne "") {
-
-    Write-Host "Using Database Connection $DatabaseServer/$DatabaseInstance [$DatabaseName]"
-
-} else {
-    
-    Write-Error "ERROR: Internal Error"
-    exit 1
-    
-}
-
-if ($restoreDb) {
 
     # Restore database
-    $databaseServer = "localhost"
-    $databaseInstance = "SQLEXPRESS"
     $databaseFolder = "c:\databases"
+    
     if (!(Test-Path -Path $databaseFolder -PathType Container)) {
         New-Item -Path $databaseFolder -itemtype Directory | Out-Null
     }
@@ -74,4 +46,31 @@ if ($restoreDb) {
                     -FilePath "$databaseFile" `
                     -DestinationPath "$databaseFolder" `
                     -Timeout $SqlTimeout | Out-Null
+
+} elseif ($databaseCredentials) {
+
+    if (Test-Path $myPath -PathType Container) {
+        $EncryptionKeyFile = Join-Path $myPath 'DynamicsNAV.key'
+    } else {
+        $EncryptionKeyFile = Join-Path $runPath 'DynamicsNAV.key'
+    }
+    if (!(Test-Path $EncryptionKeyFile -PathType Leaf)) {
+        New-NAVEncryptionKey -KeyPath $EncryptionKeyFile -Password $EncryptionSecurePassword -Force | Out-Null
+    }
+
+    Set-NAVServerConfiguration -ServerInstance "NAV" -KeyName "EnableSqlConnectionEncryption" -KeyValue "true" -WarningAction SilentlyContinue
+    Set-NAVServerConfiguration -ServerInstance "NAV" -KeyName "TrustSQLServerCertificate" -KeyValue "true" -WarningAction SilentlyContinue
+
+    Write-Host "Import Encryption Key"
+    Import-NAVEncryptionKey -ServerInstance NAV `
+                            -ApplicationDatabaseServer $databaseServer `
+                            -ApplicationDatabaseCredentials $DatabaseCredentials `
+                            -ApplicationDatabaseName $DatabaseName `
+                            -KeyPath $EncryptionKeyFile `
+                            -Password $EncryptionSecurePassword `
+                            -WarningAction SilentlyContinue `
+                            -Force
+    
+    Set-NavServerConfiguration -serverinstance "NAV" -databaseCredentials $DatabaseCredentials -WarningAction SilentlyContinue
 }
+

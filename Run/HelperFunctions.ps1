@@ -1,4 +1,10 @@
-﻿function randomchar([string]$str)
+﻿$NavServiceName = 'MicrosoftDynamicsNavServer$NAV'
+$SqlServiceName = 'MSSQL$SQLEXPRESS'
+$SqlWriterServiceName = "SQLWriter"
+$SqlBrowserServiceName = "SQLBrowser"
+$IisServiceName = "W3SVC"
+
+function randomchar([string]$str)
 {
     $rnd = Get-Random -Maximum $str.length
     [string]$str[$rnd]
@@ -119,7 +125,7 @@ function Copy-ItemMultiDest()
         [switch]$Recurse=$false
     )
 
-    $Destination | ForEach-Object { Microsoft.PowerShell.Management\Copy-Item $Source -Destination $_ -Confirm:$Confirm -Force:$Force -Recurse:$Recurse }
+    $Destination | ForEach-Object { Microsoft.PowerShell.Management\Copy-Item $Source -Destination $_ -Confirm:$Confirm -Force:$Force -Recurse:$Recurse -ErrorAction Ignore }
 }
 
 function Install-NAVSipCryptoProvider
@@ -163,4 +169,54 @@ function Install-NAVSipCryptoProvider
     New-Item -Path $registryPath -Force | Out-Null
     New-ItemProperty -Path $registryPath -PropertyType string -Name 'Dll' -Value $sipPath -Force | Out-Null
     New-ItemProperty -Path $registryPath -PropertyType string -Name 'FuncName' -Value 'NavSIPVerifyIndirectData' -Force | Out-Null
+}
+
+function GetMsiProductName([string]$path) {
+    try {
+        $installer = New-Object -ComObject WindowsInstaller.Installer
+        $database = $installer.GetType().InvokeMember("OpenDatabase", "InvokeMethod", $null, $installer, @($path, 0))
+        $query = "SELECT * FROM Property WHERE Property = 'ProductName'"
+        $view = $database.GetType().InvokeMember("OpenView", "InvokeMethod", $null, $database, $query)
+        $view.GetType().InvokeMember("Execute", "InvokeMethod", $null, $view, $null) | Out-Null
+        $record = $view.GetType().InvokeMember("Fetch", "InvokeMethod", $null, $view, $null)
+        $name = $record.GetType().InvokeMember("StringData", "GetProperty", $null, $record, 2)
+        return $name.Trim()
+    } catch {
+        throw "Failed to get MSI file version the error was: {0}." -f $_
+    } finally {
+        [Void][System.Runtime.InteropServices.Marshal]::ReleaseComObject($installer)
+    }
+}
+
+function Set-ConfigSetting {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$customSettings,
+        [Parameter(Mandatory=$true)]
+        [string]$parentPath,
+        [Parameter(Mandatory=$true)]
+        [string] $leafName,
+        [Parameter(Mandatory=$true)]
+        [xml]$customConfig
+    )
+
+    $customSettingsArray = $customSettings -split ","
+
+    foreach ($customSetting in $customSettingsArray) {
+        $customSettingArray = $customSetting -split "="
+        $customSettingKey = $customSettingArray[0]
+        $customSettingValue = $customSettingArray[1]
+        
+        if ($customConfig.SelectSingleNode("$parentPath/$leafName[@key='$customSettingKey']") -eq $null) {
+            Write-Host "Creating $customSettingKey and setting it to $customSettingValue"
+            [xml] $tmpDoc = [xml] ""
+            $tmpDoc.LoadXml("<add key='$customSettingKey' value='$customSettingValue' />") | Out-Null
+            $tmpNode = $customConfig.ImportNode($tmpDoc.get_DocumentElement(), $true)
+            $customConfig.SelectSingleNode($parentPath).AppendChild($tmpNode)
+        } else {
+            Write-Host "Setting $customSettingKey to $customSettingValue"
+            $customConfig.SelectSingleNode("$parentPath/$leafName[@key='$customSettingKey']").Value = "$customSettingValue"
+        }
+    }
 }

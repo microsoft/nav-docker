@@ -34,26 +34,22 @@ Copy-ItemMultiDest "$roleTailoredClientFolder\System.Collections.Immutable.dll" 
 Copy-ItemMultiDest "$roleTailoredClientFolder\Add-ins"                                                          -Destination "$ClickOnceApplicationFilesDirectoryWin\Add-ins", "$ClickOnceApplicationFilesDirectoryFinsql\Add-ins" -Recurse
 Copy-ItemMultiDest "$roleTailoredClientFolder\Images"                                                           -Destination "$ClickOnceApplicationFilesDirectoryWin\Images", "$ClickOnceApplicationFilesDirectoryFinsql\Images" -Recurse
 
-Copy-Item "$roleTailoredClientFolder\finsql.exe"                                                                -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
-Copy-Item "$roleTailoredClientFolder\finsql.exe.config"                                                         -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
-Copy-Item "$roleTailoredClientFolder\fin.stx"                                                                   -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
-Copy-Item "$roleTailoredClientFolder\fin.etx"                                                                   -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
-Copy-Item "$roleTailoredClientFolder\Cronus.flf"                                                                -Destination "$ClickOnceApplicationFilesDirectoryFinsql\CRONUS.FLF"
-if (Test-Path "$roleTailoredClientFolder\Commandline.dll") {
-    Copy-Item "$roleTailoredClientFolder\Commandline.dll"                                                       -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
-}
-Copy-Item "$roleTailoredClientFolder\Finhlink.exe"                                                              -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
-Copy-Item "$roleTailoredClientFolder\ndbcs.dll"                                                                 -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
-Copy-Item "$roleTailoredClientFolder\NSObjectXProxy.dll"                                                        -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
-Copy-Item "$roleTailoredClientFolder\fin.etx"                                                                   -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
-Copy-Item "$roleTailoredClientFolder\ROTAccess.dll"                                                             -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
-Copy-Item "$roleTailoredClientFolder\System.Reflection.Metadata.dll"                                            -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
-if (Test-Path "$roleTailoredClientFolder\System.Spatial.dll") {
-    Copy-Item "$roleTailoredClientFolder\System.Spatial.dll"                                                    -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
-}
-Copy-Item "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.DotNetBridge.dll"                                   -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
-Copy-Item "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Language.dll"                                       -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
-Copy-Item "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Types.dll"                                          -Destination "$ClickOnceApplicationFilesDirectoryFinsql"
+Copy-Item "$roleTailoredClientFolder\finsql.exe"                                                                -Destination "$ClickOnceApplicationFilesDirectoryFinsql" -ErrorAction Ignore
+Copy-Item "$roleTailoredClientFolder\finsql.exe.config"                                                         -Destination "$ClickOnceApplicationFilesDirectoryFinsql" -ErrorAction Ignore
+Copy-Item "$roleTailoredClientFolder\fin.stx"                                                                   -Destination "$ClickOnceApplicationFilesDirectoryFinsql" -ErrorAction Ignore
+Copy-Item "$roleTailoredClientFolder\fin.etx"                                                                   -Destination "$ClickOnceApplicationFilesDirectoryFinsql" -ErrorAction Ignore
+Copy-Item "$roleTailoredClientFolder\Cronus.flf"                                                                -Destination "$ClickOnceApplicationFilesDirectoryFinsql" -ErrorAction Ignore
+Copy-Item "$roleTailoredClientFolder\Commandline.dll"                                                           -Destination "$ClickOnceApplicationFilesDirectoryFinsql" -ErrorAction Ignore
+Copy-Item "$roleTailoredClientFolder\Finhlink.exe"                                                              -Destination "$ClickOnceApplicationFilesDirectoryFinsql" -ErrorAction Ignore
+Copy-Item "$roleTailoredClientFolder\ndbcs.dll"                                                                 -Destination "$ClickOnceApplicationFilesDirectoryFinsql" -ErrorAction Ignore
+Copy-Item "$roleTailoredClientFolder\NSObjectXProxy.dll"                                                        -Destination "$ClickOnceApplicationFilesDirectoryFinsql" -ErrorAction Ignore
+Copy-Item "$roleTailoredClientFolder\fin.etx"                                                                   -Destination "$ClickOnceApplicationFilesDirectoryFinsql" -ErrorAction Ignore
+Copy-Item "$roleTailoredClientFolder\ROTAccess.dll"                                                             -Destination "$ClickOnceApplicationFilesDirectoryFinsql" -ErrorAction Ignore
+Copy-Item "$roleTailoredClientFolder\System.Reflection.Metadata.dll"                                            -Destination "$ClickOnceApplicationFilesDirectoryFinsql" -ErrorAction Ignore
+Copy-Item "$roleTailoredClientFolder\System.Spatial.dll"                                                        -Destination "$ClickOnceApplicationFilesDirectoryFinsql" -ErrorAction Ignore
+Copy-Item "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.DotNetBridge.dll"                                   -Destination "$ClickOnceApplicationFilesDirectoryFinsql" -ErrorAction Ignore
+Copy-Item "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Language.dll"                                       -Destination "$ClickOnceApplicationFilesDirectoryFinsql" -ErrorAction Ignore
+Copy-Item "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Types.dll"                                          -Destination "$ClickOnceApplicationFilesDirectoryFinsql" -ErrorAction Ignore
 
 Get-ChildItem -Path "$roleTailoredClientFolder\??-??" -Directory | % {
     $Name = $_.Name
