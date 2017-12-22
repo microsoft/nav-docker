@@ -14,6 +14,21 @@ Write-Host "Modifying NAV Service Tier Config File with Instance Specific Settin
 $CustomConfigFile =  Join-Path $ServiceTierFolder "CustomSettings.config"
 $CustomConfig = [xml](Get-Content $CustomConfigFile)
 
+$customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseServer']").Value = $databaseServer
+$customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseInstance']").Value = $databaseInstance
+$customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseName']").Value = "$databaseName"
+$customConfig.SelectSingleNode("//appSettings/add[@key='ServerInstance']").Value = "NAV"
+$customConfig.SelectSingleNode("//appSettings/add[@key='ManagementServicesPort']").Value = "7045"
+$customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesPort']").Value = "7046"
+$customConfig.SelectSingleNode("//appSettings/add[@key='SOAPServicesPort']").Value = "7047"
+$customConfig.SelectSingleNode("//appSettings/add[@key='ODataServicesPort']").Value = "7048"
+$customConfig.SelectSingleNode("//appSettings/add[@key='DefaultClient']").Value = "Web"
+
+$taskSchedulerKeyExists = ($customConfig.SelectSingleNode("//appSettings/add[@key='EnableTaskScheduler']") -ne $null)
+if ($taskSchedulerKeyExists) {
+    $customConfig.SelectSingleNode("//appSettings/add[@key='EnableTaskScheduler']").Value = "false"
+}
+
 $customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesCredentialType']").Value = $auth
 if ($WebClient -ne "N") {
     $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value = "$protocol$publicDnsName$publicwebClientPort/NAV/WebClient/"
@@ -34,6 +49,22 @@ if ($developerServicesKeyExists) {
     $customConfig.SelectSingleNode("//appSettings/add[@key='DeveloperServicesEnabled']").Value = "true"
     $CustomConfig.SelectSingleNode("//appSettings/add[@key='DeveloperServicesSSLEnabled']").Value = $servicesUseSSL.ToString().ToLower()
 }
+$enableSymbolLoadingAtServerStartupKeyExists = ($customConfig.SelectSingleNode("//appSettings/add[@key='EnableSymbolLoadingAtServerStartup']") -ne $null)
+if ($enableSymbolLoadingAtServerStartupKeyExists) {
+    $customConfig.SelectSingleNode("//appSettings/add[@key='EnableSymbolLoadingAtServerStartup']").Value = "$($enableSymbolLoadingAtServerStartup -eq $true)"
+}
+
+# Optional enable the API Services
+$apiServicesEnabledExists = ($customConfig.SelectSingleNode("//appSettings/add[@key='ApiServicesEnabled']") -ne $null)
+if (($enableApiServices -ne $null) -and $apiServicesEnabledExists) {
+    $customConfig.SelectSingleNode("//appSettings/add[@key='ApiServicesEnabled']").Value = "$($enableApiServices -eq $true)"
+}
+
+if ($customNavSettings -ne "") {
+    Write-Host "Modifying NAV Service Tier Config File with settings from environment variable"    
+    Set-ConfigSetting -customSettings $customNavSettings -parentPath "//appSettings" -leafName "add" -customConfig $CustomConfig
+}
+
 $CustomConfig.Save($CustomConfigFile)
 
 7045,7047,7048,7049 | % {
