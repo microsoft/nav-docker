@@ -34,6 +34,22 @@ Copy-ItemMultiDest "$roleTailoredClientFolder\System.Collections.Immutable.dll" 
 Copy-ItemMultiDest "$roleTailoredClientFolder\Add-ins"                                                          -Destination "$ClickOnceApplicationFilesDirectoryWin\Add-ins", "$ClickOnceApplicationFilesDirectoryFinsql\Add-ins" -Recurse
 Copy-ItemMultiDest "$roleTailoredClientFolder\Images"                                                           -Destination "$ClickOnceApplicationFilesDirectoryWin\Images", "$ClickOnceApplicationFilesDirectoryFinsql\Images" -Recurse
 
+Copy-ItemMultiDest "$roleTailoredClientFolder\Microsoft.IO.RecyclableMemoryStream.dll"                          -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
+Copy-ItemMultiDest "$roleTailoredClientFolder\Microsoft.ReportViewer.Common.dll"                                -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
+Copy-ItemMultiDest "$roleTailoredClientFolder\Microsoft.ReportViewer.Common.resources.dll"                      -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
+Copy-ItemMultiDest "$roleTailoredClientFolder\Microsoft.ReportViewer.DataVisualization.dll"                     -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
+Copy-ItemMultiDest "$roleTailoredClientFolder\Microsoft.ReportViewer.DataVisualization.resources.dll"           -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
+Copy-ItemMultiDest "$roleTailoredClientFolder\Microsoft.ReportViewer.Design.dll"                                -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"  
+Copy-ItemMultiDest "$roleTailoredClientFolder\Microsoft.ReportViewer.Design.resources.dll"                      -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
+Copy-ItemMultiDest "$roleTailoredClientFolder\Microsoft.ReportViewer.ProcessingObjectModel.dll"                 -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
+Copy-ItemMultiDest "$roleTailoredClientFolder\Microsoft.ReportViewer.WebDesign.dll"                             -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
+Copy-ItemMultiDest "$roleTailoredClientFolder\Microsoft.ReportViewer.WebDesign.resources.dll"                   -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
+Copy-ItemMultiDest "$roleTailoredClientFolder\Microsoft.ReportViewer.WebForms.dll"                              -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
+Copy-ItemMultiDest "$roleTailoredClientFolder\Microsoft.ReportViewer.WebForms.resources.dll"                    -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
+Copy-ItemMultiDest "$roleTailoredClientFolder\Microsoft.ReportViewer.WinForms.dll"                              -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
+Copy-ItemMultiDest "$roleTailoredClientFolder\Microsoft.ReportViewer.WinForms.resources.dll"                    -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
+Copy-ItemMultiDest "$roleTailoredClientFolder\Microsoft.SqlServer.Types.dll"                                    -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
+
 Copy-Item "$roleTailoredClientFolder\finsql.exe"                                                                -Destination "$ClickOnceApplicationFilesDirectoryFinsql" -ErrorAction Ignore
 Copy-Item "$roleTailoredClientFolder\finsql.exe.config"                                                         -Destination "$ClickOnceApplicationFilesDirectoryFinsql" -ErrorAction Ignore
 Copy-Item "$roleTailoredClientFolder\fin.stx"                                                                   -Destination "$ClickOnceApplicationFilesDirectoryFinsql" -ErrorAction Ignore

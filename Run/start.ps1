@@ -73,7 +73,7 @@ try {
             Write-Host "Setting up folders took $timespend seconds"
         }
     
-        if (!(Test-Path "C:\Program Files\Microsoft Dynamics NAV" -PathType Container)) {
+        if (!(Test-Path "C:\Program Files\Microsoft Dynamics NAV\*\Service\*.exe" -PathType Leaf)) {
     
             if (!(Test-Path $navDvdPath -PathType Container)) {
                 throw "You must share a DVD folder to $navDvdPath to run the generic image"

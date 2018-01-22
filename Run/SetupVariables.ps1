@@ -36,7 +36,7 @@ if ("$env:databasePassword" -ne "") {
 if ("$env:encryptionPassword" -ne "") {
     $EncryptionSecurePassword = ConvertTo-SecureString -String "$env:encryptionPassword" -AsPlainText -Force
 } elseif ("$env:encryptionSecurepassword" -ne "" -and "$env:passwordKeyFile" -ne "") {
-    $EncryptionSecurePassword = ConvertTo-SecureString -String "$env:databaseSecurepassword" -Key (Get-Content -Path "$env:passwordKeyFile")
+    $EncryptionSecurePassword = ConvertTo-SecureString -String "$env:encryptionSecurepassword" -Key (Get-Content -Path "$env:passwordKeyFile")
 } else {
     $EncryptionSecurePassword = ConvertTo-SecureString -String (Get-RandomPassword) -AsPlainText -Force
 }
@@ -62,6 +62,23 @@ if ($env:RemovePasswordKeyFile -ne "N" -and "$env:passwordKeyFile" -ne "") {
 Remove-Item env:\passwordKeyFile -ErrorAction Ignore
 
 $licensefile = "$env:licensefile"
+
+$appBacpac = "$env:appBacpac"
+$tenantBacpac = "$env:tenantBacpac"
+$multitenant = ("$env:multitenant" -eq "Y")
+
+if ("$appBacpac" -ne "" -and "$tenantBacpac" -ne "") {
+    $multitenant = $true
+}
+
+if ($multitenant) {
+    $TenantId = "default"
+    $tenantParam = @{ "Tenant" = "$tenantId" }
+    $webTenantParam = "?tenant=$tenantId"
+} else {
+    $tenantParam = @{}
+    $webTenantParam = ""
+}
 
 $bakfile = "$env:bakfile"
 if ($bakfile -ne "") {

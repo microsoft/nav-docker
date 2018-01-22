@@ -23,6 +23,7 @@ $customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesPort']").V
 $customConfig.SelectSingleNode("//appSettings/add[@key='SOAPServicesPort']").Value = "7047"
 $customConfig.SelectSingleNode("//appSettings/add[@key='ODataServicesPort']").Value = "7048"
 $customConfig.SelectSingleNode("//appSettings/add[@key='DefaultClient']").Value = "Web"
+$customConfig.SelectSingleNode("//appSettings/add[@key='Multitenant']").Value = "$multitenant"
 
 $taskSchedulerKeyExists = ($customConfig.SelectSingleNode("//appSettings/add[@key='EnableTaskScheduler']") -ne $null)
 if ($taskSchedulerKeyExists) {

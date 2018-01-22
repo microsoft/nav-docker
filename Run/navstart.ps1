@@ -125,6 +125,11 @@ if ($usingLocalSQLServer) {
     . (Get-MyFilePath "SetupLicense.ps1")
 }
 
+if ($multitenant) {
+    . (Get-MyFilePath "SetupTenant.ps1")
+}
+
+
 $wwwRootPath = Get-WWWRootPath
 $httpPath = Join-Path $wwwRootPath "http"
 
@@ -170,7 +175,7 @@ Write-Host "Container Hostname  : $hostname"
 Write-Host "Container Dns Name  : $publicDnsName"
 if ($webClient -ne "N") {
     $publicWebBaseUrl = $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value
-    Write-Host "Web Client          : $publicWebBaseUrl"
+    Write-Host "Web Client          : $publicWebBaseUrl$webTenantParam"
 }
 if ($auth -ne "Windows" -and $usingLocalSQLServer -and !$passwordSpecified -and !$restartingInstance) {
     Write-Host "NAV Admin Username  : $username"
@@ -180,9 +185,12 @@ if ($httpSite -ne "N") {
     if (Test-Path -Path (Join-Path $httpPath "*.vsix")) {
         Write-Host "Dev. Server         : $protocol$publicDnsName"
         Write-Host "Dev. ServerInstance : NAV"
+        if ($multitenant) {
+            Write-Host "Dev. Server Tenant  : $tenantId"
+        }
     }
     if ($clickOnce -eq "Y") {
-        Write-Host "ClickOnce Manifest  : http://${publicDnsName}:$publicFileSharePort/NAV"
+        Write-Host "ClickOnce Manifest  : $clickOnceWebSiteUrl"
     }
 }
 

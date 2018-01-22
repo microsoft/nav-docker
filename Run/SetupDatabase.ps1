@@ -1,5 +1,8 @@
 ﻿# INPUT
+#     $restartingInstance (optional)
 #     $bakFile (optional)
+#     $appBacpac and tenantBacpac (optional)
+#     $databaseCredentials (optional)
 #
 # OUTPUT
 #     $databaseServer
@@ -24,6 +27,7 @@ if ($restartingInstance) {
         (New-Object System.Net.WebClient).DownloadFile($bakfileurl, $databaseFile)
     
     } else {
+
         Write-Host "Using Database .bak file '$bakfile'"
         if (!(Test-Path -Path $bakfile -PathType Leaf)) {
         	Write-Error "ERROR: Database Backup File not found."
@@ -46,6 +50,42 @@ if ($restartingInstance) {
                     -FilePath "$databaseFile" `
                     -DestinationPath "$databaseFolder" `
                     -Timeout $SqlTimeout | Out-Null
+
+    if ($multitenant) {
+        Copy-NavDatabase -SourceDatabaseName $databaseName -DestinationDatabaseName "tenant"
+        Remove-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -Force | Out-Null
+    }
+
+} elseif ("$appBacpac" -ne "" -and "$tenantBacpac" -ne "") {
+
+    # appBacpac and tenantBacpac specified - restore and use
+    
+    $dbName = "app"
+    $appBacpac, $tenantBacpac | % {
+        if ($_.StartsWith("https://") -or $_.StartsWith("http://"))
+        {
+            $databaseFile = (Join-Path $runPath "${dbName}.bacpac")
+            Write-Host "Downloading ${dbName}.bacpac"
+            (New-Object System.Net.WebClient).DownloadFile($_, $databaseFile)
+        } else {
+            if (!(Test-Path -Path $_ -PathType Leaf)) {
+        	    Write-Error "ERROR: Database Backup File not found."
+                Write-Error "The file must be uploaded to the container or available on a share."
+                exit 1
+            }
+            $databaseFile = $_
+        }
+        Restore-BacpacWithRetry -Bacpac $databaseFile -DatabaseName $dbName
+        $dbName = "tenant"
+    }
+
+    $databaseServer = "localhost"
+    $databaseInstance = "SQLEXPRESS"
+    $databaseName = "app"
+
+    if ("$licenseFile" -eq "") {
+        $licenseFile = Join-Path $serviceTierFolder "Cronus.flf"
+    }
 
 } elseif ($databaseCredentials) {
 
@@ -72,5 +112,11 @@ if ($restartingInstance) {
                             -Force
     
     Set-NavServerConfiguration -serverinstance "NAV" -databaseCredentials $DatabaseCredentials -WarningAction SilentlyContinue
+
+} elseif ($databaseServer -eq "localhost" -and $databaseInstance -eq "SQLEXPRESS" -and $multitenant) {
+    
+    Copy-NavDatabase -SourceDatabaseName $databaseName -DestinationDatabaseName "tenant"
+    Remove-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -Force | Out-Null
+
 }
 

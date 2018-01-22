@@ -66,22 +66,26 @@ function Restore-BacpacWithRetry
 {
 	Param
 	(
-		[Parameter(Mandatory=$True)]
-		[string]$Bacpac,
+        [Parameter(Mandatory=$false)]
+        [string]$DatabaseServer = "localhost",
+        [Parameter(Mandatory=$false)]
+        [string]$DatabaseInstance = "SQLEXPRESS",
 		[Parameter(Mandatory=$true)]
 		[string]$DatabaseName,
+		[Parameter(Mandatory=$True)]
+		[string]$Bacpac,
 		[Parameter(Mandatory=$false)]
 		[int]$maxattempts = 10
     )
 
     Add-Type -path "C:\Program Files (x86)\Microsoft SQL Server\130\DAC\bin\Microsoft.SqlServer.Dac.dll"
-    $conn = "Data Source=localhost\SQLEXPRESS;Initial Catalog=master;Connection Timeout=0;Integrated Security=True;"
+    $conn = "Data Source=$DatabaseServer\$DatabaseInstance;Initial Catalog=master;Connection Timeout=0;Integrated Security=True;"
 
     $attempt = 0
     while ($true) {
         try {
             $attempt++
-            Write-Host "Restore Database from $Bacpac as $DatabaseName"
+            Write-Host "Restoring Database from $Bacpac as $DatabaseName"
             $AppimportBac = New-Object Microsoft.SqlServer.Dac.DacServices $conn
             $ApploadBac = [Microsoft.SqlServer.Dac.BacPackage]::Load($Bacpac)
             $AppimportBac.ImportBacpac($ApploadBac, $DatabaseName)
@@ -97,15 +101,249 @@ function Restore-BacpacWithRetry
     }
 }
 
-function Get-NavDatabaseFiles([string]$DatabaseName)
+function Get-NavDatabaseFiles
 {
-    Invoke-sqlcmd -ea stop -ServerInstance 'localhost\SQLEXPRESS' -QueryTimeout 0 -Query "SELECT f.physical_name FROM sys.sysdatabases db INNER JOIN sys.master_files f ON f.database_id = db.dbid WHERE db.name = '$DatabaseName'" | % {
+    Param
+    (
+        [Parameter(Mandatory=$true)]
+        [string]$DatabaseName
+    )
+
+    Invoke-SqlCmdWithRetry -Query "SELECT f.physical_name FROM sys.sysdatabases db INNER JOIN sys.master_files f ON f.database_id = db.dbid WHERE db.name = '$DatabaseName'" | % {
         $file = $_.physical_name
         if (Test-Path $file)
         {
             $file = Resolve-Path $file
         }
         $file
+    }
+}
+
+function Copy-NavDatabase
+{
+    Param
+    (
+        [Parameter(Mandatory=$false)]
+        [string]$DatabaseServer = "localhost",
+        [Parameter(Mandatory=$false)]
+        [string]$DatabaseInstance = "SQLEXPRESS",
+        [Parameter(Mandatory=$false)]
+        [System.Management.Automation.PSCredential]$databaseCredentials,
+        [Parameter(Mandatory=$true)]
+        [string]$SourceDatabaseName,
+        [Parameter(Mandatory=$true)]
+        [string]$DestinationDatabaseName
+    )
+
+    Write-Host "Copying NAV Database on $databaseServer\$databaseInstance from $SourceDatabaseName to $DestinationDatabaseName"
+
+    if (Test-NavDatabase -DatabaseServer $databaseServer `
+                         -DatabaseInstance $databaseInstance `
+                         -DatabaseCredentials $databaseCredentials `
+                         -DatabaseName $DestinationDatabaseName)
+    {
+        Write-Host "Removing Destination Database on $databaseServer\$databaseInstance [$DestinationDatabaseName]"
+        Remove-NavDatabase -DatabaseServer $databaseServer `
+                           -DatabaseInstance $databaseInstance `
+                           -DatabaseCredentials $databaseCredentials `
+                           -DatabaseName $DestinationDatabaseName
+    }
+
+    if ($DatabaseServer -eq "localhost" -and $DatabaseInstance -eq "SQLEXPRESS") {
+
+        try
+        {
+            Write-Host "Taking database [$SourceDatabaseName] offline"
+            Invoke-SqlCmdWithRetry -Query ("ALTER DATABASE [{0}] SET OFFLINE WITH ROLLBACK IMMEDIATE" -f $SourceDatabaseName)
+    
+            Write-Host "Copying database files"
+            $files = ""
+            Get-NavDatabaseFiles -DatabaseName $SourceDatabaseName | % {
+                $FileInfo = Get-Item -Path $_
+                $DestinationFile = "{0}\{1}{2}" -f $FileInfo.DirectoryName, $DestinationDatabaseName, $FileInfo.Extension
+                Copy-Item -Path $FileInfo.FullName -Destination $DestinationFile -Force
+                if ("$files" -ne "") { $files += ", " }
+                $Files += "(FILENAME = N'$DestinationFile')"
+            }
+    
+            Write-Host "Attaching files as new Database [$DestinationDatabaseName]"
+            Invoke-SqlCmdWithRetry -Query ("CREATE DATABASE [{0}] ON {1} FOR ATTACH" -f $DestinationDatabaseName, $Files.ToString())
+        }
+        finally
+        {
+            Write-Host "Putting database [$SourceDatabaseName] back online"
+            Invoke-SqlCmdWithRetry -Query ("ALTER DATABASE [{0}] SET ONLINE" -f $SourceDatabaseName)
+        }
+
+    } else {
+
+        Write-Host "Creating [$DestinationDatabaseName] on $DatabaseName\$DatabaseInstance"
+        Invoke-SqlCmdWithRetry -DatabaseServer $databaseServer `
+                               -DatabaseInstance $databaseInstance `
+                               -DatabaseCredentials $databaseCredentials `
+                               -Query "CREATE Database [$DestinationDatabaseName] AS COPY OF [$SourceDatabaseName];"
+        
+        # Wait for the Database to become ready
+        Start-Sleep -Seconds 30
+    }
+}
+
+function Test-NavDatabase
+{
+    Param
+    (
+        [Parameter(Mandatory=$false)]
+        [string]$DatabaseServer = "localhost",
+        [Parameter(Mandatory=$false)]
+        [string]$DatabaseInstance = "SQLEXPRESS",
+        [Parameter(Mandatory=$false)]
+        [System.Management.Automation.PSCredential]$databaseCredentials,
+        [Parameter(Mandatory=$true)]
+        [string]$DatabaseName
+    )
+
+    $sqlCommandText = @"
+USE MASTER
+SELECT '1' FROM SYS.DATABASES WHERE NAME = '$DatabaseName'
+GO
+"@
+
+    return ((Invoke-SqlCmdWithRetry -DatabaseServer $databaseServer `
+                                    -DatabaseInstance $databaseInstance `
+                                    -DatabaseCredentials $databaseCredentials `
+                                    -Query $sqlCommandText) -ne $null)
+}
+
+function Remove-NavDatabase
+{
+    Param
+    (
+        [Parameter(Mandatory=$false)]
+        [string]$DatabaseServer = "localhost",
+        [Parameter(Mandatory=$false)]
+        [string]$DatabaseInstance = "SQLEXPRESS",
+        [Parameter(Mandatory=$false)]
+        [System.Management.Automation.PSCredential]$databaseCredentials,
+        [Parameter(Mandatory=$true)]
+        [string]$DatabaseName
+    )
+
+    Write-Host "Removing Database [$DatabaseName]"
+ 
+    $DatabaseFiles = @()
+    if ($DatabaseServer -eq "localhost") {
+        # Get database files in case they are not removed by the DROP
+        $DatabaseFiles = Get-NavDatabaseFiles -DatabaseName $DatabaseName
+
+        # SQL Express - take database offline
+        Invoke-SqlCmdWithRetry -Query "ALTER DATABASE [$DatabaseName] SET OFFLINE WITH ROLLBACK IMMEDIATE"
+    }
+ 
+    Invoke-SqlCmdWithRetry -DatabaseServer $databaseServer `
+                           -DatabaseInstance $databaseInstance `
+                           -DatabaseCredentials $databaseCredentials `
+                           -Query "DROP DATABASE [$DatabaseName]"
+ 
+    # According to MSDN database files are not removed after dropping an offline database, we need to manually delete them
+    $DatabaseFiles | ? { Test-Path $_ } | Remove-Item -Force
+
+}
+
+function Mount-NavDatabase
+{
+    Param
+    (
+        [Parameter(Mandatory=$false)]
+        [string]$ServerInstance = "NAV",
+        [Parameter(Mandatory=$true)]
+        [string]$TenantId,
+        [Parameter(Mandatory=$false)]
+        [string]$DatabaseServer = "localhost",
+        [Parameter(Mandatory=$false)]
+        [string]$DatabaseInstance = "SQLEXPRESS",
+        [Parameter(Mandatory=$true)]
+        [string]$DatabaseName,
+        [Parameter(Mandatory=$false)]
+        [System.Management.Automation.PSCredential]$databaseCredentials,
+        [Parameter(Mandatory=$false)]
+        [string[]]$AlternateId = @()
+    )
+
+    Write-Host "Mounting NAV Database for $TenantID on server $DatabaseServer\$DatabaseInstance"
+    
+    $Params = @{}
+    if ($TenantId -eq "default") {
+        $Params += @{"AllowAppDatabaseWrite"=$true }
+    }
+    if ($DatabaseCredentials) {
+        $Params = @{ "DatabaseCredentials"=$DatabaseCredentials; "Force"=$true }
+    }
+
+    Mount-NAVTenant -ServerInstance $ServerInstance `
+                    -DatabaseServer $DatabaseServer `
+                    -DatabaseInstance $DatabaseInstance `
+                    -DatabaseName $DatabaseName `
+                    -Id $TenantID `
+                    -AlternateId $AlternateId `
+                    -OverwriteTenantIdInDatabase @Params
+}
+
+function Invoke-SqlCmdWithRetry
+{
+    Param
+    (
+        [Parameter(Mandatory=$false)]
+        [string]$DatabaseServer = "localhost",
+        [Parameter(Mandatory=$false)]
+        [string]$DatabaseInstance = "SQLEXPRESS",
+        [Parameter(Mandatory=$false)]
+        [string]$DatabaseName,
+        [Parameter(Mandatory=$false)]
+        [System.Management.Automation.PSCredential]$databaseCredentials,
+        [Parameter(Mandatory=$true)]
+        [string]$Query
+    )
+
+    $DatabaseServerInstance = "$DatabaseServer"
+    if ("$DatabaseInstance" -ne "") {
+        $DatabaseServerInstance += "\$DatabaseInstance"
+    }
+    $DatabaseServerParams = @{
+        'ServerInstance' = $DatabaseServerInstance
+        'QueryTimeout' = 0
+        'ea' = 'stop'
+    }
+    if ($databaseCredentials) {
+        $DatabaseServerParams = @{ 'Username' = $databaseCredentials.UserName; 'Password' = ([System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($databaseCredentials.Password))) }
+    }
+
+    $maxattempts = 10
+    if ($DatabaseServer -eq 'localhost') {
+        $maxattempts = 1
+    }
+    $attempt = 1
+    $success = $false
+    while (!$success) {
+        try
+        {
+            if ($DatabaseName) {
+                Invoke-SqlCmd @DatabaseServerParams -Database $DatabaseName -Query $Query
+            } else {
+                Invoke-SqlCmd @DatabaseServerParams -Query $Query
+            }
+            $success = $true
+        }
+        catch {
+            if ($attempt -ge $maxattempts) {
+                Write-Host -ForegroundColor Red "Error when running: $Query"
+                throw    
+            }
+            Write-Host -ForegroundColor Yellow  "Warning, exception when running: $Query"
+            $waittime = (Get-Random -Minimum 1 -Maximum 3)*60
+            Start-Sleep -Seconds $waittime
+            Write-Host "Retrying..."
+            $attempt = $attempt + 1
+        }
     }
 }
 
