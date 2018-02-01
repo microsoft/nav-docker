@@ -286,6 +286,10 @@ function Mount-NavDatabase
                     -Id $TenantID `
                     -AlternateId $AlternateId `
                     -OverwriteTenantIdInDatabase @Params
+    
+    Sync-NAVTenant  -ServerInstance $ServerInstance `
+                    -Tenant $TenantId `
+                    -Force
 }
 
 function Invoke-SqlCmdWithRetry
