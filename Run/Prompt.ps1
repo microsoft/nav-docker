@@ -1,4 +1,9 @@
-﻿$serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName
+﻿param
+(
+    [switch]$silent
+)
+
+$serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName
 if (Test-Path "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1") {
     Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1" -wa SilentlyContinue
 } else {
@@ -21,5 +26,7 @@ if (Test-Path "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Model.Tools.psd1
 }
 
 cd $PSScriptRoot
-Write-Host -ForegroundColor Green "Welcome to the NAV Container PowerShell prompt"
-Write-Host
+if (!$silent) {
+    Write-Host -ForegroundColor Green "Welcome to the NAV Container PowerShell prompt"
+    Write-Host
+}
