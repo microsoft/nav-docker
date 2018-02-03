@@ -17,8 +17,7 @@ function Get-MyFilePath([string]$FileName)
 }
 
 if ((Get-ComputerInfo).CsTotalPhysicalMemory -lt 2000000000) {
-    Write-Host -ForegroundColor Red "Not enough memory available for the NAV on Docker Container. Please assign at least 2Gb memory to the container."
-    return
+    throw "At least 2Gb memory needs to be assigned to the NAV on Docker Container."
 }
 
 $Source = @"
