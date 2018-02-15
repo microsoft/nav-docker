@@ -174,7 +174,6 @@ Write-Host "Container IP Address: $ip"
 Write-Host "Container Hostname  : $hostname"
 Write-Host "Container Dns Name  : $publicDnsName"
 if ($webClient -ne "N") {
-    $publicWebBaseUrl = $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value
     Write-Host "Web Client          : $publicWebBaseUrl$webTenantParam"
 }
 if ($auth -ne "Windows" -and $usingLocalSQLServer -and !$passwordSpecified -and !$restartingInstance) {

@@ -31,7 +31,11 @@ if ($multitenant) {
 }
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ServicesCertificateValidationEnabled']").value="false"
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ClientServicesPort']").value="$publicWinClientPort"
-$clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ACSUri']").value = ""
+$acsUri = $federationLoginEndpoint
+if (!($acsUri.ToLowerInvariant().Contains("%26wreply="))) {
+    $acsUri += "%26wreply=$publicWebBaseUrl"
+}
+$clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key=""ACSUri""]").value = "$acsUri"
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='DnsIdentity']").value = "$dnsIdentity"
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ClientServicesCredentialType']").value = "$Auth"
 

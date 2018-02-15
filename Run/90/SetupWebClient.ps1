@@ -154,6 +154,7 @@ New-NAVWebServerInstance -Server "localhost" `
                          -ClientServicesCredentialType $auth `
                          -ClientServicesPort 7046 `
                          -ServerInstance "NAV" `
+                         -ACSUri $federationLoginEndpoint `
                          -WebServerInstance "NAV"
                         
 if ($customWebSettings -ne "") {

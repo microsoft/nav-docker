@@ -17,7 +17,7 @@ if ($auth -eq "Windows") {
 } else {
     if (!(Get-NAVServerUser -ServerInstance NAV @tenantParam -ErrorAction Ignore | Where-Object { $_.UserName -eq $username })) {
         Write-Host "Creating NAV user"
-        New-NavServerUser -ServerInstance NAV @tenantParam -Username $username -Password $securePassword
+        New-NavServerUser -ServerInstance NAV @tenantParam -Username $username -Password $securePassword -AuthenticationEMail $authenticationEMail
         New-NavServerUserPermissionSet -ServerInstance NAV @tenantParam -username $username -PermissionSetId SUPER
     }
 }

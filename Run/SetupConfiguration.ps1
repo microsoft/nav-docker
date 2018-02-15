@@ -30,9 +30,21 @@ if ($taskSchedulerKeyExists) {
     $customConfig.SelectSingleNode("//appSettings/add[@key='EnableTaskScheduler']").Value = "false"
 }
 
+$developerServicesKeyExists = ($customConfig.SelectSingleNode("//appSettings/add[@key='DeveloperServicesPort']") -ne $null)
+if ($developerServicesKeyExists) {
+    $customConfig.SelectSingleNode("//appSettings/add[@key='DeveloperServicesPort']").Value = "7049"
+    $customConfig.SelectSingleNode("//appSettings/add[@key='DeveloperServicesEnabled']").Value = "true"
+    $CustomConfig.SelectSingleNode("//appSettings/add[@key='DeveloperServicesSSLEnabled']").Value = $servicesUseSSL.ToString().ToLower()
+}
+
 $customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesCredentialType']").Value = $auth
+if ($developerServicesKeyExists) {
+    $publicWebBaseUrl = "$protocol$publicDnsName$publicwebClientPort/NAV/"
+} else {
+    $publicWebBaseUrl = "$protocol$publicDnsName$publicwebClientPort/NAV/WebClient/"
+}
 if ($WebClient -ne "N") {
-    $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value = "$protocol$publicDnsName$publicwebClientPort/NAV/WebClient/"
+    $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value = $publicWebBaseUrl
 }
 $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicSOAPBaseUrl']").Value = "$protocol${publicDnsName}:$publicSoapPort/NAV/WS"
 $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicODataBaseUrl']").Value = "$protocol${publicDnsName}:$publicODataPort/NAV/OData"
@@ -44,12 +56,7 @@ if ($navUseSSL) {
 
 $CustomConfig.SelectSingleNode("//appSettings/add[@key='SOAPServicesSSLEnabled']").Value = $servicesUseSSL.ToString().ToLower()
 $CustomConfig.SelectSingleNode("//appSettings/add[@key='ODataServicesSSLEnabled']").Value = $servicesUseSSL.ToString().ToLower()
-$developerServicesKeyExists = ($customConfig.SelectSingleNode("//appSettings/add[@key='DeveloperServicesPort']") -ne $null)
-if ($developerServicesKeyExists) {
-    $customConfig.SelectSingleNode("//appSettings/add[@key='DeveloperServicesPort']").Value = "7049"
-    $customConfig.SelectSingleNode("//appSettings/add[@key='DeveloperServicesEnabled']").Value = "true"
-    $CustomConfig.SelectSingleNode("//appSettings/add[@key='DeveloperServicesSSLEnabled']").Value = $servicesUseSSL.ToString().ToLower()
-}
+
 $enableSymbolLoadingAtServerStartupKeyExists = ($customConfig.SelectSingleNode("//appSettings/add[@key='EnableSymbolLoadingAtServerStartup']") -ne $null)
 if ($enableSymbolLoadingAtServerStartupKeyExists) {
     $customConfig.SelectSingleNode("//appSettings/add[@key='EnableSymbolLoadingAtServerStartup']").Value = "$($enableSymbolLoadingAtServerStartup -eq $true)"
@@ -58,6 +65,24 @@ if ($enableSymbolLoadingAtServerStartupKeyExists) {
 if ($customNavSettings -ne "") {
     Write-Host "Modifying NAV Service Tier Config File with settings from environment variable"    
     Set-ConfigSetting -customSettings $customNavSettings -parentPath "//appSettings" -leafName "add" -customConfig $CustomConfig
+}
+
+if ($auth -eq "AccessControlService") {
+    if ($appIdUri -eq "") {
+        $appIdUri = "$publicWebBaseUrl"
+    }
+    if ($federationMetadata -eq "") {
+        $federationMetadata = "https://login.windows.net/Common/federationmetadata/2007-06/federationmetadata.xml"
+    }
+    if ($federationLoginEndpoint -eq "") {
+        $federationLoginEndpoint = "https://login.windows.net/Common/wsfed?wa=wsignin1.0%26wtrealm=$appIdUri"
+    }
+
+    $customConfig.SelectSingleNode("//appSettings/add[@key='AppIdUri']").Value = $appIdUri
+    $customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesFederationMetadataLocation']").Value = $federationMetadata
+    if ($customConfig.SelectSingleNode("//appSettings/add[@key='WSFederationLoginEndpoint']") -ne $null) {
+        $customConfig.SelectSingleNode("//appSettings/add[@key='WSFederationLoginEndpoint']").Value = $federationLoginEndpoint
+    }
 }
 
 $CustomConfig.Save($CustomConfigFile)

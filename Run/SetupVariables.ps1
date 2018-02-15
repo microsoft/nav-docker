@@ -16,6 +16,8 @@ if ($auth -eq "") {
     }
 } elseif ($auth -eq "windows") {
     $auth = "Windows"
+} elseif ($auth -eq "accesscontrolservice" -or $auth -eq "aad") {
+    $auth = "AccessControlService"
 } else {
     $auth = "NavUserPassword"
 }
@@ -29,14 +31,18 @@ if ($auth -ne "Windows") {
 $databaseCredentials = $null
 if ("$env:databasePassword" -ne "") {
     $databaseCredentials = New-Object PSCredential -ArgumentList "$env:databaseUserName", (ConvertTo-SecureString -String "$env:databasePassword" -AsPlainText -Force)
+    Remove-Item env:\databasePassword -ErrorAction Ignore
 } elseif ("$env:databaseSecurepassword" -ne "" -and "$env:passwordKeyFile" -ne "" -and $restartingInstance -eq $false) {
     $databaseCredentials = New-Object PSCredential -ArgumentList "$env:databaseUserName", (ConvertTo-SecureString -String "$env:databaseSecurepassword" -Key (Get-Content -Path "$env:passwordKeyFile"))
+    Remove-Item env:\databaseSecurePassword -ErrorAction Ignore
 }
 
 if ("$env:encryptionPassword" -ne "") {
     $EncryptionSecurePassword = ConvertTo-SecureString -String "$env:encryptionPassword" -AsPlainText -Force
+    Remove-Item env:\encryptionPassword -ErrorAction Ignore
 } elseif ("$env:encryptionSecurepassword" -ne "" -and "$env:passwordKeyFile" -ne "") {
     $EncryptionSecurePassword = ConvertTo-SecureString -String "$env:encryptionSecurepassword" -Key (Get-Content -Path "$env:passwordKeyFile")
+    Remove-Item env:\encryptionSecurePassword -ErrorAction Ignore
 } else {
     $EncryptionSecurePassword = ConvertTo-SecureString -String (Get-RandomPassword) -AsPlainText -Force
 }
@@ -140,6 +146,12 @@ if ($publicFileSharePort -eq "") { $publicFileSharePort = "8080" }
 if ($publicWinClientPort -eq "") { $publicWinClientPort = "7046" }
 if ($publicSoapPort      -eq "") { $publicSoapPort      = "7047" }
 if ($publicODataPort     -eq "") { $publicODataPort     = "7048" }
+
+# AccessControlService
+$appIdUri = "$env:appIdUri"
+$federationLoginEndpoint = "$env:federationLoginEndpoint"
+$federationMetadata = "$env:federationMetadata"
+$authenticationEMail = "$env:authenticationEMail"
 
 $locale = "$env:locale"
 if ($locale)  {
