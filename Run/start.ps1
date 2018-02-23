@@ -38,7 +38,7 @@ $Source = @"
 "@;
  
 Add-Type -TypeDefinition $Source -Language CSharp -WarningAction SilentlyContinue | Out-Null
-
+[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
 try {
 
