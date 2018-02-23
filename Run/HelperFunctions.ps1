@@ -135,14 +135,18 @@ function Copy-NavDatabase
         [string]$DestinationDatabaseName
     )
 
-    Write-Host "Copying NAV Database on $databaseServer\$databaseInstance from $SourceDatabaseName to $DestinationDatabaseName"
+    $DatabaseServerInstance = "$DatabaseServer"
+    if ("$DatabaseInstance" -ne "") {
+        $DatabaseServerInstance += "\$DatabaseInstance"
+    }
+
+    Write-Host "Copying NAV Database on $DatabaseServerInstance from $SourceDatabaseName to $DestinationDatabaseName"
 
     if (Test-NavDatabase -DatabaseServer $databaseServer `
                          -DatabaseInstance $databaseInstance `
                          -DatabaseCredentials $databaseCredentials `
                          -DatabaseName $DestinationDatabaseName)
     {
-        Write-Host "Removing Destination Database on $databaseServer\$databaseInstance [$DestinationDatabaseName]"
         Remove-NavDatabase -DatabaseServer $databaseServer `
                            -DatabaseInstance $databaseInstance `
                            -DatabaseCredentials $databaseCredentials `
@@ -153,7 +157,7 @@ function Copy-NavDatabase
 
         try
         {
-            Write-Host "Taking database [$SourceDatabaseName] offline"
+            Write-Host "Taking database $SourceDatabaseName offline"
             Invoke-SqlCmdWithRetry -Query ("ALTER DATABASE [{0}] SET OFFLINE WITH ROLLBACK IMMEDIATE" -f $SourceDatabaseName)
     
             Write-Host "Copying database files"
@@ -166,25 +170,38 @@ function Copy-NavDatabase
                 $Files += "(FILENAME = N'$DestinationFile')"
             }
     
-            Write-Host "Attaching files as new Database [$DestinationDatabaseName]"
+            Write-Host "Attaching files as new Database $DestinationDatabaseName"
             Invoke-SqlCmdWithRetry -Query ("CREATE DATABASE [{0}] ON {1} FOR ATTACH" -f $DestinationDatabaseName, $Files.ToString())
         }
         finally
         {
-            Write-Host "Putting database [$SourceDatabaseName] back online"
+            Write-Host "Putting database $SourceDatabaseName back online"
             Invoke-SqlCmdWithRetry -Query ("ALTER DATABASE [{0}] SET ONLINE" -f $SourceDatabaseName)
         }
 
     } else {
 
-        Write-Host "Creating [$DestinationDatabaseName] on $DatabaseName\$DatabaseInstance"
+        Write-Host "Creating $DestinationDatabaseName on $DatabaseServerInstance as copy of $SourceDatabaseName"
         Invoke-SqlCmdWithRetry -DatabaseServer $databaseServer `
                                -DatabaseInstance $databaseInstance `
                                -DatabaseCredentials $databaseCredentials `
                                -Query "CREATE Database [$DestinationDatabaseName] AS COPY OF [$SourceDatabaseName];"
         
-        # Wait for the Database to become ready
-        Start-Sleep -Seconds 30
+        $engineEdition = (Invoke-SqlCmdWithRetry -DatabaseServer $databaseServer `
+                                                 -DatabaseInstance $databaseInstance `
+                                                 -DatabaseCredentials $databaseCredentials `
+                                                 -Query "select SERVERPROPERTY('EngineEdition')").Column1
+        if ("$engineEdition" -eq "5") {
+            Write-Host "Waiting for Database copy to complete"
+            # Azure SQL - Wait for the Database to become ready
+            $sqlCommandText = "select * from sys.dm_database_copies"
+            while ((Invoke-SqlCmdWithRetry -DatabaseServer $databaseServer `
+                                    -DatabaseInstance $databaseInstance `
+                                    -DatabaseCredentials $databaseCredentials `
+                                    -Query $sqlCommandText) -ne $null) {
+                Start-Sleep -Seconds 10
+            }
+        }
     }
 }
 
@@ -228,7 +245,12 @@ function Remove-NavDatabase
         [string]$DatabaseName
     )
 
-    Write-Host "Removing Database [$DatabaseName]"
+    $DatabaseServerInstance = "$DatabaseServer"
+    if ("$DatabaseInstance" -ne "") {
+        $DatabaseServerInstance += "\$DatabaseInstance"
+    }
+
+    Write-Host "Removing Database $DatabaseName from $DatabaseServerInstance"
  
     $DatabaseFiles = @()
     if ($DatabaseServer -eq "localhost") {
@@ -269,14 +291,19 @@ function Mount-NavDatabase
         [string[]]$AlternateId = @()
     )
 
-    Write-Host "Mounting NAV Database for $TenantID on server $DatabaseServer\$DatabaseInstance"
+    $DatabaseServerInstance = "$DatabaseServer"
+    if ("$DatabaseInstance" -ne "") {
+        $DatabaseServerInstance += "\$DatabaseInstance"
+    }
+
+    Write-Host "Mounting NAV Database for $TenantID on server $DatabaseServerInstance"
     
     $Params = @{}
     if ($TenantId -eq "default") {
         $Params += @{"AllowAppDatabaseWrite"=$true }
     }
     if ($DatabaseCredentials) {
-        $Params = @{ "DatabaseCredentials"=$DatabaseCredentials; "Force"=$true }
+        $Params += @{ "DatabaseCredentials"=$DatabaseCredentials; "Force"=$true }
     }
 
     Mount-NAVTenant -ServerInstance $ServerInstance `
@@ -286,7 +313,8 @@ function Mount-NavDatabase
                     -Id $TenantID `
                     -AlternateId $AlternateId `
                     -OverwriteTenantIdInDatabase @Params
-    
+
+    Write-Host "Sync'ing NAV Tenant"    
     Sync-NAVTenant  -ServerInstance $ServerInstance `
                     -Tenant $TenantId `
                     -Force
@@ -318,7 +346,7 @@ function Invoke-SqlCmdWithRetry
         'ea' = 'stop'
     }
     if ($databaseCredentials) {
-        $DatabaseServerParams = @{ 'Username' = $databaseCredentials.UserName; 'Password' = ([System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($databaseCredentials.Password))) }
+        $DatabaseServerParams += @{ 'Username' = $databaseCredentials.UserName; 'Password' = ([System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($databaseCredentials.Password))) }
     }
 
     $maxattempts = 10
