@@ -101,9 +101,13 @@ if ($restartingInstance) {
     Set-NAVServerConfiguration -ServerInstance "NAV" -KeyName "EnableSqlConnectionEncryption" -KeyValue "true" -WarningAction SilentlyContinue
     Set-NAVServerConfiguration -ServerInstance "NAV" -KeyName "TrustSQLServerCertificate" -KeyValue "true" -WarningAction SilentlyContinue
 
+    $databaseServerInstance = $databaseServer
+    if ("$databaseInstance" -ne "") {
+        $databaseServerInstance += "\$databaseInstance"
+    }
     Write-Host "Import Encryption Key"
     Import-NAVEncryptionKey -ServerInstance NAV `
-                            -ApplicationDatabaseServer $databaseServer `
+                            -ApplicationDatabaseServer $databaseServerInstance `
                             -ApplicationDatabaseCredentials $DatabaseCredentials `
                             -ApplicationDatabaseName $DatabaseName `
                             -KeyPath $EncryptionKeyFile `
