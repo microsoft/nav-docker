@@ -121,9 +121,7 @@ if ((Get-Service -name $NavServiceName).Status -ne "Running") {
     Restart-Service -Name $NavServiceName -WarningAction Ignore
 }
 
-if ($usingLocalSQLServer) {
-    . (Get-MyFilePath "SetupLicense.ps1")
-}
+. (Get-MyFilePath "SetupLicense.ps1")
 
 if ($multitenant) {
     . (Get-MyFilePath "SetupTenant.ps1")

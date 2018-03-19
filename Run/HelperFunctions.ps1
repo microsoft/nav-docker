@@ -351,7 +351,7 @@ function Invoke-SqlCmdWithRetry
 
     $maxattempts = 10
     if ($DatabaseServer -eq 'localhost') {
-        $maxattempts = 1
+        $maxattempts = 3
     }
     $attempt = 1
     $success = $false
@@ -371,9 +371,12 @@ function Invoke-SqlCmdWithRetry
                 throw    
             }
             Write-Host -ForegroundColor Yellow  "Warning, exception when running: $Query"
-            $waittime = (Get-Random -Minimum 1 -Maximum 3)*60
-            Start-Sleep -Seconds $waittime
-            Write-Host "Retrying..."
+            Write-Host -NoNewline "Waiting"
+            1..$attempt*3 | % {
+                Start-Sleep -Seconds 10
+                Write-Host -NoNewline "."
+            }
+            Write-Host " - retrying"
             $attempt = $attempt + 1
         }
     }
