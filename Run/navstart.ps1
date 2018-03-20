@@ -46,13 +46,15 @@ set the environment variable ACCEPT_EULA to 'Y' if you accept the agreement."
     exit 1
 }
 
-$containerAge = [System.DateTime]::Now.Subtract((Get-Item "C:\RUN").CreationTime).Days
-if ($containerAge -gt 90) {
-    if ($Accept_outdated -ne "Y") {
-        Write-Error "You are trying to run a container which is more than 90 days old.
-Microsoft recommends that you always run the latest version of our containers.
-Set the environment variable ACCEPT_OUTDATED to 'Y' if you want to run this container anyway."
-        exit 1
+if (!$restartingImage) {
+    $containerAge = [System.DateTime]::Now.Subtract((Get-Item "C:\RUN").CreationTime).Days
+    if ($containerAge -gt 90) {
+        if ($Accept_outdated -ne "Y") {
+            Write-Error "You are trying to run a container which is more than 90 days old.
+    Microsoft recommends that you always run the latest version of our containers.
+    Set the environment variable ACCEPT_OUTDATED to 'Y' if you want to run this container anyway."
+            exit 1
+        }
     }
 }
 
