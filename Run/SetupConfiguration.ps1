@@ -60,6 +60,7 @@ $CustomConfig.SelectSingleNode("//appSettings/add[@key='ODataServicesSSLEnabled'
 $enableSymbolLoadingAtServerStartupKeyExists = ($customConfig.SelectSingleNode("//appSettings/add[@key='EnableSymbolLoadingAtServerStartup']") -ne $null)
 if ($enableSymbolLoadingAtServerStartupKeyExists) {
     $customConfig.SelectSingleNode("//appSettings/add[@key='EnableSymbolLoadingAtServerStartup']").Value = "$($enableSymbolLoadingAtServerStartup -eq $true)"
+    Set-ConfigSetting -customSettings "TenantEnvironmentType=Sandbox" -parentPath "//appSettings" -leafName "add" -customConfig $customConfig -silent
 }
 
 if ($customNavSettings -ne "") {

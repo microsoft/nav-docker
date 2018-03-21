@@ -305,6 +305,13 @@ function Mount-NavDatabase
     if ($DatabaseCredentials) {
         $Params += @{ "DatabaseCredentials"=$DatabaseCredentials; "Force"=$true }
     }
+    
+    $CustomConfigFile =  Join-Path $ServiceTierFolder "CustomSettings.config"
+    $CustomConfig = [xml](Get-Content $CustomConfigFile)
+    $tenantEnvironmentType = $customConfig.SelectSingleNode("//appSettings/add[@key='TenantEnvironmentType']")
+    if ($tenantEnvironmentType -ne $null) {
+        $Params += @{"EnvironmentType" = $tenantEnvironmentType.value }
+    }
 
     Mount-NAVTenant -ServerInstance $ServerInstance `
                     -DatabaseServer $DatabaseServer `
@@ -471,7 +478,8 @@ function Set-ConfigSetting {
         [Parameter(Mandatory=$true)]
         [string] $leafName,
         [Parameter(Mandatory=$true)]
-        [xml]$customConfig
+        [xml]$customConfig,
+        [switch]$silent
     )
 
     $customSettingsArray = $customSettings -split ","
@@ -482,13 +490,17 @@ function Set-ConfigSetting {
         $customSettingValue = $customSettingArray[1]
         
         if ($customConfig.SelectSingleNode("$parentPath/$leafName[@key='$customSettingKey']") -eq $null) {
-            Write-Host "Creating $customSettingKey and setting it to $customSettingValue"
+            if (!$silent) {
+                Write-Host "Creating $customSettingKey and setting it to $customSettingValue"
+            }
             [xml] $tmpDoc = [xml] ""
             $tmpDoc.LoadXml("<add key='$customSettingKey' value='$customSettingValue' />") | Out-Null
             $tmpNode = $customConfig.ImportNode($tmpDoc.get_DocumentElement(), $true)
-            $customConfig.SelectSingleNode($parentPath).AppendChild($tmpNode)
+            $customConfig.SelectSingleNode($parentPath).AppendChild($tmpNode) | Out-Null
         } else {
-            Write-Host "Setting $customSettingKey to $customSettingValue"
+            if (!$silent) {
+                Write-Host "Setting $customSettingKey to $customSettingValue"
+            }
             $customConfig.SelectSingleNode("$parentPath/$leafName[@key='$customSettingKey']").Value = "$customSettingValue"
         }
     }
