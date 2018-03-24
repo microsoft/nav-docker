@@ -61,6 +61,7 @@ $enableSymbolLoadingAtServerStartupKeyExists = ($customConfig.SelectSingleNode("
 if ($enableSymbolLoadingAtServerStartupKeyExists) {
     $customConfig.SelectSingleNode("//appSettings/add[@key='EnableSymbolLoadingAtServerStartup']").Value = "$($enableSymbolLoadingAtServerStartup -eq $true)"
     Set-ConfigSetting -customSettings "TenantEnvironmentType=Sandbox" -parentPath "//appSettings" -leafName "add" -customConfig $customConfig -silent
+    Set-ConfigSetting -customSettings "EnableSaasExtensionInstall=true" -parentPath "//appSettings" -leafName "add" -customConfig $customConfig -silent
 }
 
 if ($customNavSettings -ne "") {
