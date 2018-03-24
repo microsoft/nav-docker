@@ -1,4 +1,4 @@
-FROM microsoft/dotnet-framework:4.7-windowsservercore
+FROM microsoft/dotnet-framework:4.7.1-windowsservercore-ltsc2016
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
