@@ -162,6 +162,7 @@ if ($locale)  {
     Set-Culture -CultureInfo $cultureInfo
 }
 
+$isBcSandbox = ($env:isBcSandbox -eq "Y")
 $enableSymbolLoadingAtServerStartup = ($env:enableSymbolLoading -eq "Y")
 
 $customNavSettings = "$env:customNavSettings"
