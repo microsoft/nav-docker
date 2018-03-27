@@ -49,7 +49,7 @@ Copy-Item -Path "$navDvdPath\ClickOnceInstallerTools\Program Files\Microsoft Dyn
 Write-Host "Copying PowerShell Scripts"
 Copy-Item -Path "$navDvdPath\WindowsPowerShellScripts\Cloud\NAVAdministration\" -Destination $runPath -Recurse -Force
 
-"TestToolKit","UpgradeToolKit","Extensions" | % {
+"Test Assemblies","TestToolKit","UpgradeToolKit","Extensions" | % {
     $dir = "$navDvdPath\$_" 
     if (Test-Path $dir -PathType Container)
     {
