@@ -140,7 +140,7 @@ function Copy-NavDatabase
         $DatabaseServerInstance += "\$DatabaseInstance"
     }
 
-    Write-Host "Copying NAV Database on $DatabaseServerInstance from $SourceDatabaseName to $DestinationDatabaseName"
+    Write-Host "Copying Database on $DatabaseServerInstance from $SourceDatabaseName to $DestinationDatabaseName"
 
     if (Test-NavDatabase -DatabaseServer $databaseServer `
                          -DatabaseInstance $databaseInstance `
@@ -296,7 +296,7 @@ function Mount-NavDatabase
         $DatabaseServerInstance += "\$DatabaseInstance"
     }
 
-    Write-Host "Mounting NAV Database for $TenantID on server $DatabaseServerInstance"
+    Write-Host "Mounting Database for $TenantID on server $DatabaseServerInstance"
     
     $Params = @{}
     if ($TenantId -eq "default") {
@@ -321,7 +321,7 @@ function Mount-NavDatabase
                     -AlternateId $AlternateId `
                     -OverwriteTenantIdInDatabase @Params
 
-    Write-Host "Sync'ing NAV Tenant"    
+    Write-Host "Sync'ing Tenant"    
     Sync-NAVTenant  -ServerInstance $ServerInstance `
                     -Tenant $TenantId `
                     -Force
@@ -413,7 +413,7 @@ function Install-NAVSipCryptoProvider
     $sipPath = "C:\Windows\System32\NavSip.dll"
     Test-Path -Path $sipPath -ErrorAction Stop | Out-Null
 
-    Write-Host "Installing NAV SIP crypto provider: '$sipPath'"
+    Write-Host "Installing SIP crypto provider: '$sipPath'"
 
     $registryPath = 'HKLM:\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllCreateIndirectData\{36FFA03E-F824-48E7-8E07-4A2DCB034CC7}'
     New-Item -Path $registryPath -Force | Out-Null

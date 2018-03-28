@@ -10,7 +10,7 @@
 # OUTPUT
 #
 
-Write-Host "Modifying NAV Service Tier Config File with Instance Specific Settings"
+Write-Host "Modifying Service Tier Config File with Instance Specific Settings"
 $CustomConfigFile =  Join-Path $ServiceTierFolder "CustomSettings.config"
 $CustomConfig = [xml](Get-Content $CustomConfigFile)
 
@@ -69,7 +69,7 @@ if ($isBcSandbox) {
 }
 
 if ($customNavSettings -ne "") {
-    Write-Host "Modifying NAV Service Tier Config File with settings from environment variable"    
+    Write-Host "Modifying Service Tier Config File with settings from environment variable"    
     Set-ConfigSetting -customSettings $customNavSettings -parentPath "//appSettings" -leafName "add" -customConfig $CustomConfig
 }
 

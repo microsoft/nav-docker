@@ -44,15 +44,24 @@ if ($restartingInstance) {
         New-Item -Path $databaseFolder -itemtype Directory | Out-Null
     }
 
-    New-NAVDatabase -DatabaseServer $databaseServer `
-                    -DatabaseInstance $databaseInstance `
-                    -DatabaseName "$databaseName" `
-                    -FilePath "$databaseFile" `
-                    -DestinationPath "$databaseFolder" `
-                    -Timeout $SqlTimeout | Out-Null
-
-    if ($multitenant) {
-        Copy-NavDatabase -SourceDatabaseName $databaseName -DestinationDatabaseName "tenant"
+    if (!$multitenant) {
+        New-NAVDatabase -DatabaseServer $databaseServer `
+                        -DatabaseInstance $databaseInstance `
+                        -DatabaseName "$databaseName" `
+                        -FilePath "$databaseFile" `
+                        -DestinationPath "$databaseFolder" `
+                        -Timeout $SqlTimeout | Out-Null
+    } else {
+        New-NAVDatabase -DatabaseServer $databaseServer `
+                        -DatabaseInstance $databaseInstance `
+                        -DatabaseName "tenant" `
+                        -FilePath "$databaseFile" `
+                        -DestinationPath "$databaseFolder" `
+                        -Timeout $SqlTimeout | Out-Null
+        
+        Write-Host "Exporting Application to $DatabaseName"
+        Export-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -DestinationDatabaseName $databaseName -Force | Out-Null
+        Write-Host "Removing Application from tenant"
         Remove-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -Force | Out-Null
     }
 
@@ -120,6 +129,10 @@ if ($restartingInstance) {
 } elseif ($databaseServer -eq "localhost" -and $databaseInstance -eq "SQLEXPRESS" -and $multitenant) {
     
     Copy-NavDatabase -SourceDatabaseName $databaseName -DestinationDatabaseName "tenant"
+    Remove-NavDatabase -DatabaseName $databaseName
+    Write-Host "Exporting Application to $DatabaseName"
+    Export-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -DestinationDatabaseName $databaseName -Force | Out-Null
+    Write-Host "Removing Application from tenant"
     Remove-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -Force | Out-Null
 
 }
