@@ -153,7 +153,7 @@ $AcsUriParam = @{}
 if ("$federationLoginEndpoint" -ne "") {
     $AcsUriParam += @{AcsUri = $federationLoginEndpoint}
 }
-Write-Host "Creating NAV Web Server Instance"
+Write-Host "Creating Web Server Instance"
 New-NAVWebServerInstance -Server "localhost" `
                          -ClientServicesCredentialType $auth `
                          -ClientServicesPort 7046 `
