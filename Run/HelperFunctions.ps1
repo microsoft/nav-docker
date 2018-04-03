@@ -136,38 +136,6 @@ function Get-UniqueFilename
     }
     $Filename
 }
-function New-EmptyDatabase
-{
-    Param
-    (
-        [Parameter(Mandatory=$false)]
-        [string]$DatabaseServer = "localhost",
-        [Parameter(Mandatory=$false)]
-        [string]$DatabaseInstance = "SQLEXPRESS",
-        [Parameter(Mandatory=$false)]
-        [System.Management.Automation.PSCredential]$databaseCredentials,
-        [Parameter(Mandatory=$true)]
-        [string]$DatabaseName,
-        [Parameter(Mandatory=$true)]
-        [string]$DatabaseFolder
-    )
-
-    Write-Host "Create empty database $DatabaseName in database folder $DatabaseFolder"
-    $DataFile = Get-UniqueFilename -Filename (join-path $DatabaseFolder "$DatabaseName.mdf")
-    $LogFile = Get-UniqueFilename -Filename (join-path $DatabaseFolder "$DatabaseName.ldf")
-    $SqlCmd = ( "CREATE DATABASE [{0}] ON (NAME={0}_Data,FILENAME='{1}',size=200MB) " `
-              + "LOG ON (NAME={0}_Log,FILENAME='{2}',size=100MB)" ) -f $DatabaseName,$DataFile,$LogFile
-    if ($DatabaseServer -eq "localhost" -and $DatabaseInstance -eq "SQLEXPRESS")
-    {
-        Invoke-SqlCmdWithRetry -Query $SqlCmd    
-    }
-    else {
-        Invoke-SqlCmdWithRetry -DatabaseServer $databaseServer `
-                               -DatabaseInstance $databaseInstance `
-                               -DatabaseCredentials $databaseCredentials `
-                               -Query $SqlCmd        
-    }
-}
 function Copy-NavDatabase
 {
     Param
