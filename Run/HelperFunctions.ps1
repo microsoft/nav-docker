@@ -118,7 +118,56 @@ function Get-NavDatabaseFiles
         $file
     }
 }
+function Get-UniqueFilename
+{
+    Param
+    (
+        [Parameter(Mandatory=$true)]
+        [string]$Filename
+    )
 
+    [System.IO.FileInfo]$FileInfo = $Filename
+    $SeqNo=1
+
+    while (test-path $Filename)
+    {
+        $Filename = "{0}\{1}_{2}{3}" -f $FileInfo.DirectoryName,$FileInfo.BaseName,$SeqNo,$FileInfo.Extension
+        $SeqNo++
+    }
+    $Filename
+}
+function New-EmptyDatabase
+{
+    Param
+    (
+        [Parameter(Mandatory=$false)]
+        [string]$DatabaseServer = "localhost",
+        [Parameter(Mandatory=$false)]
+        [string]$DatabaseInstance = "SQLEXPRESS",
+        [Parameter(Mandatory=$false)]
+        [System.Management.Automation.PSCredential]$databaseCredentials,
+        [Parameter(Mandatory=$true)]
+        [string]$DatabaseName,
+        [Parameter(Mandatory=$true)]
+        [string]$DatabaseFolder
+    )
+
+    Write-Host "Create empty database $DatabaseName in database folder $DatabaseFolder"
+    $DataFile = Get-UniqueFilename -Filename (join-path $DatabaseFolder "$DatabaseName.mdf")
+    $LogFile = Get-UniqueFilename -Filename (join-path $DatabaseFolder "$DatabaseName.ldf")
+    $SqlCmd = ( "CREATE DATABASE [{0}] ON (NAME={0}_Data,FILENAME='{1}',size=200MB) " `
+              + "LOG ON (NAME={0}_Log,FILENAME='{2}',size=100MB)" ) -f $DatabaseName,$DataFile,$LogFile
+    if ($DatabaseServer -eq "localhost" -and $DatabaseInstance -eq "SQLEXPRESS")
+    {
+        Invoke-SqlCmdWithRetry -Query $SqlCmd    
+    }
+    else {
+        Invoke-SqlCmdWithRetry -DatabaseServer $databaseServer `
+                               -DatabaseInstance $databaseInstance `
+                               -DatabaseCredentials $databaseCredentials `
+                               -Query $SqlCmd        
+    }
+}
 function Copy-NavDatabase
 {
     Param
@@ -165,9 +214,10 @@ function Copy-NavDatabase
             Get-NavDatabaseFiles -DatabaseName $SourceDatabaseName | % {
                 $FileInfo = Get-Item -Path $_
                 $DestinationFile = "{0}\{1}{2}" -f $FileInfo.DirectoryName, $DestinationDatabaseName, $FileInfo.Extension
+                $DestinationFile = Get-UniqueFilename -Filename $DestinationFile
                 Copy-Item -Path $FileInfo.FullName -Destination $DestinationFile -Force
                 if ("$files" -ne "") { $files += ", " }
-                $Files += "(FILENAME = N'$DestinationFile')"
+                $Files += "(FILENAME = N'$DestinationFile')"                
             }
     
             Write-Host "Attaching files as new Database $DestinationDatabaseName"
