@@ -118,7 +118,24 @@ function Get-NavDatabaseFiles
         $file
     }
 }
+function Get-UniqueFilename
+{
+    Param
+    (
+        [Parameter(Mandatory=$true)]
+        [string]$Filename
+    )
 
+    [System.IO.FileInfo]$FileInfo = $Filename
+    $SeqNo=1
+
+    while (test-path $Filename)
+    {
+        $Filename = "{0}\{1}_{2}{3}" -f $FileInfo.DirectoryName,$FileInfo.BaseName,$SeqNo,$FileInfo.Extension
+        $SeqNo++
+    }
+    $Filename
+}
 function Copy-NavDatabase
 {
     Param
@@ -165,9 +182,10 @@ function Copy-NavDatabase
             Get-NavDatabaseFiles -DatabaseName $SourceDatabaseName | % {
                 $FileInfo = Get-Item -Path $_
                 $DestinationFile = "{0}\{1}{2}" -f $FileInfo.DirectoryName, $DestinationDatabaseName, $FileInfo.Extension
+                $DestinationFile = Get-UniqueFilename -Filename $DestinationFile
                 Copy-Item -Path $FileInfo.FullName -Destination $DestinationFile -Force
                 if ("$files" -ne "") { $files += ", " }
-                $Files += "(FILENAME = N'$DestinationFile')"
+                $Files += "(FILENAME = N'$DestinationFile')"                
             }
     
             Write-Host "Attaching files as new Database $DestinationDatabaseName"
