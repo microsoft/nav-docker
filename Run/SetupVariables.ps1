@@ -29,36 +29,41 @@ if ($auth -ne "Windows") {
 }
 
 $databaseCredentials = $null
-if ("$env:databasePassword" -ne "") {
-    $databaseCredentials = New-Object PSCredential -ArgumentList "$env:databaseUserName", (ConvertTo-SecureString -String "$env:databasePassword" -AsPlainText -Force)
-    Remove-Item env:\databasePassword -ErrorAction Ignore
-} elseif ("$env:databaseSecurepassword" -ne "" -and "$env:passwordKeyFile" -ne "" -and $restartingInstance -eq $false) {
-    $databaseCredentials = New-Object PSCredential -ArgumentList "$env:databaseUserName", (ConvertTo-SecureString -String "$env:databaseSecurepassword" -Key (Get-Content -Path "$env:passwordKeyFile"))
-    Remove-Item env:\databaseSecurePassword -ErrorAction Ignore
-}
-
-if ("$env:encryptionPassword" -ne "") {
-    $EncryptionSecurePassword = ConvertTo-SecureString -String "$env:encryptionPassword" -AsPlainText -Force
-    Remove-Item env:\encryptionPassword -ErrorAction Ignore
-} elseif ("$env:encryptionSecurepassword" -ne "" -and "$env:passwordKeyFile" -ne "") {
-    $EncryptionSecurePassword = ConvertTo-SecureString -String "$env:encryptionSecurepassword" -Key (Get-Content -Path "$env:passwordKeyFile")
-    Remove-Item env:\encryptionSecurePassword -ErrorAction Ignore
-} else {
-    $EncryptionSecurePassword = ConvertTo-SecureString -String (Get-RandomPassword) -AsPlainText -Force
-}
-
+$EncryptionSecurePassword = $null
 $passwordSpecified = $false
-if ("$env:password" -ne "") {
-    $securepassword = ConvertTo-SecureString -String "$env:password" -AsPlainText -Force
-    Remove-Item env:\password -ErrorAction Ignore
-    $passwordSpecified = $true
-} elseif ("$env:securepassword" -ne "" -and "$env:passwordKeyFile" -ne "" -and $restartingInstance -eq $false) {
-    $securePassword = ConvertTo-SecureString -String "$env:securepassword" -Key (Get-Content -Path "$env:passwordKeyFile")
-    Remove-Item env:\securePassword -ErrorAction Ignore
-    $passwordSpecified = $true
-} else {
-    if ($auth -ne "Windows") {
-        $securePassword = ConvertTo-SecureString -String (Get-RandomPassword) -AsPlainText -Force
+$securepassword = $null
+
+if (!$restartingInstance) {
+    if ("$env:databasePassword" -ne "") {
+        $databaseCredentials = New-Object PSCredential -ArgumentList "$env:databaseUserName", (ConvertTo-SecureString -String "$env:databasePassword" -AsPlainText -Force)
+        Remove-Item env:\databasePassword -ErrorAction Ignore
+    } elseif ("$env:databaseSecurepassword" -ne "" -and "$env:passwordKeyFile" -ne "") {
+        $databaseCredentials = New-Object PSCredential -ArgumentList "$env:databaseUserName", (ConvertTo-SecureString -String "$env:databaseSecurepassword" -Key (Get-Content -Path "$env:passwordKeyFile"))
+        Remove-Item env:\databaseSecurePassword -ErrorAction Ignore
+    }
+
+    if ("$env:encryptionPassword" -ne "") {
+        $EncryptionSecurePassword = ConvertTo-SecureString -String "$env:encryptionPassword" -AsPlainText -Force
+        Remove-Item env:\encryptionPassword -ErrorAction Ignore
+    } elseif ("$env:encryptionSecurepassword" -ne "" -and "$env:passwordKeyFile" -ne "") {
+        $EncryptionSecurePassword = ConvertTo-SecureString -String "$env:encryptionSecurepassword" -Key (Get-Content -Path "$env:passwordKeyFile")
+        Remove-Item env:\encryptionSecurePassword -ErrorAction Ignore
+    } else {
+        $EncryptionSecurePassword = ConvertTo-SecureString -String (Get-RandomPassword) -AsPlainText -Force
+    }
+
+    if ("$env:password" -ne "") {
+        $securepassword = ConvertTo-SecureString -String "$env:password" -AsPlainText -Force
+        Remove-Item env:\password -ErrorAction Ignore
+        $passwordSpecified = $true
+    } elseif ("$env:securepassword" -ne "" -and "$env:passwordKeyFile" -ne "") {
+        $securePassword = ConvertTo-SecureString -String "$env:securepassword" -Key (Get-Content -Path "$env:passwordKeyFile")
+        Remove-Item env:\securePassword -ErrorAction Ignore
+        $passwordSpecified = $true
+    } else {
+        if ($auth -ne "Windows") {
+            $securePassword = ConvertTo-SecureString -String (Get-RandomPassword) -AsPlainText -Force
+        }
     }
 }
 
