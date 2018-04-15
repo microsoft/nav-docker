@@ -169,12 +169,8 @@ if ($locale)  {
 
 $isBcSandbox = ($env:isBcSandbox -eq "Y")
 $enableSymbolLoadingAtServerStartup = ($env:enableSymbolLoading -eq "Y")
+$enableApiServices = ($env:enableApiServices -eq "Y")
 
 $customNavSettings = "$env:customNavSettings"
 $customWebSettings = "$env:customWebSettings"
 $customWinSettings = "$env:customWinSettings"
-
-# Optional enable the API Services
-if ($env:enableApiServices -ne $null) {
-    $enableApiServices = ($env:enableApiServices -eq "Y")
-}
