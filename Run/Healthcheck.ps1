@@ -3,3 +3,5 @@ if ((Test-Path "$PSScriptRoot\my" -PathType Container) -and (Test-Path "$PSScrip
 } else {
     . "$PSScriptRoot\CheckHealth.ps1"
 }
+
+exit $LASTEXITCODE
