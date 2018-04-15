@@ -1,5 +1,8 @@
 ﻿# INPUT
+#     $restartingInstance (optional)
 #     $bakFile (optional)
+#     $appBacpac and tenantBacpac (optional)
+#     $databaseCredentials (optional)
 #
 # OUTPUT
 #     $databaseServer
@@ -24,6 +27,7 @@ if ($restartingInstance) {
         (New-Object System.Net.WebClient).DownloadFile($bakfileurl, $databaseFile)
     
     } else {
+
         Write-Host "Using Database .bak file '$bakfile'"
         if (!(Test-Path -Path $bakfile -PathType Leaf)) {
         	Write-Error "ERROR: Database Backup File not found."
@@ -34,18 +38,63 @@ if ($restartingInstance) {
     }
 
     # Restore database
-    $databaseFolder = "c:\databases"
+    $databaseFolder = "c:\databases\my"
     
     if (!(Test-Path -Path $databaseFolder -PathType Container)) {
         New-Item -Path $databaseFolder -itemtype Directory | Out-Null
     }
 
-    New-NAVDatabase -DatabaseServer $databaseServer `
-                    -DatabaseInstance $databaseInstance `
-                    -DatabaseName "$databaseName" `
-                    -FilePath "$databaseFile" `
-                    -DestinationPath "$databaseFolder" `
-                    -Timeout $SqlTimeout | Out-Null
+    if (!$multitenant) {
+        New-NAVDatabase -DatabaseServer $databaseServer `
+                        -DatabaseInstance $databaseInstance `
+                        -DatabaseName "$databaseName" `
+                        -FilePath "$databaseFile" `
+                        -DestinationPath "$databaseFolder" `
+                        -Timeout $SqlTimeout | Out-Null
+    } else {
+        New-NAVDatabase -DatabaseServer $databaseServer `
+                        -DatabaseInstance $databaseInstance `
+                        -DatabaseName "tenant" `
+                        -FilePath "$databaseFile" `
+                        -DestinationPath "$databaseFolder" `
+                        -Timeout $SqlTimeout | Out-Null
+        
+        Write-Host "Exporting Application to $DatabaseName"
+        Export-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -DestinationDatabaseName $databaseName -Force | Out-Null
+        Write-Host "Removing Application from tenant"
+        Remove-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -Force | Out-Null
+    }
+
+} elseif ("$appBacpac" -ne "" -and "$tenantBacpac" -ne "") {
+
+    # appBacpac and tenantBacpac specified - restore and use
+    
+    $dbName = "app"
+    $appBacpac, $tenantBacpac | % {
+        if ($_.StartsWith("https://") -or $_.StartsWith("http://"))
+        {
+            $databaseFile = (Join-Path $runPath "${dbName}.bacpac")
+            Write-Host "Downloading ${dbName}.bacpac"
+            (New-Object System.Net.WebClient).DownloadFile($_, $databaseFile)
+        } else {
+            if (!(Test-Path -Path $_ -PathType Leaf)) {
+        	    Write-Error "ERROR: Database Backup File not found."
+                Write-Error "The file must be uploaded to the container or available on a share."
+                exit 1
+            }
+            $databaseFile = $_
+        }
+        Restore-BacpacWithRetry -Bacpac $databaseFile -DatabaseName $dbName
+        $dbName = "tenant"
+    }
+
+    $databaseServer = "localhost"
+    $databaseInstance = "SQLEXPRESS"
+    $databaseName = "app"
+
+    if ("$licenseFile" -eq "") {
+        $licenseFile = Join-Path $serviceTierFolder "Cronus.flf"
+    }
 
 } elseif ($databaseCredentials) {
 
@@ -61,9 +110,13 @@ if ($restartingInstance) {
     Set-NAVServerConfiguration -ServerInstance "NAV" -KeyName "EnableSqlConnectionEncryption" -KeyValue "true" -WarningAction SilentlyContinue
     Set-NAVServerConfiguration -ServerInstance "NAV" -KeyName "TrustSQLServerCertificate" -KeyValue "true" -WarningAction SilentlyContinue
 
+    $databaseServerInstance = $databaseServer
+    if ("$databaseInstance" -ne "") {
+        $databaseServerInstance += "\$databaseInstance"
+    }
     Write-Host "Import Encryption Key"
     Import-NAVEncryptionKey -ServerInstance NAV `
-                            -ApplicationDatabaseServer $databaseServer `
+                            -ApplicationDatabaseServer $databaseServerInstance `
                             -ApplicationDatabaseCredentials $DatabaseCredentials `
                             -ApplicationDatabaseName $DatabaseName `
                             -KeyPath $EncryptionKeyFile `
@@ -72,5 +125,15 @@ if ($restartingInstance) {
                             -Force
     
     Set-NavServerConfiguration -serverinstance "NAV" -databaseCredentials $DatabaseCredentials -WarningAction SilentlyContinue
+
+} elseif ($databaseServer -eq "localhost" -and $databaseInstance -eq "SQLEXPRESS" -and $multitenant) {
+    
+    Copy-NavDatabase -SourceDatabaseName $databaseName -DestinationDatabaseName "tenant"
+    Remove-NavDatabase -DatabaseName $databaseName
+    Write-Host "Exporting Application to $DatabaseName"
+    Export-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -DestinationDatabaseName $databaseName -Force | Out-Null
+    Write-Host "Removing Application from tenant"
+    Remove-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -Force | Out-Null
+
 }
 

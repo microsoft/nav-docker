@@ -7,7 +7,7 @@ if ($servicesUseSSL) {
     $certparam += @{CertificateThumbprint = $certificateThumbprint}
 }
 
-Write-Host "Creating DotNetCore NAV Web Server Instance"
+Write-Host "Creating DotNetCore Web Server Instance"
 $publishFolder = "$webClientFolder\WebPublish"
 
 $NAVWebClientManagementModule = "$webClientFolder\Modules\NAVWebClientManagement\NAVWebClientManagement.psm1"

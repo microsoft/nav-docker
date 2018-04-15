@@ -48,7 +48,7 @@ Copy-Item -Path "$navDvdPath\*.vsix" -Destination $runPath
 Write-Host "Copying PowerShell Scripts"
 Copy-Item -Path "$navDvdPath\WindowsPowerShellScripts\Cloud\NAVAdministration\" -Destination $runPath -Recurse -Force
 
-"TestToolKit","UpgradeToolKit","Extensions" | % {
+"Test Assemblies","TestToolKit","UpgradeToolKit","Extensions" | % {
     $dir = "$navDvdPath\$_" 
     if (Test-Path $dir -PathType Container)
     {
@@ -163,6 +163,12 @@ Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance 'NAV' -Databas
 Write-Host "Copying PowerShell.exe.config"
 Copy-Item -Path "$runPath\powershell.exe.config" -Destination C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe.Config -Force
 Copy-Item -Path "$runPath\powershell.exe.config" -Destination C:\Windows\SysWOW64\Windowspowershell\v1.0\powershell.exe.Config -Force
+
+Write-Host "Generating Symbol Reference"
+$pre = (get-process -Name "finsql" -ErrorAction Ignore) | % { $_.Id }
+Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=generatesymbolreference, Database=CRONUS, ServerName=localhost\SQLEXPRESS, ntauthentication=1"
+$procs = get-process -Name "finsql" -ErrorAction Ignore
+$procs | Where-Object { $pre -notcontains $_.Id } | Wait-Process
 
 $timespend = [Math]::Round([DateTime]::Now.Subtract($startTime).Totalseconds)
 Write-Host "Installation took $timespend seconds"

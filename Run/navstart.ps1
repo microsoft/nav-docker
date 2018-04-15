@@ -46,13 +46,15 @@ set the environment variable ACCEPT_EULA to 'Y' if you accept the agreement."
     exit 1
 }
 
-$containerAge = [System.DateTime]::Now.Subtract((Get-Item "C:\RUN").CreationTime).Days
-if ($containerAge -gt 90) {
-    if ($Accept_outdated -ne "Y") {
-        Write-Error "You are trying to run a container which is more than 90 days old.
-Microsoft recommends that you always run the latest version of our containers.
-Set the environment variable ACCEPT_OUTDATED to 'Y' if you want to run this container anyway."
-        exit 1
+if (!$restartingImage) {
+    $containerAge = [System.DateTime]::Now.Subtract((Get-Item "C:\RUN").CreationTime).Days
+    if ($containerAge -gt 90) {
+        if ($Accept_outdated -ne "Y") {
+            Write-Error "You are trying to run a container which is more than 90 days old.
+    Microsoft recommends that you always run the latest version of our containers.
+    Set the environment variable ACCEPT_OUTDATED to 'Y' if you want to run this container anyway."
+            exit 1
+        }
     }
 }
 
@@ -121,9 +123,12 @@ if ((Get-Service -name $NavServiceName).Status -ne "Running") {
     Restart-Service -Name $NavServiceName -WarningAction Ignore
 }
 
-if ($usingLocalSQLServer) {
-    . (Get-MyFilePath "SetupLicense.ps1")
+. (Get-MyFilePath "SetupLicense.ps1")
+
+if ($multitenant) {
+    . (Get-MyFilePath "SetupTenant.ps1")
 }
+
 
 $wwwRootPath = Get-WWWRootPath
 $httpPath = Join-Path $wwwRootPath "http"
@@ -169,8 +174,7 @@ Write-Host "Container IP Address: $ip"
 Write-Host "Container Hostname  : $hostname"
 Write-Host "Container Dns Name  : $publicDnsName"
 if ($webClient -ne "N") {
-    $publicWebBaseUrl = $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value
-    Write-Host "Web Client          : $publicWebBaseUrl"
+    Write-Host "Web Client          : $publicWebBaseUrl$webTenantParam"
 }
 if ($auth -ne "Windows" -and $usingLocalSQLServer -and !$passwordSpecified -and !$restartingInstance) {
     Write-Host "NAV Admin Username  : $username"
@@ -180,9 +184,12 @@ if ($httpSite -ne "N") {
     if (Test-Path -Path (Join-Path $httpPath "*.vsix")) {
         Write-Host "Dev. Server         : $protocol$publicDnsName"
         Write-Host "Dev. ServerInstance : NAV"
+        if ($multitenant) {
+            Write-Host "Dev. Server Tenant  : $tenantId"
+        }
     }
     if ($clickOnce -eq "Y") {
-        Write-Host "ClickOnce Manifest  : http://${publicDnsName}:$publicFileSharePort/NAV"
+        Write-Host "ClickOnce Manifest  : $clickOnceWebSiteUrl"
     }
 }
 

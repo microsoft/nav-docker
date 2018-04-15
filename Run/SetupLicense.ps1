@@ -25,6 +25,6 @@ if ($restartingInstance) {
             exit 1
         }
     }
-    Write-Host "Import NAV License"
+    Write-Host "Import License"
     Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance 'NAV' -Database NavDatabase -WarningAction SilentlyContinue
 }

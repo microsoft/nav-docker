@@ -8,22 +8,36 @@
 #     $roleTailoredClientFolder
 #
 # OUTPUT
+#     $clickOnceWebSiteUrl
 #
 
 Import-Module "$NAVAdministrationScriptsFolder\NAVAdministration.psm1"
 Import-Module WebAdministration
 
 $clickOnceDirectory = Join-Path $httpPath "NAV"
+$clickOnceWebSiteUrl = "http://${publicDnsName}:$publicFileSharePort/NAV"
+if ($multitenant) {
+    $clickOnceDirectory += "/$tenantId"
+    $clickOnceWebSiteUrl += "/$tenantId"
+}
 Remove-Item $clickOnceDirectory -Force -Recurse -ErrorAction SilentlyContinue
-$webSiteUrl = "http://${publicDnsName}:$publicFileSharePort/NAV"
 
 $ClientUserSettingsFileName = "$runPath\ClientUserSettings.config"
 [xml]$ClientUserSettings = Get-Content $clientUserSettingsFileName
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='Server']").value = "$publicDnsName"
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ServerInstance']").value="NAV"
+if ($multitenant) {
+    $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='TenantId']").value="$tenantId"
+}
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ServicesCertificateValidationEnabled']").value="false"
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ClientServicesPort']").value="$publicWinClientPort"
-$clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ACSUri']").value = ""
+$acsUri = "$federationLoginEndpoint"
+if ("$acsUri" -ne "") {
+    if (!($acsUri.ToLowerInvariant().Contains("%26wreply="))) {
+        $acsUri += "%26wreply=$publicWebBaseUrl"
+    }
+}
+$clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key=""ACSUri""]").value = "$acsUri"
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='DnsIdentity']").value = "$dnsIdentity"
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ClientServicesCredentialType']").value = "$Auth"
 
@@ -77,8 +91,8 @@ Set-ApplicationManifestApplicationIdentity `
 $deploymentManifestFile = Join-Path $clickOnceDirectory 'Win\Deployment\Microsoft.Dynamics.Nav.Client.application'
 $deploymentIdentityName = "$publicDnsName ClickOnce"
 $deploymentIdentityVersion = $applicationIdentityVersion
-$deploymentManifestUrl = ($webSiteUrl + "/Win/Deployment/Microsoft.Dynamics.Nav.Client.application")
-$applicationManifestUrl = ($webSiteUrl + "/Win/Deployment/ApplicationFiles/Microsoft.Dynamics.Nav.Client.exe.manifest")
+$deploymentManifestUrl = ($clickOnceWebSiteUrl + "/Win/Deployment/Microsoft.Dynamics.Nav.Client.application")
+$applicationManifestUrl = ($clickOnceWebSiteUrl + "/Win/Deployment/ApplicationFiles/Microsoft.Dynamics.Nav.Client.exe.manifest")
 
 Set-DeploymentManifestApplicationReference `
     -DeploymentManifestFile $DeploymentManifestFile `
@@ -117,8 +131,8 @@ $deploymentManifestFile = Join-Path $clickOnceDirectory 'Finsql\Deployment\finsq
 (Get-Content $deploymentManifestFile).replace('"msil"', '"x86"') | Set-Content $deploymentManifestFile
 $deploymentIdentityName = "$publicDnsName Finsql ClickOnce"
 $deploymentIdentityVersion = $applicationIdentityVersion
-$deploymentManifestUrl = ($webSiteUrl + "/Finsql/Deployment/Finsql.application")
-$applicationManifestUrl = ($webSiteUrl + "/Finsql/Deployment/ApplicationFiles/Finsql.exe.manifest")
+$deploymentManifestUrl = ($clickOnceWebSiteUrl + "/Finsql/Deployment/Finsql.application")
+$applicationManifestUrl = ($clickOnceWebSiteUrl + "/Finsql/Deployment/ApplicationFiles/Finsql.exe.manifest")
 
 Set-DeploymentManifestApplicationReference `
     -DeploymentManifestFile $DeploymentManifestFile `

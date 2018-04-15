@@ -11,12 +11,22 @@ if ("$env:VSIXURL" -ne "") {
 }
 
 $setupVersion = (Get-Item -Path "c:\navdvd\setup.exe").VersionInfo.FileVersion
-$versionFolder = $setupVersion.Split('.')[0]+$setupVersion.Split('.')[1]
-Copy-Item -Path (Join-Path $PSScriptRoot "$versionFolder\*") -Destination $PSScriptRoot -Recurse -Force
+$versionNo = [Int]::Parse($setupVersion.Split('.')[0]+$setupVersion.Split('.')[1])
+$versionFolder = ""
+Get-ChildItem -Path $PSScriptRoot -Directory | where-object { [Int]::TryParse($_.Name, [ref]$null) } | % { [Int]::Parse($_.Name) } | Sort-Object | % {
+    if ($_ -le $versionNo) {
+        $versionFolder = Join-Path $PSScriptRoot "$_"
+    }
+}
+if ($versionFolder -eq "") {
+    throw "unable to locate installation folder"
+}
+
+Copy-Item -Path "$versionFolder\*" -Destination $PSScriptRoot -Recurse -Force
 
 # Remove version specific folders
-"70","71","80","90","100","110" | % {
-    Remove-Item (Join-Path $PSScriptRoot $_) -Recurse -Force -ErrorAction Ignore
+Get-ChildItem -Path $PSScriptRoot -Directory | where-object { [Int]::TryParse($_.Name, [ref]$null) } | % {
+    Remove-Item (Join-Path $PSScriptRoot $_.Name) -Recurse -Force -ErrorAction Ignore
 }
 
 . (Join-Path $PSScriptRoot "navinstall.ps1")

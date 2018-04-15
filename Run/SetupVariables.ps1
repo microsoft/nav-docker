@@ -16,6 +16,8 @@ if ($auth -eq "") {
     }
 } elseif ($auth -eq "windows") {
     $auth = "Windows"
+} elseif ($auth -eq "accesscontrolservice" -or $auth -eq "aad") {
+    $auth = "AccessControlService"
 } else {
     $auth = "NavUserPassword"
 }
@@ -27,32 +29,41 @@ if ($auth -ne "Windows") {
 }
 
 $databaseCredentials = $null
-if ("$env:databasePassword" -ne "") {
-    $databaseCredentials = New-Object PSCredential -ArgumentList "$env:databaseUserName", (ConvertTo-SecureString -String "$env:databasePassword" -AsPlainText -Force)
-} elseif ("$env:databaseSecurepassword" -ne "" -and "$env:passwordKeyFile" -ne "" -and $restartingInstance -eq $false) {
-    $databaseCredentials = New-Object PSCredential -ArgumentList "$env:databaseUserName", (ConvertTo-SecureString -String "$env:databaseSecurepassword" -Key (Get-Content -Path "$env:passwordKeyFile"))
-}
-
-if ("$env:encryptionPassword" -ne "") {
-    $EncryptionSecurePassword = ConvertTo-SecureString -String "$env:encryptionPassword" -AsPlainText -Force
-} elseif ("$env:encryptionSecurepassword" -ne "" -and "$env:passwordKeyFile" -ne "") {
-    $EncryptionSecurePassword = ConvertTo-SecureString -String "$env:databaseSecurepassword" -Key (Get-Content -Path "$env:passwordKeyFile")
-} else {
-    $EncryptionSecurePassword = ConvertTo-SecureString -String (Get-RandomPassword) -AsPlainText -Force
-}
-
+$EncryptionSecurePassword = $null
 $passwordSpecified = $false
-if ("$env:password" -ne "") {
-    $securepassword = ConvertTo-SecureString -String "$env:password" -AsPlainText -Force
-    Remove-Item env:\password -ErrorAction Ignore
-    $passwordSpecified = $true
-} elseif ("$env:securepassword" -ne "" -and "$env:passwordKeyFile" -ne "" -and $restartingInstance -eq $false) {
-    $securePassword = ConvertTo-SecureString -String "$env:securepassword" -Key (Get-Content -Path "$env:passwordKeyFile")
-    Remove-Item env:\securePassword -ErrorAction Ignore
-    $passwordSpecified = $true
-} else {
-    if ($auth -ne "Windows") {
-        $securePassword = ConvertTo-SecureString -String (Get-RandomPassword) -AsPlainText -Force
+$securepassword = $null
+
+if (!$restartingInstance) {
+    if ("$env:databasePassword" -ne "") {
+        $databaseCredentials = New-Object PSCredential -ArgumentList "$env:databaseUserName", (ConvertTo-SecureString -String "$env:databasePassword" -AsPlainText -Force)
+        Remove-Item env:\databasePassword -ErrorAction Ignore
+    } elseif ("$env:databaseSecurepassword" -ne "" -and "$env:passwordKeyFile" -ne "") {
+        $databaseCredentials = New-Object PSCredential -ArgumentList "$env:databaseUserName", (ConvertTo-SecureString -String "$env:databaseSecurepassword" -Key (Get-Content -Path "$env:passwordKeyFile"))
+        Remove-Item env:\databaseSecurePassword -ErrorAction Ignore
+    }
+
+    if ("$env:encryptionPassword" -ne "") {
+        $EncryptionSecurePassword = ConvertTo-SecureString -String "$env:encryptionPassword" -AsPlainText -Force
+        Remove-Item env:\encryptionPassword -ErrorAction Ignore
+    } elseif ("$env:encryptionSecurepassword" -ne "" -and "$env:passwordKeyFile" -ne "") {
+        $EncryptionSecurePassword = ConvertTo-SecureString -String "$env:encryptionSecurepassword" -Key (Get-Content -Path "$env:passwordKeyFile")
+        Remove-Item env:\encryptionSecurePassword -ErrorAction Ignore
+    } else {
+        $EncryptionSecurePassword = ConvertTo-SecureString -String (Get-RandomPassword) -AsPlainText -Force
+    }
+
+    if ("$env:password" -ne "") {
+        $securepassword = ConvertTo-SecureString -String "$env:password" -AsPlainText -Force
+        Remove-Item env:\password -ErrorAction Ignore
+        $passwordSpecified = $true
+    } elseif ("$env:securepassword" -ne "" -and "$env:passwordKeyFile" -ne "") {
+        $securePassword = ConvertTo-SecureString -String "$env:securepassword" -Key (Get-Content -Path "$env:passwordKeyFile")
+        Remove-Item env:\securePassword -ErrorAction Ignore
+        $passwordSpecified = $true
+    } else {
+        if ($auth -ne "Windows") {
+            $securePassword = ConvertTo-SecureString -String (Get-RandomPassword) -AsPlainText -Force
+        }
     }
 }
 
@@ -62,6 +73,23 @@ if ($env:RemovePasswordKeyFile -ne "N" -and "$env:passwordKeyFile" -ne "") {
 Remove-Item env:\passwordKeyFile -ErrorAction Ignore
 
 $licensefile = "$env:licensefile"
+
+$appBacpac = "$env:appBacpac"
+$tenantBacpac = "$env:tenantBacpac"
+$multitenant = ("$env:multitenant" -eq "Y")
+
+if ("$appBacpac" -ne "" -and "$tenantBacpac" -ne "") {
+    $multitenant = $true
+}
+
+if ($multitenant) {
+    $TenantId = "default"
+    $tenantParam = @{ "Tenant" = "$tenantId" }
+    $webTenantParam = "?tenant=$tenantId"
+} else {
+    $tenantParam = @{}
+    $webTenantParam = ""
+}
 
 $bakfile = "$env:bakfile"
 if ($bakfile -ne "") {
@@ -124,6 +152,12 @@ if ($publicWinClientPort -eq "") { $publicWinClientPort = "7046" }
 if ($publicSoapPort      -eq "") { $publicSoapPort      = "7047" }
 if ($publicODataPort     -eq "") { $publicODataPort     = "7048" }
 
+# AccessControlService
+$appIdUri = "$env:appIdUri"
+$federationLoginEndpoint = "$env:federationLoginEndpoint"
+$federationMetadata = "$env:federationMetadata"
+$authenticationEMail = "$env:authenticationEMail"
+
 $locale = "$env:locale"
 if ($locale)  {
     $cultureInfo = new-object System.Globalization.CultureInfo $locale
@@ -133,6 +167,7 @@ if ($locale)  {
     Set-Culture -CultureInfo $cultureInfo
 }
 
+$isBcSandbox = ($env:isBcSandbox -eq "Y")
 $enableSymbolLoadingAtServerStartup = ($env:enableSymbolLoading -eq "Y")
 
 $customNavSettings = "$env:customNavSettings"

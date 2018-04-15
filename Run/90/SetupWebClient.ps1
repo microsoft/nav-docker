@@ -149,12 +149,16 @@ New-NavWebSite -WebClientFolder $WebClientFolder `
                -Port $webClientPort `
                -Auth $Auth @certparam
 
-Write-Host "Creating NAV Web Server Instance"
+$AcsUriParam = @{}
+if ("$federationLoginEndpoint" -ne "") {
+    $AcsUriParam += @{AcsUri = $federationLoginEndpoint}
+}
+Write-Host "Creating Web Server Instance"
 New-NAVWebServerInstance -Server "localhost" `
                          -ClientServicesCredentialType $auth `
                          -ClientServicesPort 7046 `
                          -ServerInstance "NAV" `
-                         -WebServerInstance "NAV"
+                         @AcsUriParam -WebServerInstance "NAV"
                         
 if ($customWebSettings -ne "") {
     Write-Host "Modifying Web Client config with settings from environment variable"        
