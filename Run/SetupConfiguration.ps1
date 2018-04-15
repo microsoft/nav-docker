@@ -62,6 +62,11 @@ if ($enableSymbolLoadingAtServerStartupKeyExists) {
     $customConfig.SelectSingleNode("//appSettings/add[@key='EnableSymbolLoadingAtServerStartup']").Value = "$($enableSymbolLoadingAtServerStartup -eq $true)"
 }
 
+$apiServicesEnabledExists = ($customConfig.SelectSingleNode("//appSettings/add[@key='ApiServicesEnabled']") -ne $null)
+if (($enableApiServices -ne $null) -and $apiServicesEnabledExists) {
+    $customConfig.SelectSingleNode("//appSettings/add[@key='ApiServicesEnabled']").Value = "$($enableApiServices -eq $true)"
+}
+
 if ($isBcSandbox) {
     $customConfig.SelectSingleNode("//appSettings/add[@key='EnableTaskScheduler']").Value = "true"
     Set-ConfigSetting -customSettings "TenantEnvironmentType=Sandbox" -parentPath "//appSettings" -leafName "add" -customConfig $customConfig -silent

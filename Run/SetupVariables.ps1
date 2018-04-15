@@ -169,6 +169,7 @@ if ($locale)  {
 
 $isBcSandbox = ($env:isBcSandbox -eq "Y")
 $enableSymbolLoadingAtServerStartup = ($env:enableSymbolLoading -eq "Y")
+$enableApiServices = ($env:enableApiServices -eq "Y")
 
 $customNavSettings = "$env:customNavSettings"
 $customWebSettings = "$env:customWebSettings"
