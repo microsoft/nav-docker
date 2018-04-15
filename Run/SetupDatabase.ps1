@@ -51,6 +51,8 @@ if ($restartingInstance) {
                         -FilePath "$databaseFile" `
                         -DestinationPath "$databaseFolder" `
                         -Timeout $SqlTimeout | Out-Null
+        Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=upgradedatabase, Database=$databaseName, ServerName=$databaseServer\$databaseInstance, ntauthentication=1" -Wait
+
     } else {
         New-NAVDatabase -DatabaseServer $databaseServer `
                         -DatabaseInstance $databaseInstance `
@@ -58,7 +60,8 @@ if ($restartingInstance) {
                         -FilePath "$databaseFile" `
                         -DestinationPath "$databaseFolder" `
                         -Timeout $SqlTimeout | Out-Null
-        
+        Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=upgradedatabase, Database=$databaseName, ServerName=$databaseServer\$databaseInstance, ntauthentication=1" -Wait
+
         Write-Host "Exporting Application to $DatabaseName"
         Export-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -DestinationDatabaseName $databaseName -Force | Out-Null
         Write-Host "Removing Application from tenant"
