@@ -1,7 +1,9 @@
-NAVDVD/*
 *.md
 .git
 *.docx
 *.pdf
 LICENSE
 .gitignore
+build.ps1
+BuildAndPushGeneric.ps1
+settings.ps1

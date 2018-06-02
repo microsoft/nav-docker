@@ -1,8 +1,5 @@
 *.msi
-**/NAVDVD/*
 *.dll
 *.exe
 **/Run/Install/*
-run.ps1
-build.ps1
-clean.ps1
+
