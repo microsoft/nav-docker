@@ -26,5 +26,5 @@ if ($restartingInstance) {
         }
     }
     Write-Host "Import License"
-    Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance 'NAV' -Database NavDatabase -WarningAction SilentlyContinue
+    Import-NAVServerLicense -LicenseData ([Byte[]]$(Get-Content -Path $licensefile -Encoding Byte)) -ServerInstance 'NAV' -Database NavDatabase -WarningAction SilentlyContinue
 }
