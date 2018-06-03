@@ -56,7 +56,7 @@ Copy-Item -Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics
 Copy-Item -Path "$navDvdPath\ClickOnceInstallerTools\Program Files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force
 
 Write-Host "Copying PowerShell Scripts"
-Copy-Item -Path "$navDvdPath\WindowsPowerShellScripts\Cloud\NAVAdministration\" -Destination $runPath -Recurse -Force
+Copy-Item -Path "$navDvdPath\Cloud\Examples\NAVAdministration\" -Destination $runPath -Recurse -Force
 
 "TestToolKit","UpgradeToolKit" | % {
     $dir = "$navDvdPath\$_" 
@@ -140,7 +140,6 @@ $customConfig.SelectSingleNode("//appSettings/add[@key='ManagementServicesPort']
 $customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesPort']").Value = "7046"
 $customConfig.SelectSingleNode("//appSettings/add[@key='SOAPServicesPort']").Value = "7047"
 $customConfig.SelectSingleNode("//appSettings/add[@key='ODataServicesPort']").Value = "7048"
-$customConfig.SelectSingleNode("//appSettings/add[@key='DefaultClient']").Value = "Web"
 $taskSchedulerKeyExists = ($customConfig.SelectSingleNode("//appSettings/add[@key='EnableTaskScheduler']") -ne $null)
 if ($taskSchedulerKeyExists) {
     $customConfig.SelectSingleNode("//appSettings/add[@key='EnableTaskScheduler']").Value = "false"
@@ -166,7 +165,7 @@ Start-Service -Name $NavServiceName -WarningAction Ignore
 
 Write-Host "Importing CRONUS license file"
 $licensefile = (Get-Item -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf").FullName
-Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance 'NAV' -Database NavDatabase -WarningAction SilentlyContinue
+Import-NAVServerLicense -LicenseData ([Byte[]]$(Get-Content -Path $licensefile -Encoding Byte)) -ServerInstance 'NAV' -Database NavDatabase -WarningAction SilentlyContinue
 
 if (Test-Path -Path "$PSScriptRoot\powershell.exe.config" -PathType Leaf) {
     Write-Host "Copying PowerShell.exe.config"
