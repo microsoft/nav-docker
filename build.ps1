@@ -2,9 +2,7 @@
 $tag = "0.0.6.0"
 $latest = $false
 
-# "1803","1709","ltsc2016" | % {
-
-"ltsc2016" | % {
+"1803","1709","ltsc2016" | % {
 
     $baseVersionTag = $_
     $baseImage = "microsoft/dotnet-framework:4.7.2-runtime-windowsservercore-$baseVersionTag"

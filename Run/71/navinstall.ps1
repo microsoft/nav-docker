@@ -172,10 +172,26 @@ Write-Host "Importing CRONUS license file"
 $licensefile = (Get-Item -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf").FullName
 Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance 'NAV' -Database NavDatabase -WarningAction SilentlyContinue
 
-if (Test-Path -Path "$PSScriptRoot\powershell.exe.config" -PathType Leaf) {
-    Write-Host "Copying PowerShell.exe.config"
-    Copy-Item -Path "$PSScriptRoot\powershell.exe.config" -Destination C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe.Config -Force
-    Copy-Item -Path "$PSScriptRoot\powershell.exe.config" -Destination C:\Windows\SysWOW64\Windowspowershell\v1.0\powershell.exe.Config -Force
+$newConfigFile = Get-MyFilePath -FileName "powershell.exe.config"
+if (Test-Path $newConfigFile) {
+    Write-Host "Update PowerShell.exe.config"
+    "C:\Windows\SysWOW64\WindowsPowerShell\v1.0\PowerShell.exe.config","C:\Windows\System32\WindowsPowerShell\v1.0\PowerShell.exe.config" | % {
+        $existingConfigFile = $_
+        if (Test-Path -Path $existingConfigFile) {
+            Write-Host "Modify $existingConfigFile"
+            $Acl = Get-Acl $existingConfigFile
+            $Ar = New-Object  system.security.accesscontrol.filesystemaccessrule("BUILTIN\Administrators","FullControl","Allow")
+            $Acl.AddAccessRule($Ar)
+            Set-Acl $existingConfigFile $Acl
+            [xml]$existing = Get-Content -Path $existingConfigFile
+            [xml]$new = Get-Content -Path $newConfigFile
+            $existing.configuration.AppendChild($existing.ImportNode($new.configuration.runtime,$true)) | Out-Null
+            $existing.Save($existingConfigFile)
+        } else {
+            Write-Host "Create $existingConfigFile"
+            Copy-Item -Path $newConfigFile -Destination $existingConfigFile -Force
+        }
+    }
 }
 
 $timespend = [Math]::Round([DateTime]::Now.Subtract($startTime).Totalseconds)
