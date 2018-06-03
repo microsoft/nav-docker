@@ -19,7 +19,8 @@ $latest = $false
     $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
         
     $imageNameTag = "dynamics-nav:generic"
-    Write-Host -ForegroundColor Yellow "Build $imageNameTag-$baseVersionTag"
+    $buildImageNameTag = "$imageNameTag-$baseVersionTag"
+    Write-Host -ForegroundColor Yellow "Build $buildImageNameTag"
 
     $imageFolder = $PSScriptRoot
     $dockerFilePath = Join-Path $imageFolder "DOCKERFILE"
@@ -27,18 +28,15 @@ $latest = $false
     $dockerFile[0] = "FROM $baseImage"
     $dockerFile | Set-Content $dockerFilePath
         
-    docker rmi $imageNameTag -f 2>NULL | Out-Null
+    docker rmi $buildImageNameTag -f 2>NULL | Out-Null
     docker build --label maintainer="$maintainer" `
                  --label created="$created" `
                  --label tag="$tag" `
                  --label osversion="$osversion" `
                  --label eula="$eula" `
-                 -t $imageNameTag `
+                 -t $buildImageNameTag `
                  $imageFolder
-        
-    if ($LastExitCode -ne 0) {
-        throw "Docker build error"
-    }
+    if ($LastExitCode -ne 0) { throw "Docker build error" }
     
     Write-Host -ForegroundColor Green "Success"
         
@@ -46,24 +44,34 @@ $latest = $false
     
         $imageNameTags = @()
         if ($latest) {
-            $imageNameTags += "$registry/$imageNameTag"
+            if ($baseVersionTag -eq "ltsc2016") {
+                $imageNameTags += "$registry/$imageNameTag"
+            }
             $imageNameTags += "$registry/$imageNameTag-$baseVersionTag"
         }
         if ($tag) {
-            $imageNameTags += "$registry/$imageNameTag-$tag"
+            if ($baseVersionTag -eq "ltsc2016") {
+                $imageNameTags += "$registry/$imageNameTag-$tag"
+            }
             $imageNameTags += "$registry/$imageNameTag-$tag-$baseVersionTag"
         }
     
         $imageNameTags | % {
             $extraTag = $_
             write-Host -ForegroundColor Yellow "$extraTag"
-            docker tag $imageNameTag $extraTag
+            docker tag $buildImageNameTag $extraTag
+            if ($LastExitCode -ne 0) { throw "Docker tag error" }
+            write-Host "push"
             docker push $extraTag | Out-Null
-            docker rmi $extraTag -f
+            if ($LastExitCode -ne 0) { throw "Docker push error" }
+            write-Host "untag"
+            docker rmi $extraTag -f | Out-Null
+            if ($LastExitCode -ne 0) { throw "Docker rmi error" }
         }
     }
     
     if ($removeImage) {
-        docker rmi $imageNameTag -f
+        docker rmi $buildImageNameTag -f
+        if ($LastExitCode -ne 0) { throw "Docker rmi error" }
     }
 }

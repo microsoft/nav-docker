@@ -5,5 +5,4 @@
 LICENSE
 .gitignore
 build.ps1
-BuildAndPushGeneric.ps1
-settings.ps1
+NULL
