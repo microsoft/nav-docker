@@ -8,7 +8,7 @@
 
 if ($auth -eq "Windows") {
     if ($username -ne "") {
-        if (!(Get-NAVServerUser -ServerInstance NAV @tenantParam -ErrorAction Ignore | Where-Object { $_.UserName.EndsWith("\$username", [System.StringComparison]::InvariantCultureIgnoreCase) -or $_.UserName -eq $username })) {
+        if (!(Get-NAVServerUser -ServerInstance NAV @tenantParam -ErrorAction Ignore | Where-Object { ($_.UserName) -and ($_.UserName.EndsWith("\$username", [System.StringComparison]::InvariantCultureIgnoreCase) -or $_.UserName -eq $username) })) {
             Write-Host "Creating SUPER user with authentication Windows"
             New-NavServerUser -ServerInstance NAV @tenantParam -WindowsAccount $username
             New-NavServerUserPermissionSet -ServerInstance NAV @tenantParam -WindowsAccount $username -PermissionSetId SUPER
