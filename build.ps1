@@ -1,6 +1,6 @@
 ﻿$registry = "microsoft"
-$tag = "0.0.6.0"
-$latest = $false
+$tag = "0.0.6.1"
+$latest = $true
 
 "1803","1709","ltsc2016" | % {
 
