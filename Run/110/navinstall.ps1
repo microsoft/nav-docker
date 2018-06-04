@@ -2,7 +2,17 @@ Write-Host "Installing NAV"
 $startTime = [DateTime]::Now
 
 $runPath = "c:\Run"
+$myPath = Join-Path $runPath "my"
 $navDvdPath = "C:\NAVDVD"
+
+function Get-MyFilePath([string]$FileName)
+{
+    if ((Test-Path $myPath -PathType Container) -and (Test-Path (Join-Path $myPath $FileName) -PathType Leaf)) {
+        (Join-Path $myPath $FileName)
+    } else {
+        (Join-Path $runPath $FileName)
+    }
+}
 
 . (Join-Path $runPath "HelperFunctions.ps1")
 
