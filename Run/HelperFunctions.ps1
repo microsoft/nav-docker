@@ -118,6 +118,7 @@ function Get-NavDatabaseFiles
         $file
     }
 }
+
 function Get-UniqueFilename
 {
     Param
@@ -157,7 +158,7 @@ function Copy-NavDatabase
         $DatabaseServerInstance += "\$DatabaseInstance"
     }
 
-    Write-Host "Copying Database on $DatabaseServerInstance from $SourceDatabaseName to $DestinationDatabaseName"
+    Write-Host "Cxopying Database on $DatabaseServerInstance from $SourceDatabaseName to $DestinationDatabaseName"
 
     if (Test-NavDatabase -DatabaseServer $databaseServer `
                          -DatabaseInstance $databaseInstance `
@@ -199,19 +200,22 @@ function Copy-NavDatabase
 
     } else {
 
-        Write-Host "Creating $DestinationDatabaseName on $DatabaseServerInstance as copy of $SourceDatabaseName"
-        Invoke-SqlCmdWithRetry -DatabaseServer $databaseServer `
-                               -DatabaseInstance $databaseInstance `
-                               -DatabaseCredentials $databaseCredentials `
-                               -Query "CREATE Database [$DestinationDatabaseName] AS COPY OF [$SourceDatabaseName];"
-        
         $engineEdition = (Invoke-SqlCmdWithRetry -DatabaseServer $databaseServer `
                                                  -DatabaseInstance $databaseInstance `
                                                  -DatabaseCredentials $databaseCredentials `
                                                  -Query "select SERVERPROPERTY('EngineEdition')").Column1
+
+        Write-Host "EngineEdition $engineEdition"
         if ("$engineEdition" -eq "5") {
+
+            # Azure SQL
+            Write-Host "Creating $DestinationDatabaseName on $DatabaseServerInstance as copy of $SourceDatabaseName"
+            Invoke-SqlCmdWithRetry -DatabaseServer $databaseServer `
+                                   -DatabaseInstance $databaseInstance `
+                                   -DatabaseCredentials $databaseCredentials `
+                                   -Query "CREATE Database [$DestinationDatabaseName] AS COPY OF [$SourceDatabaseName];"
+        
             Write-Host "Waiting for Database copy to complete"
-            # Azure SQL - Wait for the Database to become ready
             $sqlCommandText = "select * from sys.dm_database_copies"
             while ((Invoke-SqlCmdWithRetry -DatabaseServer $databaseServer `
                                     -DatabaseInstance $databaseInstance `
@@ -219,6 +223,28 @@ function Copy-NavDatabase
                                     -Query $sqlCommandText) -ne $null) {
                 Start-Sleep -Seconds 10
             }
+        } else {
+
+            $backupQuery = "backup database [$SourceDatabaseName] to disk = 'C:\$sourceDatabaseName.bak' with init, stats=10;"
+            Write-Host $backupQuery
+            Invoke-SqlCmdWithRetry -DatabaseServer $databaseServer `
+                                   -DatabaseInstance $databaseInstance `
+                                   -DatabaseCredentials $databaseCredentials `
+                                   -Query $backupQuery
+
+
+            $files = Invoke-SqlCmdWithRetry -DatabaseServer $databaseServer `
+                                   -DatabaseInstance $databaseInstance `
+                                   -DatabaseCredentials $databaseCredentials `
+                                   -Query "SELECT f.Name,f.Physical_name FROM sys.sysdatabases db INNER JOIN sys.master_files f ON f.database_id = db.dbid WHERE db.name = '$SourceDatabaseName'" | % { $_.name+[System.IO.Path]::GetExtension($_.physical_name) }
+            $move = ($files -join "', move '").Replace(".mdf","' to 'C:\$DestinationDatabaseName.mdf").Replace(".ldf","' to 'C:\$DestinationDatabaseName.ldf")
+
+            $restoreQuery = "restore database [$DestinationDatabaseName] from disk = 'C:\$sourceDatabaseName.bak' with stats=10, recovery, move '$move'"
+            Write-Host $restoreQuery
+            Invoke-SqlCmdWithRetry -DatabaseServer $databaseServer `
+                                   -DatabaseInstance $databaseInstance `
+                                   -DatabaseCredentials $databaseCredentials `
+                                   -Query $restoreQuery
         }
     }
 }
