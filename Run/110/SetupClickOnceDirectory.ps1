@@ -27,6 +27,7 @@ Copy-ItemMultiDest "$roleTailoredClientFolder\Microsoft.Office.Interop.Excel.dll
 Copy-ItemMultiDest "$roleTailoredClientFolder\Microsoft.Office.Interop.OneNote.dll"                             -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-ItemMultiDest "$roleTailoredClientFolder\Microsoft.Office.Interop.Outlook.dll"                             -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-ItemMultiDest "$roleTailoredClientFolder\Microsoft.Office.Interop.Word.dll"                                -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
+Copy-ItemMultiDest "$roleTailoredClientFolder\Microsoft.ApplicationInsights.dll"                                -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-ItemMultiDest "$roleTailoredClientFolder\Newtonsoft.Json.dll"                                              -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-ItemMultiDest "$roleTailoredClientFolder\Office.dll"                                                       -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
 Copy-ItemMultiDest "$roleTailoredClientFolder\RapidStart.ico"                                                   -Destination "$ClickOnceApplicationFilesDirectoryWin", "$ClickOnceApplicationFilesDirectoryFinsql"
