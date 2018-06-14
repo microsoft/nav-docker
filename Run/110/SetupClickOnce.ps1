@@ -76,7 +76,7 @@ $MageExeLocation = Join-Path $runPath 'Install\mage.exe'
 
 # Win Client
 $applicationManifestFile = Join-Path $clickOnceApplicationFilesDirectoryWin 'Microsoft.Dynamics.Nav.Client.exe.manifest'
-$applicationIdentityName = "$publicDnsName ClickOnce"
+$applicationIdentityName = "${publicDnsName}:$publicFileSharePort ClickOnce"
 $applicationIdentityVersion = (Get-Item -Path (Join-Path $clickOnceApplicationFilesDirectoryWin 'Microsoft.Dynamics.Nav.Client.exe')).VersionInfo.FileVersion
 
 Set-ApplicationManifestFileList `
@@ -114,7 +114,7 @@ $applicationManifestFile = Join-Path $clickOnceApplicationFilesDirectoryFinsql '
     Replace('"msil"', '"x86"').
     Replace('<commandLine file="Microsoft.Dynamics.Nav.Client.exe" parameters="" />','<commandLine file="finsql.exe" parameters="" />').
     Replace('name="Microsoft.Dynamics.Nav.Client" version="8.0.0.0"','name="finsql" version="0.0.0.0"') | Set-Content $applicationManifestFile
-$applicationIdentityName = "$publicDnsName Finsql ClickOnce"
+$applicationIdentityName = "${publicDnsName}:$publicFileSharePort Finsql ClickOnce"
 $applicationIdentityVersion = (Get-Item -Path (Join-Path $clickOnceApplicationFilesDirectoryFinsql 'finsql.exe')).VersionInfo.FileVersion
 
 Set-ApplicationManifestFileList `
