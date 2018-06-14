@@ -158,7 +158,7 @@ function Copy-NavDatabase
         $DatabaseServerInstance += "\$DatabaseInstance"
     }
 
-    Write-Host "Cxopying Database on $DatabaseServerInstance from $SourceDatabaseName to $DestinationDatabaseName"
+    Write-Host "Copying Database on $DatabaseServerInstance from $SourceDatabaseName to $DestinationDatabaseName"
 
     if (Test-NavDatabase -DatabaseServer $databaseServer `
                          -DatabaseInstance $databaseInstance `
