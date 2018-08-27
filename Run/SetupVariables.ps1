@@ -1,4 +1,4 @@
-﻿$Accept_eula = "$env:Accept_eula"
+﻿F$Accept_eula = "$env:Accept_eula"
 $Accept_outdated = "$env:Accept_outdated"
 
 $hostname = hostname
@@ -140,15 +140,16 @@ if ($SqlTimeout -eq "") {
 
 # Set Port overrides
 $fileSharePort          = "$env:fileSharePort"
-$webClientPort          = "$env:webClientPort"
 $managementServicesPort = "$env:managementServicesPort"
 $clientServicesPort     = "$env:clientServicesPort"
 $soapServicesPort       = "$env:soapServicesPort"
 $oDataServicesPort      = "$env:oDataServicesPort"
 $developerServicesPort  = "$env:developerServicesPort"
+if ("$env:webClientPort" -ne "") {
+    $webClientPort = "$env:webClientPort"
+}
 
 if ("$fileSharePort" -eq "")          { $fileSharePort      = "8080" }
-if ("$webClientPort" -eq "")          { $webClientPort      = "443" }
 if ("$managementServicesPort" -eq "") { $managementServicesPort = "7045" }
 if ("$clientServicesPort" -eq "")     { $clientServicesPort = "7046" }
 if ("$soapServicesPort" -eq "")       { $soapServicesPort   = "7047" }
@@ -163,8 +164,11 @@ $publicSoapPort      = "$env:publicSoapPort"
 $publicODataPort     = "$env:publicODataPort"
 
 # Default public ports
-if ($publicWebClientPort -ne "") { $publicWebClientPort = ":$publicWebClientPort" }
-if ($publicWebClientPort -eq "" -and $webClientPort -ne "443") { $publicWebClientPort = ":$webClientPort" }
+if ($publicWebClientPort -ne "") {
+    $publicWebClientPort = ":$publicWebClientPort"
+} elseif ("$env:webClientPort" -ne "") {
+    $publicWebClientPort = ":$webClientPort"
+}
 
 if ($publicFileSharePort -eq "") { $publicFileSharePort = "$fileSharePort" }
 if ($publicWinClientPort -eq "") { $publicWinClientPort = "$clientServicesPort" }
