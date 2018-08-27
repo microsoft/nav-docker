@@ -1,16 +1,16 @@
 ﻿$registry = "microsoft"
-$tag = "0.0.6.1"
-$latest = $true
+$tag = "0.0.6.5"
+$latest = $false
+$removeImage = $false
 
-"1803","1709","ltsc2016" | % {
+"1803","1709" | % {
+#"ltsc2016" | % {
 
     $baseVersionTag = $_
     $baseImage = "microsoft/dotnet-framework:4.7.2-runtime-windowsservercore-$baseVersionTag"
     
     $maintainer = "Dynamics SMB"
     $eula = "https://go.microsoft.com/fwlink/?linkid=861843"
-    
-    $removeImage = $false
     
     docker pull $baseImage
     $osversion = docker inspect --format "{{.OsVersion}}" $baseImage

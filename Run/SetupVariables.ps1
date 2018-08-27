@@ -138,6 +138,23 @@ if ($SqlTimeout -eq "") {
     $SqlTimeout = "300"
 }
 
+# Set Port overrides
+$fileSharePort          = "$env:fileSharePort"
+$webClientPort          = "$env:webClientPort"
+$managementServicesPort = "$env:managementServicesPort"
+$clientServicesPort     = "$env:clientServicesPort"
+$soapServicesPort       = "$env:soapServicesPort"
+$oDataServicesPort      = "$env:oDataServicesPort"
+$developerServicesPort  = "$env:developerServicesPort"
+
+if ("$fileSharePort" -eq "")          { $fileSharePort      = "8080" }
+if ("$webClientPort" -eq "")          { $webClientPort      = "443" }
+if ("$managementServicesPort" -eq "") { $managementServicesPort = "7045" }
+if ("$clientServicesPort" -eq "")     { $clientServicesPort = "7046" }
+if ("$soapServicesPort" -eq "")       { $soapServicesPort   = "7047" }
+if ("$oDataServicesPort" -eq "")      { $oDataServicesPort  = "7048" }
+if ("$developerServicesPort" -eq "")  { $developerServicesPort  = "7049" }
+
 # Set public ports
 $publicWebClientPort = "$env:publicWebClientPort"
 $publicFileSharePort = "$env:publicFileSharePort"
@@ -147,10 +164,12 @@ $publicODataPort     = "$env:publicODataPort"
 
 # Default public ports
 if ($publicWebClientPort -ne "") { $publicWebClientPort = ":$publicWebClientPort" }
-if ($publicFileSharePort -eq "") { $publicFileSharePort = "8080" }
-if ($publicWinClientPort -eq "") { $publicWinClientPort = "7046" }
-if ($publicSoapPort      -eq "") { $publicSoapPort      = "7047" }
-if ($publicODataPort     -eq "") { $publicODataPort     = "7048" }
+if ($publicWebClientPort -eq "" -and $webClientPort -ne "443") { $publicWebClientPort = ":$webClientPort" }
+
+if ($publicFileSharePort -eq "") { $publicFileSharePort = "$fileSharePort" }
+if ($publicWinClientPort -eq "") { $publicWinClientPort = "$clientServicesPort" }
+if ($publicSoapPort      -eq "") { $publicSoapPort      = "$soapServicesPort" }
+if ($publicODataPort     -eq "") { $publicODataPort     = "$oDataServicesPort" }
 
 # AccessControlService
 $appIdUri = "$env:appIdUri"

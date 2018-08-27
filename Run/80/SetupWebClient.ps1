@@ -154,7 +154,7 @@ New-NavWebSite -WebClientFolder $WebClientFolder `
 Write-Host "Creating Web Server Instance"
 New-NAVWebServerInstance -Server "localhost" `
                          -ClientServicesCredentialType $auth `
-                         -ClientServicesPort 7046 `
+                         -ClientServicesPort "$clientServicesPort" `
                          -ServerInstance "NAV" `
                          -WebServerInstance "NAV"
 

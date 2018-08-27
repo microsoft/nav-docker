@@ -136,10 +136,10 @@ $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseServer']").Value
 $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseInstance']").Value = $databaseInstance
 $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseName']").Value = "$databaseName"
 $customConfig.SelectSingleNode("//appSettings/add[@key='ServerInstance']").Value = "NAV"
-$customConfig.SelectSingleNode("//appSettings/add[@key='ManagementServicesPort']").Value = "7045"
-$customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesPort']").Value = "7046"
-$customConfig.SelectSingleNode("//appSettings/add[@key='SOAPServicesPort']").Value = "7047"
-$customConfig.SelectSingleNode("//appSettings/add[@key='ODataServicesPort']").Value = "7048"
+$customConfig.SelectSingleNode("//appSettings/add[@key='ManagementServicesPort']").Value = "$managementServicesPort"
+$customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesPort']").Value = "$clientServicesPort"
+$customConfig.SelectSingleNode("//appSettings/add[@key='SOAPServicesPort']").Value = "$soapServicesPort"
+$customConfig.SelectSingleNode("//appSettings/add[@key='ODataServicesPort']").Value = "$oDataServicesPort"
 $customConfig.SelectSingleNode("//appSettings/add[@key='DefaultClient']").Value = "Web"
 $taskSchedulerKeyExists = ($customConfig.SelectSingleNode("//appSettings/add[@key='EnableTaskScheduler']") -ne $null)
 if ($taskSchedulerKeyExists) {

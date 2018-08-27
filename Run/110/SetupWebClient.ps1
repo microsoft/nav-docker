@@ -20,7 +20,7 @@ New-NAVWebServerInstance -PublishFolder $publishFolder `
                          -Server "localhost" `
                          -ServerInstance "NAV" `
                          -ClientServicesCredentialType $Auth `
-                         -ClientServicesPort "7046" `
+                         -ClientServicesPort "$clientServicesPort" `
                          -WebSitePort $webClientPort @certparam
 
 $navsettingsFile = Join-Path $wwwRootPath "nav\navsettings.json"

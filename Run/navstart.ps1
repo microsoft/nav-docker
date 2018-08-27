@@ -142,7 +142,7 @@ if (!$restartingInstance) {
     if ($httpSite -ne "N") {
         Write-Host "Creating http download site"
         New-Item -Path $httpPath -ItemType Directory | Out-Null
-        New-Website -Name http -Port 8080 -PhysicalPath $httpPath | Out-Null
+        New-Website -Name http -Port $fileSharePort -PhysicalPath $httpPath | Out-Null
     
         $webConfigFile = Join-Path $httpPath "web.config"
         Copy-Item -Path (Join-Path $runPath "web.config") -Destination $webConfigFile

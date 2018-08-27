@@ -18,10 +18,10 @@ $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseServer']").Value
 $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseInstance']").Value = $databaseInstance
 $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseName']").Value = "$databaseName"
 $customConfig.SelectSingleNode("//appSettings/add[@key='ServerInstance']").Value = "NAV"
-$customConfig.SelectSingleNode("//appSettings/add[@key='ManagementServicesPort']").Value = "7045"
-$customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesPort']").Value = "7046"
-$customConfig.SelectSingleNode("//appSettings/add[@key='SOAPServicesPort']").Value = "7047"
-$customConfig.SelectSingleNode("//appSettings/add[@key='ODataServicesPort']").Value = "7048"
+$customConfig.SelectSingleNode("//appSettings/add[@key='ManagementServicesPort']").Value = "$managementServicesPort"
+$customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesPort']").Value = "$clientServicesPort"
+$customConfig.SelectSingleNode("//appSettings/add[@key='SOAPServicesPort']").Value = "$soapServicesPort"
+$customConfig.SelectSingleNode("//appSettings/add[@key='ODataServicesPort']").Value = "$oDataServicesPort"
 $customConfig.SelectSingleNode("//appSettings/add[@key='DefaultClient']").Value = "Web"
 $customConfig.SelectSingleNode("//appSettings/add[@key='Multitenant']").Value = "$multitenant"
 
@@ -32,7 +32,7 @@ if ($taskSchedulerKeyExists) {
 
 $developerServicesKeyExists = ($customConfig.SelectSingleNode("//appSettings/add[@key='DeveloperServicesPort']") -ne $null)
 if ($developerServicesKeyExists) {
-    $customConfig.SelectSingleNode("//appSettings/add[@key='DeveloperServicesPort']").Value = "7049"
+    $customConfig.SelectSingleNode("//appSettings/add[@key='DeveloperServicesPort']").Value = "$developerServicesPort"
     $customConfig.SelectSingleNode("//appSettings/add[@key='DeveloperServicesEnabled']").Value = "true"
     $CustomConfig.SelectSingleNode("//appSettings/add[@key='DeveloperServicesSSLEnabled']").Value = $servicesUseSSL.ToString().ToLower()
 }
@@ -98,7 +98,7 @@ if ($auth -eq "AccessControlService") {
 
 $CustomConfig.Save($CustomConfigFile)
 
-7045,7047,7048,7049 | % {
+$managementServicesPort,$soapServicesPort,$oDataServicesPort,$developerServicesPort | % {
     netsh http add urlacl url=$protocol+:$_/NAV user="NT AUTHORITY\SYSTEM" | Out-Null
     if ($servicesUseSSL) {
         netsh http add sslcert ipport=0.0.0.0:$_ certhash=$certificateThumbprint appid="{00112233-4455-6677-8899-AABBCCDDEEFF}" | Out-Null
@@ -106,10 +106,10 @@ $CustomConfig.Save($CustomConfigFile)
 }
 
 if ($navUseSSL) {
-    netsh http add urlacl url=https://+:7046/NAV user="NT AUTHORITY\SYSTEM" | Out-Null
-    netsh http add sslcert ipport=0.0.0.0:7046 certhash=$certificateThumbprint appid="{00112233-4455-6677-8899-AABBCCDDEEFF}" | Out-Null
+    netsh http add urlacl url=https://+:$clientServicesPort/NAV user="NT AUTHORITY\SYSTEM" | Out-Null
+    netsh http add sslcert ipport=0.0.0.0:$clientServicesPort certhash=$certificateThumbprint appid="{00112233-4455-6677-8899-AABBCCDDEEFF}" | Out-Null
 } else {
-    netsh http add urlacl url=http://+:7046/NAV user="NT AUTHORITY\SYSTEM" | Out-Null
+    netsh http add urlacl url=http://+:$clientServicesPort/NAV user="NT AUTHORITY\SYSTEM" | Out-Null
 }
 
 if ($developerServicesKeyExists) {
