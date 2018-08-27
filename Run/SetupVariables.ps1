@@ -1,4 +1,4 @@
-﻿F$Accept_eula = "$env:Accept_eula"
+﻿$Accept_eula = "$env:Accept_eula"
 $Accept_outdated = "$env:Accept_outdated"
 
 $hostname = hostname
