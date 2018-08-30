@@ -73,6 +73,9 @@ Copy-Item (Join-Path (Get-ChildItem -Path "$NavDvdPath\RoleTailoredClient\Common
 $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName
 $roleTailoredClientFolder = (Get-Item "C:\Program Files (x86)\Microsoft Dynamics NAV\*\RoleTailored Client").FullName
 
+# Copy office DLLs to Add-ins folder in service Tier to allow compilation of codeunit 5054 and more
+Copy-Item -Path (Join-Path $roleTailoredClientFolder "*office*.dll") -Destination (Join-Path $serviceTierFolder "Add-ins\Office")
+
 # Due to dependencies from finsql.exe, we have to copy hlink.dll and ReportBuilder in place inside the container
 Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path $roleTailoredClientFolder 'hlink.dll')
 Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path $serviceTierFolder 'hlink.dll')
