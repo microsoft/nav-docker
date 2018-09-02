@@ -6,6 +6,10 @@ $publicDnsName = "$env:PublicDnsName"
 if ($publicDnsName -eq "") {
     $publicDnsName = $hostname
 }
+$clickOnceIdentity = "$env:ClickOnceIdentity"
+if ($clickOnceIdentity -eq "") {
+    $clickOnceIdentity = $publicDnsName
+}
 
 $auth = "$env:Auth"
 if ($auth -eq "") {

@@ -1,6 +1,7 @@
 ﻿# INPUT
 #     $navDvdPath
 #     $publicDnsName 
+#     $clickOnceIdentity
 #     $httpPath
 #     $dnsIdentity
 #     $Auth
@@ -40,8 +41,8 @@ if ($customWinSettings -ne "") {
     Set-ConfigSetting -customSettings $customWinSettings -parentPath "//configuration/appSettings" -leafName "add" -customConfig $clientUserSettings
 }
 
-$applicationName = "NAV Windows Client for $publicDnsName"
-$applicationNameFinSql = "NAV C/SIDE for $publicDnsName"
+$applicationName = "NAV Windows Client for $clickOnceIdentity"
+$applicationNameFinSql = "NAV C/SIDE for $clickOnceIdentity"
 $applicationPublisher = "Microsoft Corporation"
 
 
@@ -70,7 +71,7 @@ $MageExeLocation = Join-Path $runPath 'Install\mage.exe'
 
 # Win Client
 $applicationManifestFile = Join-Path $clickOnceApplicationFilesDirectoryWin 'Microsoft.Dynamics.Nav.Client.exe.manifest'
-$applicationIdentityName = "$publicDnsName ClickOnce"
+$applicationIdentityName = "$clickOnceIdentity ClickOnce"
 $applicationIdentityVersion = (Get-Item -Path (Join-Path $clickOnceApplicationFilesDirectoryWin 'Microsoft.Dynamics.Nav.Client.exe')).VersionInfo.FileVersion
 
 Set-ApplicationManifestFileList `
@@ -83,7 +84,7 @@ Set-ApplicationManifestApplicationIdentity `
     -ApplicationIdentityVersion $ApplicationIdentityVersion
 
 $deploymentManifestFile = Join-Path $clickOnceDirectory 'Win\Deployment\Microsoft.Dynamics.Nav.Client.application'
-$deploymentIdentityName = "$publicDnsName ClickOnce"
+$deploymentIdentityName = "$clickOnceIdentity ClickOnce"
 $deploymentIdentityVersion = $applicationIdentityVersion
 $deploymentManifestUrl = ($clickOnceWebSiteUrl + "/Win/Deployment/Microsoft.Dynamics.Nav.Client.application")
 $applicationManifestUrl = ($clickOnceWebSiteUrl + "/Win/Deployment/ApplicationFiles/Microsoft.Dynamics.Nav.Client.exe.manifest")
@@ -108,7 +109,7 @@ $applicationManifestFile = Join-Path $clickOnceApplicationFilesDirectoryFinsql '
     Replace('"msil"', '"x86"').
     Replace('<commandLine file="Microsoft.Dynamics.Nav.Client.exe" parameters="" />','<commandLine file="finsql.exe" parameters="" />').
     Replace('name="Microsoft.Dynamics.Nav.Client" version="8.0.0.0"','name="finsql" version="0.0.0.0"') | Set-Content $applicationManifestFile
-$applicationIdentityName = "$publicDnsName Finsql ClickOnce"
+$applicationIdentityName = "$clickOnceIdentity Finsql ClickOnce"
 $applicationIdentityVersion = (Get-Item -Path (Join-Path $clickOnceApplicationFilesDirectoryFinsql 'finsql.exe')).VersionInfo.FileVersion
 
 Set-ApplicationManifestFileList `
@@ -123,7 +124,7 @@ Set-ApplicationManifestApplicationIdentity `
 Rename-Item (Join-Path $clickOnceDirectory 'Finsql\Deployment\Microsoft.Dynamics.Nav.Client.application') (Join-Path $clickOnceDirectory 'Finsql\Deployment\finsql.application')
 $deploymentManifestFile = Join-Path $clickOnceDirectory 'Finsql\Deployment\finsql.application'
 (Get-Content $deploymentManifestFile).replace('"msil"', '"x86"') | Set-Content $deploymentManifestFile
-$deploymentIdentityName = "$publicDnsName Finsql ClickOnce"
+$deploymentIdentityName = "$clickOnceIdentity Finsql ClickOnce"
 $deploymentIdentityVersion = $applicationIdentityVersion
 $deploymentManifestUrl = ($clickOnceWebSiteUrl + "/Finsql/Deployment/Finsql.application")
 $applicationManifestUrl = ($clickOnceWebSiteUrl + "/Finsql/Deployment/ApplicationFiles/Finsql.exe.manifest")
