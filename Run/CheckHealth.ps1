@@ -4,7 +4,8 @@
     $publicWebBaseUrl = $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value
     if ($publicWebBaseUrl -ne "") {
         # WebClient installed use WebClient base Health endpoint
-        $result = Invoke-WebRequest -Uri "$publicWebBaseUrl/Health/System" -UseBasicParsing -TimeoutSec 10
+        if (!($publicWebBaseUrl.EndsWith("/"))) { $publicWebBaseUrl += "/" }
+        $result = Invoke-WebRequest -Uri "${publicWebBaseUrl}Health/System" -UseBasicParsing -TimeoutSec 10
         if ($result.StatusCode -eq 200 -and ((ConvertFrom-Json $result.Content).result)) {
             # Web Client Health Check Endpoint will test Web Client, Service Tier and Database Connection
             exit 0
