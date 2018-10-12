@@ -19,6 +19,7 @@ function Get-MyFilePath([string]$FileName)
 
 $hostname = hostname
 
+. (Get-MyFilePath "ServiceSettings.ps1")
 . (Get-MyFilePath "HelperFunctions.ps1")
 . (Get-MyFilePath "SetupVariables.ps1")
 
