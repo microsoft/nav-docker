@@ -1,0 +1,12 @@
+ARG baseimage
+
+FROM $baseimage
+
+ARG COUNTRYURL=""
+ARG CountryCode=""
+
+ENV CountryCode=$CountryCode DatabaseName=Cronus$CountryCode
+
+COPY ./importCountry.ps1 C:/RUN/importCountry.ps1
+
+RUN .\Run\importCountry.ps1 -COUNTRYURL $COUNTRYURL
