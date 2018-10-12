@@ -1,4 +1,4 @@
-FROM navgeneric.azurecr.io/generic:1709
+FROM microsoft/dynamics-nav:generic-1709
 
 ARG NAVDVDURL="" VSIXURL="" IsBcSandbox="N"
 
