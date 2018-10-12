@@ -1,0 +1,9 @@
+ARG baseimage
+
+FROM $baseimage
+
+ARG NAVDVDURL="" VSIXURL="" IsBcSandbox="N"
+
+ENV DatabaseServer=localhost DatabaseInstance=SQLEXPRESS DatabaseName=CRONUS NAVDVDURL=$NAVDVDURL IsBcSandbox=$IsBcSandbox
+
+RUN .\Run\buildimage.ps1 -NAVDVDURL $NAVDVDURL -VSIXURL $VSIXURL
