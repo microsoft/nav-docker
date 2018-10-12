@@ -12,5 +12,5 @@ $acr = "navgeneric"
                  --build-arg tag=$tag `
                  --verbose `
                  --file "$_.DOCKERFILE" `
-                 https://github.com/Microsoft/nav-docker.git#master
+                 https://github.com/Microsoft/nav-docker.git#master:generic
 }
