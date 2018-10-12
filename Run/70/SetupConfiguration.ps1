@@ -59,12 +59,6 @@ if (($enableApiServices -ne $null) -and $apiServicesEnabledExists) {
     $customConfig.SelectSingleNode("//appSettings/add[@key='ApiServicesEnabled']").Value = "$($enableApiServices -eq $true)"
 }
 
-if ($isBcSandbox) {
-    $customConfig.SelectSingleNode("//appSettings/add[@key='EnableTaskScheduler']").Value = "true"
-    Set-ConfigSetting -customSettings "TenantEnvironmentType=Sandbox" -parentPath "//appSettings" -leafName "add" -customConfig $customConfig -silent
-    Set-ConfigSetting -customSettings "EnableSaasExtensionInstall=true" -parentPath "//appSettings" -leafName "add" -customConfig $customConfig -silent
-}
-
 if ($customNavSettings -ne "") {
     Write-Host "Modifying Service Tier Config File with settings from environment variable"    
     Set-ConfigSetting -customSettings $customNavSettings -parentPath "//appSettings" -leafName "add" -customConfig $CustomConfig

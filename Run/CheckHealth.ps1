@@ -1,7 +1,9 @@
 ﻿try {
+    . (Join-Path $PSScriptRoot "ServiceSettings.ps1")
     $CustomConfigFile = Join-Path (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName "CustomSettings.config"
     $CustomConfig = [xml](Get-Content $CustomConfigFile)
     $publicWebBaseUrl = $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value
+    $serverInstance = $CustomConfig.SelectSingleNode("//appSettings/add[@key='ServerInstance']").Value
     if ($publicWebBaseUrl -ne "") {
         # WebClient installed use WebClient base Health endpoint
         if (!($publicWebBaseUrl.EndsWith("/"))) { $publicWebBaseUrl += "/" }
@@ -12,7 +14,7 @@
         }
     } else {
         # WebClient not installed, check Service Tier
-        if ((Get-service -name 'MicrosoftDynamicsNavServer$NAV').Status -eq 'Running') {
+        if ((Get-service -name "$NavServiceName").Status -eq 'Running') {
             exit 0
         }
     }

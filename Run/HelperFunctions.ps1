@@ -1,5 +1,4 @@
-﻿$NavServiceName = 'MicrosoftDynamicsNavServer$NAV'
-$SqlServiceName = 'MSSQL$SQLEXPRESS'
+﻿$SqlServiceName = 'MSSQL$SQLEXPRESS'
 $SqlWriterServiceName = "SQLWriter"
 $SqlBrowserServiceName = "SQLBrowser"
 $IisServiceName = "W3SVC"

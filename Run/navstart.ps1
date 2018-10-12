@@ -83,6 +83,9 @@ $roleTailoredClientFolder = (Get-Item "C:\Program Files (x86)\Microsoft Dynamics
 $clickOnceInstallerToolsFolder = (Get-Item "C:\Program Files (x86)\Microsoft Dynamics NAV\*\ClickOnce Installer Tools").FullName
 $WebClientFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Web Client")[0]
 $NAVAdministrationScriptsFolder = (Get-Item "$runPath\NAVAdministration").FullName
+$CustomConfigFile = Join-Path $serviceTierFolder "CustomSettings.config"
+$CustomConfig = [xml](Get-Content $CustomConfigFile)
+$serverInstance = $CustomConfig.SelectSingleNode("//appSettings/add[@key='ServerInstance']").Value
 
 if (Test-Path "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1") {
     Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1" -wa SilentlyContinue
@@ -116,10 +119,10 @@ if (!$restartingInstance) {
 }
 
 if ((Get-Service -name $NavServiceName).Status -ne "Running") {
-    Write-Host "Starting NAV Service Tier"
+    Write-Host "Starting Service Tier"
     Start-Service -Name $NavServiceName -WarningAction Ignore
 } else {
-    Write-Host "Restarting NAV Service Tier"
+    Write-Host "Restarting Service Tier"
     Restart-Service -Name $NavServiceName -WarningAction Ignore
 }
 
@@ -177,13 +180,13 @@ if ($webClient -ne "N") {
     Write-Host "Web Client          : $publicWebBaseUrl$webTenantParam"
 }
 if ($auth -ne "Windows" -and $usingLocalSQLServer -and !$passwordSpecified -and !$restartingInstance) {
-    Write-Host "NAV Admin Username  : $username"
-    Write-Host ("NAV Admin Password  : "+[System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)))
+    Write-Host "Admin Username      : $username"
+    Write-Host ("Admin Password      : "+[System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)))
 }
 if ($httpSite -ne "N") {
     if (Test-Path -Path (Join-Path $httpPath "*.vsix")) {
         Write-Host "Dev. Server         : $protocol$publicDnsName"
-        Write-Host "Dev. ServerInstance : NAV"
+        Write-Host "Dev. ServerInstance : $serverInstance"
         if ($multitenant) {
             Write-Host "Dev. Server Tenant  : $tenantId"
         }
