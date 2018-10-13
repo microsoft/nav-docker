@@ -1,15 +1,14 @@
 ARG baseimage
+ARG navdvdurl
+ARG vsixurl
+ARG isbcsandbox="N"
 
 FROM $baseimage
 
-ARG NAVDVDURL
-ARG VSIXURL
-ARG IsBcSandbox="N"
-
-ENV DatabaseServer=localhost DatabaseInstance=SQLEXPRESS DatabaseName=CRONUS IsBcSandbox=$IsBcSandbox
+ENV DatabaseServer=localhost DatabaseInstance=SQLEXPRESS DatabaseName=CRONUS IsBcSandbox=$isbcsandbox
 
 COPY ./buildimage.ps1 C:/RUN/buildimage.ps1
 
-RUN echo "-NAVDVDURL $NAVDVDURL -VSIXURL $VSIXURL"
+RUN echo "-NAVDVDURL $navdvdurl -VSIXURL $vsixurl"
 
 RUN .\Run\buildimage.ps1 -NAVDVDURL $NAVDVDURL -VSIXURL $VSIXURL
