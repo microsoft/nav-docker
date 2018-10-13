@@ -9,6 +9,6 @@ ENV DatabaseServer=localhost DatabaseInstance=SQLEXPRESS DatabaseName=CRONUS IsB
 
 COPY ./buildimage.ps1 /buildimage.ps1
 
-RUN powershell.exe -Command "$ErrorActionPreference = 'Stop' ; \
+RUN powershell.exe -Command $ErrorActionPreference = 'Stop' ; \
     $ProgressPreference = 'SilentlyContinue' ; \
-    c:\buildimage.ps1 -NAVDVDURL ""%navdvdurl%"" -VSIXURL ""%vsixurl"""
+    c:\buildimage.ps1 -NAVDVDURL %navdvdurl% -VSIXURL %vsixurl
