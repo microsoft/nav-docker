@@ -4,6 +4,7 @@ $acr = "nav2017"
 #"1803","1709","ltsc2016" | ForEach-Object {
 "1803" | ForEach-Object {
     $baseimage = "microsoft/dynamics-nav:generic-$_"
+    az acr import --name $acr --source $baseimage
     az acr build --registry $acr `
                  --image "nav:2017-cu18-w1-$_" `
                  --timeout 4800 `

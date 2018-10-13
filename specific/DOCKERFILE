@@ -2,8 +2,8 @@ ARG baseimage
 
 FROM $baseimage
 
-ARG NAVDVDURL=""
-ARG VSIXURL=""
+ARG NAVDVDURL
+ARG VSIXURL
 ARG IsBcSandbox="N"
 
 ENV DatabaseServer=localhost DatabaseInstance=SQLEXPRESS DatabaseName=CRONUS IsBcSandbox=$IsBcSandbox
