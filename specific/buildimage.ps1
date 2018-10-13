@@ -4,7 +4,7 @@
 )
 
 if ("$NAVDVDURL" -ne "") {
-    Write-Host "Downloading NAVDVD"
+    Write-Host "Downloading NAVDVD $NAVDVDURL"
     (New-Object System.Net.WebClient).DownloadFile("$NAVDVDURL", "C:\NAVDVD.zip")
     [Reflection.Assembly]::LoadWithPartialName("System.IO.Compression.Filesystem") | Out-Null
     [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\NAVDVD.zip","C:\NAVDVD\")
