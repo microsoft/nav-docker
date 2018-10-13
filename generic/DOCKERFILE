@@ -17,7 +17,6 @@ RUN Add-WindowsFeature Web-Server,web-AppInit,web-Asp-Net45,web-Windows-Auth,web
     Invoke-WebRequest -Uri 'https://download.microsoft.com/download/9/0/7/907AD35F-9F9C-43A5-9789-52470555DB90/ENU/SQLEXPR_x64_ENU.exe' -OutFile sqlexpress.exe ; \
     Start-Process -Wait -FilePath .\sqlexpress.exe -ArgumentList /qs, /x:setup ; \
     .\setup\setup.exe /q /ACTION=Install /INSTANCENAME=SQLEXPRESS /FEATURES=SQLEngine /UPDATEENABLED=0 /SQLSVCACCOUNT='NT AUTHORITY\System' /SQLSYSADMINACCOUNTS='BUILTIN\ADMINISTRATORS' /TCPENABLED=1 /NPENABLED=0 /IACCEPTSQLSERVERLICENSETERMS ; \
-    Remove-Item -Recurse -Force sqlexpress.exe, setup ; \
     While (!(get-service 'MSSQL$SQLEXPRESS' -ErrorAction SilentlyContinue)) { Start-Sleep -Seconds 5 } ; \
     Stop-Service 'MSSQL$SQLEXPRESS' ; \
     Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql13.SQLEXPRESS\mssqlserver\supersocketnetlib\tcp\ipall' -name tcpdynamicports -value '' ; \
@@ -26,7 +25,8 @@ RUN Add-WindowsFeature Web-Server,web-AppInit,web-Asp-Net45,web-Windows-Auth,web
     Set-Service 'MSSQL$SQLEXPRESS' -startuptype manual ; \
     if (get-service 'SQLTELEMETRY$SQLEXPRESS' -ErrorAction SilentlyContinue) { Set-Service 'SQLTELEMETRY$SQLEXPRESS' -startuptype manual } ; \
     Set-Service 'SQLWriter' -startuptype manual ; \
-    Set-Service 'SQLBrowser' -startuptype manual
+    Set-Service 'SQLBrowser' -startuptype manual ; \
+    Remove-Item -Recurse -Force sqlexpress.exe, setup
     
 COPY Run /Run/
 
