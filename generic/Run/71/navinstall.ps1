@@ -14,7 +14,8 @@ function Get-MyFilePath([string]$FileName)
     }
 }
 
-. (Join-Path $runPath "HelperFunctions.ps1")
+. (Get-MyFilePath "ServiceSettings.ps1")
+. (Get-MyFilePath "HelperFunctions.ps1")
 
 if (!(Test-Path $navDvdPath -PathType Container)) {
     Write-Error "NAVDVD folder not found.
