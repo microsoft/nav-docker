@@ -11,4 +11,4 @@ ENV DatabaseServer=localhost DatabaseInstance=SQLEXPRESS DatabaseName=CRONUS IsB
 
 COPY ./buildimage.ps1 /buildimage.ps1
 
-RUN .\buildimage.ps1 -NAVDVDURL $navdvdurl -VSIXURL $vsixurl
+RUN .\buildimage.ps1 -NAVDVDURL %navdvdurl% -VSIXURL %vsixurl%
