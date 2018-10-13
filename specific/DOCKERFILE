@@ -11,4 +11,4 @@ COPY ./buildimage.ps1 C:/RUN/buildimage.ps1
 
 RUN echo "-NAVDVDURL $navdvdurl -VSIXURL $vsixurl"
 
-RUN .\Run\buildimage.ps1 -NAVDVDURL $NAVDVDURL -VSIXURL $VSIXURL
+RUN .\Run\buildimage.ps1 -NAVDVDURL "https://bcdocker.blob.core.windows.net/public/NAV.10.0.21832.W1.DVD.zip" -VSIXURL $VSIXURL
