@@ -1,9 +1,10 @@
 ARG baseimage
+
+FROM $baseimage
+
 ARG navdvdurl="test"
 ARG vsixurl=""
 ARG isbcsandbox="N"
-
-FROM $baseimage
 
 ENV DatabaseServer=localhost DatabaseInstance=SQLEXPRESS DatabaseName=CRONUS NAVDVDURL=$navdvdurl VSIXURL=$vsixurl IsBcSandbox=$isbcsandbox
 
