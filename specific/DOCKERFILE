@@ -5,9 +5,7 @@ ARG isbcsandbox="N"
 
 FROM $baseimage
 
-SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
-
-ENV DatabaseServer=localhost DatabaseInstance=SQLEXPRESS DatabaseName=CRONUS NAVDVDURL=$navdvdurl VSIXURL=$vsixurl IsBcSandbox=$isbcsandbox
+ENV DatabaseServer=localhost DatabaseInstance=SQLEXPRESS DatabaseName=CRONUS NAVDVDURL=%navdvdurl% VSIXURL=%vsixurl% IsBcSandbox=%isbcsandbox%
 
 COPY ./buildimage.ps1 /buildimage.ps1
 
