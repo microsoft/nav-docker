@@ -7,6 +7,6 @@ FROM $baseimage
 
 ENV DatabaseServer=localhost DatabaseInstance=SQLEXPRESS DatabaseName=CRONUS NAVDVDURL=$navdvdurl VSIXURL=$vsixurl IsBcSandbox=$isbcsandbox
 
-COPY ./buildimage.ps1 /buildimage.ps1
+COPY ./buildimage.ps1 /Run/buildimage.ps1
 
-RUN \buildimage.ps1
+RUN \Run\buildimage.ps1
