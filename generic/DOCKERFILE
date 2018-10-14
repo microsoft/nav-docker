@@ -1,8 +1,9 @@
 ARG baseimage
-ARG created
-ARG tag
 
 FROM $baseimage
+
+ARG created
+ARG tag
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
