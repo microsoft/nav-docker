@@ -2,11 +2,14 @@ ARG baseimage
 
 FROM $baseimage
 
-ARG COUNTRYURL=""
-ARG CountryCode=""
+ARG countryurl=""
+ARG country=""
 
-ENV CountryCode=$CountryCode DatabaseName=Cronus$CountryCode
+ENV CountryCode=$country DatabaseName=Cronus$countrycode COUNTRYURL=$countryurl
 
-COPY ./importCountry.ps1 C:/RUN/importCountry.ps1
+COPY ./importCountry.ps1 /Run/importCountry.ps1
 
-RUN .\Run\importCountry.ps1 -COUNTRYURL $COUNTRYURL
+RUN \Run\importCountry.ps1
+
+LABEL created="$created" \
+      country="$country"

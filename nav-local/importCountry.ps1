@@ -11,7 +11,7 @@ $SqlServiceName = 'MSSQL$SQLEXPRESS'
 $SqlWriterServiceName = "SQLWriter"
 $SqlBrowserServiceName = "SQLBrowser"
 
-Write-Host "Downloading database"
+Write-Host "Downloading database $env:COUNTRYURL"
 $countryFile = "C:\COUNTRY.zip"
 (New-Object System.Net.WebClient).DownloadFile("$env:COUNTRYURL", $countryFile)
 [Reflection.Assembly]::LoadWithPartialName("System.IO.Compression.Filesystem") | Out-Null

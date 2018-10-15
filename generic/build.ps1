@@ -27,7 +27,7 @@ $acr = "navgeneric"
     if ($LASTEXITCODE -eq 0) {
         Write-Host "SUCCESS"
 
-        $tags = @("microsoft/dynamics-nav:generic-dev-$_")
+        $tags = @("microsoft/dynamics-nav:generic-$_")
     
         docker pull "$acr.azurecr.io/$image"
         $tags | ForEach-Object {
