@@ -1,6 +1,19 @@
 version: 1.0-preview-1
-stepTimeout: 3600
-totalTimeout: 3600
+stepTimeout: 10800
+totalTimeout: 10800
 steps:
-  - id: build1803
-    build: -t {{.Run.Registry}}/nav:{{.Values.imagetag}} --build-arg baseimage={{.Values.baseimage}}-1803 --build-arg navdvdurl={{.Values.navdvdurl}} --build-arg legal={{.Values.legal}} --build-arg created={{.Values.created}} --build-arg nav={{.Values.nav}} --build-arg cu={{.Values.cu}} --build-arg country={{.Values.country}} --build-arg version={{.Values.version}} -f ./DOCKERFILE https://github.com/Microsoft/nav-docker.git#master:nav-w1
+  - id: build-w1-1803
+    build: -t {{.Run.Registry}}/nav:{{.Run.ID}}-w1-1803 --build-arg baseimage={{.Values.baseimage}}-1803 --build-arg navdvdurl={{.Values.navdvdurl}} --build-arg legal={{.Values.legal}} --build-arg created={{.Values.created}} --build-arg nav={{.Values.nav}} --build-arg cu={{.Values.cu}} --build-arg country={{.Values.country}} --build-arg version={{.Values.version}} -f ./DOCKERFILE https://github.com/Microsoft/nav-docker.git#master:nav-w1
+  - id: push-w1-1803
+    push: ["{{.Run.Registry}}/nav:{{.Run.ID}}-w1-1803"]
+    when: ["build-w1-1803"]
+  - id: build-w1-1709
+    build: -t {{.Run.Registry}}/nav:{{.Run.ID}}-w1-1709 --build-arg baseimage={{.Values.baseimage}}-1709 --build-arg navdvdurl={{.Values.navdvdurl}} --build-arg legal={{.Values.legal}} --build-arg created={{.Values.created}} --build-arg nav={{.Values.nav}} --build-arg cu={{.Values.cu}} --build-arg country={{.Values.country}} --build-arg version={{.Values.version}} -f ./DOCKERFILE https://github.com/Microsoft/nav-docker.git#master:nav-w1
+  - id: push-w1-1709
+    push: ["{{.Run.Registry}}/nav:{{.Run.ID}}-w1-1709"]
+    when: ["build-w1-1709"]
+  - id: build-w1-ltsc2016
+    build: -t {{.Run.Registry}}/nav:{{.Run.ID}}-w1-ltsc2016 --build-arg baseimage={{.Values.baseimage}}-ltsc2016 --build-arg navdvdurl={{.Values.navdvdurl}} --build-arg legal={{.Values.legal}} --build-arg created={{.Values.created}} --build-arg nav={{.Values.nav}} --build-arg cu={{.Values.cu}} --build-arg country={{.Values.country}} --build-arg version={{.Values.version}} -f ./DOCKERFILE https://github.com/Microsoft/nav-docker.git#master:nav-w1
+  - id: push-w1-ltsc2016
+    push: ["{{.Run.Registry}}/nav:{{.Run.ID}}-w1-ltsc2016"]
+    when: ["build-w1-ltsc2016"]
