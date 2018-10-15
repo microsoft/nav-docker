@@ -5,7 +5,7 @@ FROM $baseimage
 ARG countryurl=""
 ARG country=""
 
-ENV CountryCode=$country DatabaseName=Cronus$countrycode COUNTRYURL=$countryurl
+ENV CountryCode=$country DatabaseName=Cronus$country COUNTRYURL=$countryurl
 
 COPY ./importCountry.ps1 /Run/importCountry.ps1
 
