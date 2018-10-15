@@ -10,7 +10,6 @@ $acr = "nav2017"
                  --timeout 4800 `
                  --os Windows `
                  --build-arg baseimage=$baseimage `
-                 --build-arg NAVDVDURL=$navdvdurl `
                  --file DOCKERFILE `
                  --verbose `
                  https://github.com/Microsoft/nav-docker.git#master:specific

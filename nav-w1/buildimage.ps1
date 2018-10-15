@@ -1,6 +1,4 @@
-﻿Write-Host "NAVDVDURL $env:NAVDVDURL"
-
-if ("$env:NAVDVDURL" -ne "") {
+﻿if ("$env:NAVDVDURL" -ne "") {
     Write-Host "Downloading NAVDVD"
     (New-Object System.Net.WebClient).DownloadFile("$env:NAVDVDURL", "C:\NAVDVD.zip")
     [Reflection.Assembly]::LoadWithPartialName("System.IO.Compression.Filesystem") | Out-Null
