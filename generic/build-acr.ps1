@@ -1,5 +1,4 @@
-﻿$tag = "0.0.7.0"
-$created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
+﻿. (Join-Path $PSScriptRoot "Settings.ps1")
 $acr = "navgeneric"
 
 #az acr run --registry $acr --file build-and-push.yaml --set created=$created --set tag=$tag --os Windows $PSScriptRoot

@@ -23,7 +23,7 @@ RUN Add-WindowsFeature Web-Server,web-AppInit,web-Asp-Net45,web-Windows-Auth,web
     Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql13.SQLEXPRESS\mssqlserver\supersocketnetlib\tcp\ipall' -name tcpport -value 1433 ; \
     Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql13.SQLEXPRESS\mssqlserver\' -name LoginMode -value 2 ; \
     Set-Service 'MSSQL$SQLEXPRESS' -startuptype manual ; \
-    if (get-service 'SQLTELEMETRY$SQLEXPRESS' -ErrorAction SilentlyContinue) { Set-Service 'SQLTELEMETRY$SQLEXPRESS' -startuptype manual } ; \
+    Set-Service 'SQLTELEMETRY$SQLEXPRESS' -startuptype manual ; \
     Set-Service 'SQLWriter' -startuptype manual ; \
     Set-Service 'SQLBrowser' -startuptype manual ; \
     Remove-Item -Recurse -Force sqlexpress.exe, setup
