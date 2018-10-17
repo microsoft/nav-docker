@@ -9,9 +9,10 @@
     [string] $country = "w1",
     [string] $version = "10.0.21832.0",
     [string[]] $oss = @("1803"),
-    [string[]] $tags = @("microsoft/dynamics-nav:2017-cu18-w1",
-                         "microsoft/dynamics-nav:2017-cu18",
-                         "microsoft/dynamics-nav:10.0.21832.0-w1")
+    [string[]] $tags = @("microsoft/dynamics-nav:$nav-$cu-$country",
+                         "microsoft/dynamics-nav:$nav-$cu",
+                         "microsoft/dynamics-nav:$version-$country",
+                         "microsoft/dynamics-nav:$version")
 )
 
 $oss | ForEach-Object {
