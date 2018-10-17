@@ -4,6 +4,7 @@ FROM $baseimage
 
 ARG created
 ARG tag
+ARG osversion
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
@@ -44,4 +45,5 @@ CMD .\Run\start.ps1
 LABEL maintainer="Dynamics SMB" \
       eula="https://go.microsoft.com/fwlink/?linkid=861843" \
       tag="$tag" \
-      created="$created"
+      created="$created" \
+      osversion="$osversion"
