@@ -22,21 +22,18 @@ $oss | ForEach-Object {
     docker pull $baseimage
     $osversion = docker inspect --format "{{.OsVersion}}" $baseImage
 
-    $az = az acr build --registry $acr `
-                       --image $image `
-                       --timeout 7200 `
-                       --os Windows `
-                       --build-arg baseimage=$baseimage `
-                       --build-arg created=$created `
-                       --build-arg tag=$tag `
-                       --build-arg osversion=$osversion `
-                       --file DOCKERFILE `
-                       --no-logs `
-                       https://github.com/Microsoft/nav-docker.git#master:generic
+    az acr build --registry $acr `
+                 --image $image `
+                 --timeout 7200 `
+                 --os Windows `
+                 --build-arg baseimage=$baseimage `
+                 --build-arg created=$created `
+                 --build-arg tag=$tag `
+                 --build-arg osversion=$osversion `
+                 --file DOCKERFILE `
+                 --no-logs `
+                 https://github.com/Microsoft/nav-docker.git#master:generic
     
-    Write-Host "RUNID " $az.runId
-    az acr task logs --registry $acr --run-id $az.runId
-
     if ($LASTEXITCODE -eq 0) {
         Write-Host "SUCCESS"
 
