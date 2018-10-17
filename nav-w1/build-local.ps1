@@ -37,6 +37,13 @@ $oss | ForEach-Object {
     if ($LASTEXITCODE -eq 0) {
         Write-Host "SUCCESS"
 
+        if ($_ -eq "ltsc2016") {
+            $tags | ForEach-Object {
+                docker tag $image $_
+                docker push $_
+            }
+        }
+
         $tags | ForEach-Object {
             docker tag $image $_$osSuffix
             docker push $_$osSuffix
