@@ -8,7 +8,7 @@
     [string] $cu = "cu18",
     [string] $country = "w1",
     [string] $version = "10.0.21832.0",
-    [string[]] $oss = @("1803"),
+    [string[]] $oss = @("ltsc2016"),
     [string[]] $tags = @("microsoft/dynamics-nav:2017-cu18-w1",
                          "microsoft/dynamics-nav:2017-cu18",
                          "microsoft/dynamics-nav:10.0.21832.0-w1")
@@ -19,9 +19,11 @@ $oss | ForEach-Object {
     $osSuffix = "-$_"
     $thisbaseimage = "$baseimage$osSuffix"
     $image = "nav:$version-$country$osSuffix"
-    az acr build --registry $acr `
-                 --image $image `
-                 --build-arg baseimage=$thisbaseimage `
+
+    docker pull $thisbaseimage
+    docker rmi $image -f 2>NULL | Out-Null
+
+    docker build --build-arg baseimage=$thisbaseimage `
                  --build-arg navdvdurl=$navdvdurl `
                  --build-arg legal=$legal `
                  --build-arg created=$created `
@@ -29,10 +31,8 @@ $oss | ForEach-Object {
                  --build-arg cu=$cu `
                  --build-arg country=$country `
                  --build-arg version=$version `
-                 --timeout 10800 `
-                 --os Windows `
-                 --file DOCKERFILE `
-                 https://github.com/Microsoft/nav-docker.git#master:nav-w1
+                 --tag $image `
+                 $PSScriptRoot
 
     if ($LASTEXITCODE -eq 0) {
         Write-Host "SUCCESS"

@@ -1,6 +1,6 @@
 ﻿Param(
     [string] $acr = "navgeneric",
-    [string[]] $oss = @("1803","1709")
+    [string[]] $oss = @("1803")
 )
 
 . (Join-Path $PSScriptRoot "Settings.ps1")
@@ -19,21 +19,21 @@ $oss | ForEach-Object {
 
     $image = "generic:$_"
 
-    docker pull $baseimage
-    $osversion = docker inspect --format "{{.OsVersion}}" $baseImage
-
-    az acr build --registry $acr `
-                 --image $image `
-                 --timeout 7200 `
-                 --os Windows `
-                 --build-arg baseimage=$baseimage `
-                 --build-arg created=$created `
-                 --build-arg tag=$tag `
-                 --build-arg osversion=$osversion `
-                 --file DOCKERFILE `
-                 https://github.com/Microsoft/nav-docker.git#master:generic
-    
-    if ($LASTEXITCODE -eq 0) {
+#    docker pull $baseimage
+#    $osversion = docker inspect --format "{{.OsVersion}}" $baseImage
+#
+#    az acr build --registry $acr `
+#                 --image $image `
+#                 --timeout 7200 `
+#                 --os Windows `
+#                 --build-arg baseimage=$baseimage `
+#                 --build-arg created=$created `
+#                 --build-arg tag=$tag `
+#                 --build-arg osversion=$osversion `
+#                 --file DOCKERFILE `
+#                 https://github.com/Microsoft/nav-docker.git#master:generic
+#    
+#    if ($LASTEXITCODE -eq 0) {
         Write-Host "SUCCESS"
 
         $tags = @("microsoft/dynamics-nav:generic-$_")
@@ -46,5 +46,5 @@ $oss | ForEach-Object {
             docker tag "$acr.azurecr.io/$image" $_
             docker push $_
         }
-    }
+#    }
 }
