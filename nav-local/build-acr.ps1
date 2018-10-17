@@ -17,23 +17,22 @@ $oss | ForEach-Object {
     $thisbaseimage = "microsoft/dynamics-nav:$version-w1$osSuffix"
     $image = "nav:$version-$country$osSuffix"
 
-    $az = az acr build --registry $acr `
-                       --image $image `
-                       --build-arg baseimage=$thisbaseimage `
-                       --build-arg created=$created `
-                       --build-arg countryurl=$countryurl `
-                       --build-arg country=$country `
-                       --timeout 10800 `
-                       --os Windows `
-                       --no-logs `
-                       --file DOCKERFILE `
-                       https://github.com/Microsoft/nav-docker.git#master:nav-local
-
-    Write-Host "RUNID " $az.runId
-    az acr task logs --registry $acr --run-id $az.runId
+    az acr build --registry $acr `
+                 --image $image `
+                 --build-arg baseimage=$thisbaseimage `
+                 --build-arg created=$created `
+                 --build-arg countryurl=$countryurl `
+                 --build-arg country=$country `
+                 --timeout 10800 `
+                 --os Windows `
+                 --file DOCKERFILE `
+                 https://github.com/Microsoft/nav-docker.git#master:nav-local
 
     if ($LASTEXITCODE -eq 0) {
         Write-Host "SUCCESS"
+
+        $image = "$acr.azurecr.io/$image"
+        docker pull $image
 
         if ($_ -eq "ltsc2016") {
             $tags | ForEach-Object {
