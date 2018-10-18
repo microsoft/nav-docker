@@ -2,6 +2,7 @@
     [string] $acr = "navgeneric",
     [string] $baseimage = "microsoft/dynamics-nav:generic",
     [string] $navdvdurl = "https://bcdocker.blob.core.windows.net/public/NAV.10.0.21832.W1.DVD.zip",
+    [string] $vsixurl = "",
     [string] $legal = "http://go.microsoft.com/fwlink/?LinkId=724017",
     [string] $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm"),
     [string] $nav = "2017",
@@ -24,6 +25,7 @@ $oss | ForEach-Object {
                  --image $image `
                  --build-arg baseimage=$thisbaseimage `
                  --build-arg navdvdurl=$navdvdurl `
+                 --build-arg vsixurl=$vsixurl `
                  --build-arg legal=$legal `
                  --build-arg created=$created `
                  --build-arg nav=$nav `
