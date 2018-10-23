@@ -119,7 +119,27 @@ if (!$restartingInstance) {
     . (Get-MyFilePath "SetupAddIns.ps1")
 }
 
-if ((Get-Service -name $NavServiceName).Status -ne "Running") {
+$service = Get-Service -name $NavServiceName -ErrorAction Ignore
+if (!($service)) {
+    # Creating NAV Service
+    Write-Host "Creating NAV Service Tier"
+    $serviceCredentials = New-Object System.Management.Automation.PSCredential ("NT AUTHORITY\SYSTEM", (new-object System.Security.SecureString))
+    $serverFile = "$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe"
+    $configFile = "$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe.config"
+    New-Service -Name $NavServiceName -BinaryPathName """$serverFile"" `$NAV /config ""$configFile""" -DisplayName 'Microsoft Dynamics NAV Server [NAV]' -Description 'NAV' -StartupType manual -Credential $serviceCredentials -DependsOn @("HTTP") | Out-Null
+    
+    $serverVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($serverFile)
+    $versionFolder = ("{0}{1}" -f $serverVersion.FileMajorPart,$serverVersion.FileMinorPart)
+    $registryPath = "HKLM:\SOFTWARE\Microsoft\Microsoft Dynamics NAV\$versionFolder\Service"
+    New-Item -Path $registryPath -Force | Out-Null
+    New-ItemProperty -Path $registryPath -Name 'Path' -Value "$serviceTierFolder\" -Force | Out-Null
+    New-ItemProperty -Path $registryPath -Name 'Installed' -Value 1 -Force | Out-Null
+    
+    Install-NAVSipCryptoProvider
+    
+    Write-Host "Starting NAV Service Tier"
+    Start-Service -Name $NavServiceName -WarningAction Ignore
+} elseif ($service.Status -ne "Running") {
     Write-Host "Starting Service Tier"
     Start-Service -Name $NavServiceName -WarningAction Ignore
 } else {

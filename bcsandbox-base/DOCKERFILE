@@ -11,7 +11,7 @@ ARG cu=""
 ARG country=""
 ARG version=""
 
-ENV DatabaseServer=localhost DatabaseInstance=SQLEXPRESS DatabaseName=CRONUS NAVDVDURL=$navdvdurl VSIXURL=$vsixurl IsBcSandbox=N
+ENV DatabaseServer=localhost DatabaseInstance=SQLEXPRESS DatabaseName=CRONUS NAVDVDURL=$navdvdurl VSIXURL=$vsixurl IsBcSandbox=Y
 
 COPY ./buildimage.ps1 /Run/buildimage.ps1
 

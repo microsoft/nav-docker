@@ -3,6 +3,7 @@ Set-ExecutionPolicy Unrestricted
 $runPath = "c:\Run"
 $myPath = Join-Path $runPath "my"
 $navDvdPath = "C:\NAVDVD"
+$navFSPath = "C:\NAVFS"
 
 $publicDnsNameFile = "$RunPath\PublicDnsName.txt"
 $restartingInstance = Test-Path -Path $publicDnsNameFile -PathType Leaf
@@ -76,31 +77,38 @@ try {
             $timespend = [Math]::Round([DateTime]::Now.Subtract($startTime).Totalseconds)
             Write-Host "Setting up folders took $timespend seconds"
         }
+
+        if (Test-Path $navFsPath -PathType Container) {
+            Write-Host "Copying files from $NavFsPath"
+            Get-ChildItem -Path $navFSPath | ForEach-Object {
+                Copy-Item -Path "$navFSPath\$($_.Name)" -Destination "c:\" -recurse -force
+            }
+        }
     
         if (!(Test-Path "C:\Program Files\Microsoft Dynamics NAV\*\Service\*.exe" -PathType Leaf)) {
     
-            if (!(Test-Path $navDvdPath -PathType Container)) {
-                throw "You must share a DVD folder to $navDvdPath to run the generic image"
-            }
-            
-            $setupVersion = (Get-Item -Path "$navDvdPath\setup.exe").VersionInfo.FileVersion
-            $versionNo = [Int]::Parse($setupVersion.Split('.')[0]+$setupVersion.Split('.')[1])
-            $versionFolder = ""
-            Get-ChildItem -Path $PSScriptRoot -Directory | where-object { [Int]::TryParse($_.Name, [ref]$null) } | % { [Int]::Parse($_.Name) } | Sort-Object | % {
-                if ($_ -le $versionNo) {
-                    $versionFolder = Join-Path $PSScriptRoot "$_"
+            if (Test-Path $navDvdPath -PathType Container) {
+                $setupVersion = (Get-Item -Path "$navDvdPath\ServiceTier\program files\Microsoft Dynamics NAV\*\Service\Microsoft.Dynamics.Nav.Server.exe").VersionInfo.FileVersion
+                $versionNo = [Int]::Parse($setupVersion.Split('.')[0]+$setupVersion.Split('.')[1])
+                $versionFolder = ""
+                Get-ChildItem -Path $PSScriptRoot -Directory | where-object { [Int]::TryParse($_.Name, [ref]$null) } | % { [Int]::Parse($_.Name) } | Sort-Object | % {
+                    if ($_ -le $versionNo) {
+                        $versionFolder = Join-Path $PSScriptRoot "$_"
+                    }
                 }
-            }
-            if ($versionFolder -ne "") {
-                Copy-Item -Path "$versionFolder\*" -Destination $PSScriptRoot -Recurse -Force
-            }
-
-            # Remove version specific folders
-            Get-ChildItem -Path $PSScriptRoot -Directory | where-object { [Int]::TryParse($_.Name, [ref]$null) } | % {
-                Remove-Item (Join-Path $PSScriptRoot $_.Name) -Recurse -Force -ErrorAction Ignore
-            }
+                if ($versionFolder -ne "") {
+                    Copy-Item -Path "$versionFolder\*" -Destination $PSScriptRoot -Recurse -Force
+                }
     
-            . (Get-MyFilePath "navinstall.ps1")
+                # Remove version specific folders
+                Get-ChildItem -Path $PSScriptRoot -Directory | where-object { [Int]::TryParse($_.Name, [ref]$null) } | % {
+                    Remove-Item (Join-Path $PSScriptRoot $_.Name) -Recurse -Force -ErrorAction Ignore
+                }
+        
+                . (Get-MyFilePath "navinstall.ps1")
+            } else {
+                throw "You must share a DVD folder to $navDvdPath or a file system to $navFSPath in order to run the generic image"
+            }
         }
     }
 

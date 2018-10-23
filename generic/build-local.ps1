@@ -1,6 +1,6 @@
 ﻿Param(
     [string] $acr = "navgeneric",
-    [string[]] $oss = @("ltsc2016")
+    [string[]] $oss = @("1803")
 )
 
 . (Join-Path $PSScriptRoot "Settings.ps1")
@@ -35,14 +35,14 @@ $oss | ForEach-Object {
     if ($LASTEXITCODE -eq 0) {
         Write-Host "SUCCESS"
 
-        $tags = @("microsoft/dynamics-nav:generic-$_")
-        if ($_ -eq "ltsc2016") {
-            $tags += "microsoft/dynamics-nav:generic"
-        }
-
-        $tags | ForEach-Object {
-            docker tag $image $_
-            docker push $_
-        }
+        #$tags = @("microsoft/dynamics-nav:generic-$_")
+        #if ($_ -eq "ltsc2016") {
+        #    $tags += "microsoft/dynamics-nav:generic"
+        #}
+        #
+        #$tags | ForEach-Object {
+        #    docker tag $image $_
+        #    docker push $_
+        #}
     }
 }

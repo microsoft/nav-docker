@@ -29,20 +29,14 @@ Start-Service -Name $SqlBrowserServiceName -ErrorAction Ignore
 Start-Service -Name $SqlWriterServiceName -ErrorAction Ignore
 Start-Service -Name $SqlServiceName -ErrorAction Ignore
 
+InstallPrerequisite -Name "Url Rewrite" -MsiPath "$NavDvdPath\Prerequisite Components\IIS URL Rewrite Module\rewrite_2.0_rtw_x64.msi" -MsiUrl "https://download.microsoft.com/download/C/9/E/C9E8180D-4E51-40A6-A9BF-776990D8BCA9/rewrite_amd64.msi"
+InstallPrerequisite -Name "SQL Clr Types" -MsiPath "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer\SQLSysClrTypes.msi" -MsiUrl "https://download.microsoft.com/download/1/3/0/13089488-91FC-4E22-AD68-5BE58BD5C014/ENU/x86/SQLSysClrTypes.msi"
+InstallPrerequisite -Name "Report Viewer" -MsiPath "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer\ReportViewer.msi" -MsiUrl "https://download.microsoft.com/download/A/1/2/A129F694-233C-4C7C-860F-F73139CF2E01/ENU/x86/ReportViewer.msi"
+InstallPrerequisite -Name "OpenXML" -MsiPath "$NavDvdPath\Prerequisite Components\Open XML SDK 2.5 for Microsoft Office\OpenXMLSDKv25.msi" -MsiUrl "https://download.microsoft.com/download/5/5/3/553C731E-9333-40FB-ADE3-E02DC9643B31/OpenXMLSDKV25.msi"
+
 # start IIS services
 Write-Host "Starting Internet Information Server"
 Start-Service -name $IisServiceName
-
-# Prerequisites
-Write-Host "Installing Url Rewrite"
-start-process "$NavDvdPath\Prerequisite Components\IIS URL Rewrite Module\rewrite_2.0_rtw_x64.msi" -ArgumentList "/quiet /qn /passive" -Wait
-
-Write-Host "Installing Report Viewer"
-start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer\SQLSysClrTypes.msi" -ArgumentList "/quiet /qn /passive" -Wait
-start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer\ReportViewer.msi" -ArgumentList "/quiet /qn /passive" -Wait
-
-Write-Host "Installing OpenXML"
-start-process "$NavDvdPath\Prerequisite Components\Open XML SDK 2.5 for Microsoft Office\OpenXMLSDKv25.msi" -ArgumentList "/quiet /qn /passive" -Wait
 
 Write-Host "Copying Service Tier Files"
 Copy-Item -Path "$NavDvdPath\ServiceTier\Program Files" -Destination "C:\" -Recurse -Force
@@ -99,23 +93,45 @@ Set-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -value "$repor
 Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
 
 # Restore CRONUS Demo database to databases folder
-Write-Host "Restoring CRONUS Demo Database"
-$bak = (Get-ChildItem -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\*.bak")[0]
+if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
+    Write-Host "Restoring CRONUS Demo Database"
+    $bak = (Get-ChildItem -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\*.bak")[0]
+    
+    # Restore database
+    $databaseServer = "localhost"
+    $databaseInstance = "SQLEXPRESS"
+    $databaseName = "CRONUS"
+    $databaseFolder = "c:\databases"
+    New-Item -Path $databaseFolder -itemtype Directory -ErrorAction Ignore | Out-Null
+    $databaseFile = $bak.FullName
+    
+    New-NAVDatabase -DatabaseServer $databaseServer `
+                    -DatabaseInstance $databaseInstance `
+                    -DatabaseName "$databaseName" `
+                    -FilePath "$databaseFile" `
+                    -DestinationPath "$databaseFolder" `
+                    -Timeout 300 | Out-Null
+} else {
 
-# Restore database
-$databaseServer = "localhost"
-$databaseInstance = "SQLEXPRESS"
-$databaseName = "CRONUS"
-$databaseFolder = "c:\databases"
-New-Item -Path $databaseFolder -itemtype Directory -ErrorAction Ignore | Out-Null
-$databaseFile = $bak.FullName
-
-New-NAVDatabase -DatabaseServer $databaseServer `
-                -DatabaseInstance $databaseInstance `
-                -DatabaseName "$databaseName" `
-                -FilePath "$databaseFile" `
-                -DestinationPath "$databaseFolder" `
-                -Timeout 300 | Out-Null
+    if (Test-Path "$navDvdPath\databases") {
+        Write-Host "Copying Cronus database"
+        Copy-Item -path "$navDvdPath\databases" -Destination "c:\" -Recurse -Force
+        $mdf = (Get-Item "C:\databases\*.mdf").FullName
+        $ldf = (Get-Item "C:\databases\*.ldf").FullName
+        $databaseName = (Get-Item "C:\databases\*.mdf").BaseName
+        $databaseServer = "localhost"
+        $databaseInstance = "SQLEXPRESS"
+    } else {
+        throw "No database found"
+    }
+    $attachcmd = @"
+USE [master]
+GO
+CREATE DATABASE [CRONUS] ON (FILENAME = '$mdf'),(FILENAME = '$ldf') FOR ATTACH
+GO
+"@
+    Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -QueryTimeOut 0 -ea Stop -Query $attachcmd
+}
 
 # run local installers if present
 if (Test-Path "$navDvdPath\Installers" -PathType Container) {
@@ -172,9 +188,11 @@ Install-NAVSipCryptoProvider
 Write-Host "Starting NAV Service Tier"
 Start-Service -Name $NavServiceName -WarningAction Ignore
 
-Write-Host "Importing CRONUS license file"
-$licensefile = (Get-Item -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf").FullName
-Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance 'NAV' -Database NavDatabase -WarningAction SilentlyContinue
+if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
+    Write-Host "Importing CRONUS license file"
+    $licensefile = (Get-Item -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf").FullName
+    Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance 'NAV' -Database NavDatabase -WarningAction SilentlyContinue
+}
 
 $newConfigFile = Get-MyFilePath -FileName "powershell.exe.config"
 if (Test-Path $newConfigFile) {

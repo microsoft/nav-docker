@@ -548,3 +548,23 @@ function Set-ConfigSetting {
         }
     }
 }
+
+function InstallPrerequisite {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [string]$Name,
+        [Parameter(Mandatory=$true)]
+        [string]$MsiPath,
+        [Parameter(Mandatory=$true)]
+        [string]$MsiUrl
+    )
+
+    if (!(Test-Path $MsiPath)) {
+        Write-Host "Downloading $Name"
+        $MsiPath = Join-Path "c:\run\install" ([System.IO.Path]::GetFileName("$MsiPath"))
+        [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+        (New-Object System.Net.WebClient).DownloadFile($MsiUrl, $MsiPath)
+    }
+    Write-Host "Install $Name"
+    start-process $MsiPath -ArgumentList "/quiet /qn /passive" -Wait
+}
