@@ -193,8 +193,14 @@ if ($newPublicDnsName -and $httpSite -ne "N" -and $clickOnce -eq "Y") {
 $CustomConfigFile =  Join-Path $ServiceTierFolder "CustomSettings.config"
 $CustomConfig = [xml](Get-Content $CustomConfigFile)
 
-$ip = (Get-NetIPAddress | Where-Object { $_.AddressFamily -eq "IPv4" -and $_.IPAddress -ne "127.0.0.1" })[0].IPAddress
-Write-Host "Container IP Address: $ip"
+$ips = Get-NetIPAddress | Where-Object { $_.AddressFamily -eq "IPv4" -and $_.IPAddress -ne "127.0.0.1" }
+if ($ips) {
+    $ips | ForEach-Object {
+        Write-Host "Container IP Address: $($_.IPAddress)"
+    }
+} else {
+    Write-Host "Container IP Address: UNKNOWN"
+}
 Write-Host "Container Hostname  : $hostname"
 Write-Host "Container Dns Name  : $publicDnsName"
 if ($webClient -ne "N") {
