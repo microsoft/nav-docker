@@ -121,24 +121,7 @@ if (!$restartingInstance) {
 
 $service = Get-Service -name $NavServiceName -ErrorAction Ignore
 if (!($service)) {
-    # Creating NAV Service
-    Write-Host "Creating NAV Service Tier"
-    $serviceCredentials = New-Object System.Management.Automation.PSCredential ("NT AUTHORITY\SYSTEM", (new-object System.Security.SecureString))
-    $serverFile = "$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe"
-    $configFile = "$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe.config"
-    New-Service -Name $NavServiceName -BinaryPathName """$serverFile"" `$NAV /config ""$configFile""" -DisplayName 'Microsoft Dynamics NAV Server [NAV]' -Description 'NAV' -StartupType manual -Credential $serviceCredentials -DependsOn @("HTTP") | Out-Null
-    
-    $serverVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($serverFile)
-    $versionFolder = ("{0}{1}" -f $serverVersion.FileMajorPart,$serverVersion.FileMinorPart)
-    $registryPath = "HKLM:\SOFTWARE\Microsoft\Microsoft Dynamics NAV\$versionFolder\Service"
-    New-Item -Path $registryPath -Force | Out-Null
-    New-ItemProperty -Path $registryPath -Name 'Path' -Value "$serviceTierFolder\" -Force | Out-Null
-    New-ItemProperty -Path $registryPath -Name 'Installed' -Value 1 -Force | Out-Null
-    
-    Install-NAVSipCryptoProvider
-    
-    Write-Host "Starting NAV Service Tier"
-    Start-Service -Name $NavServiceName -WarningAction Ignore
+    Write-Error "Service Tier doesn't exist / is not installed"
 } elseif ($service.Status -ne "Running") {
     Write-Host "Starting Service Tier"
     Start-Service -Name $NavServiceName -WarningAction Ignore
@@ -193,9 +176,13 @@ if ($newPublicDnsName -and $httpSite -ne "N" -and $clickOnce -eq "Y") {
 $CustomConfigFile =  Join-Path $ServiceTierFolder "CustomSettings.config"
 $CustomConfig = [xml](Get-Content $CustomConfigFile)
 
+$ip = "127.0.0.1"
 $ips = Get-NetIPAddress | Where-Object { $_.AddressFamily -eq "IPv4" -and $_.IPAddress -ne "127.0.0.1" }
 if ($ips) {
     $ips | ForEach-Object {
+        if ($ip -eq "127.0.0.1") {
+            $ip = $_.IPAddress
+        }
         Write-Host "Container IP Address: $($_.IPAddress)"
     }
 } else {
