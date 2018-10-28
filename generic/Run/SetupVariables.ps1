@@ -179,6 +179,10 @@ if ($publicWinClientPort -eq "") { $publicWinClientPort = "$clientServicesPort" 
 if ($publicSoapPort      -eq "") { $publicSoapPort      = "$soapServicesPort" }
 if ($publicODataPort     -eq "") { $publicODataPort     = "$oDataServicesPort" }
 
+if ("$env:WebServerInstance" -ne "") {
+    $webServerInstance = "$env:WebServerInstance"
+}
+
 # AccessControlService
 $appIdUri = "$env:appIdUri"
 $federationLoginEndpoint = "$env:federationLoginEndpoint"

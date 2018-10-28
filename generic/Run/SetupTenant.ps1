@@ -6,6 +6,6 @@
 
     # Setup tenant
     Copy-NavDatabase -SourceDatabaseName "tenant" -DestinationDatabaseName $TenantId
-    Mount-NavDatabase -TenantId $TenantId -DatabaseName $TenantId
+    Mount-NavDatabase -ServerInstance $ServerInstance -TenantId $TenantId -DatabaseName $TenantId
 
 }

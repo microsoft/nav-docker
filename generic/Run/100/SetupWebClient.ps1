@@ -157,12 +157,12 @@ Write-Host "Creating Web Server Instance"
 New-NAVWebServerInstance -Server "localhost" `
                          -ClientServicesCredentialType $auth `
                          -ClientServicesPort "$clientServicesPort" `
-                         -ServerInstance "NAV" `
-                         @AcsUriParam -WebServerInstance "NAV"
+                         -ServerInstance "$ServerInstance" `
+                         @AcsUriParam -WebServerInstance "$WebServerInstance"
                         
 if ($customWebSettings -ne "") {
     Write-Host "Modifying Web Client config with settings from environment variable"        
-    $webConfigPath = "C:\inetpub\wwwroot\NAV\web.config"
+    $webConfigPath = "C:\inetpub\wwwroot\$WebServerInstance\web.config"
     
     $webConfig = [xml](Get-Content $webConfigPath)
     Set-ConfigSetting -customSettings $customWebSettings -parentPath "//configuration/DynamicsNAVSettings" -leafName "add" -customConfig $webConfig

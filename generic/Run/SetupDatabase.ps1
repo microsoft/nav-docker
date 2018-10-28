@@ -110,15 +110,15 @@ if ($restartingInstance) {
         New-NAVEncryptionKey -KeyPath $EncryptionKeyFile -Password $EncryptionSecurePassword -Force | Out-Null
     }
 
-    Set-NAVServerConfiguration -ServerInstance "NAV" -KeyName "EnableSqlConnectionEncryption" -KeyValue "true" -WarningAction SilentlyContinue
-    Set-NAVServerConfiguration -ServerInstance "NAV" -KeyName "TrustSQLServerCertificate" -KeyValue "true" -WarningAction SilentlyContinue
+    Set-NAVServerConfiguration -ServerInstance $ServerInstance -KeyName "EnableSqlConnectionEncryption" -KeyValue "true" -WarningAction SilentlyContinue
+    Set-NAVServerConfiguration -ServerInstance $ServerInstance -KeyName "TrustSQLServerCertificate" -KeyValue "true" -WarningAction SilentlyContinue
 
     $databaseServerInstance = $databaseServer
     if ("$databaseInstance" -ne "") {
         $databaseServerInstance += "\$databaseInstance"
     }
     Write-Host "Import Encryption Key"
-    Import-NAVEncryptionKey -ServerInstance NAV `
+    Import-NAVEncryptionKey -ServerInstance $ServerInstance `
                             -ApplicationDatabaseServer $databaseServerInstance `
                             -ApplicationDatabaseCredentials $DatabaseCredentials `
                             -ApplicationDatabaseName $DatabaseName `
@@ -127,7 +127,7 @@ if ($restartingInstance) {
                             -WarningAction SilentlyContinue `
                             -Force
     
-    Set-NavServerConfiguration -serverinstance "NAV" -databaseCredentials $DatabaseCredentials -WarningAction SilentlyContinue
+    Set-NavServerConfiguration -serverinstance $ServerInstance -databaseCredentials $DatabaseCredentials -WarningAction SilentlyContinue
 
 } elseif ($databaseServer -eq "localhost" -and $databaseInstance -eq "SQLEXPRESS" -and $multitenant) {
     

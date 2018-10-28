@@ -1,4 +1,4 @@
-Write-Host "Installing NAV"
+Write-Host "Installing Business Central"
 $startTime = [DateTime]::Now
 
 $runPath = "c:\Run"
@@ -23,17 +23,26 @@ You must map a folder on the host with the NAVDVD content to $navDvdPath"
     exit 1
 }
 
+InstallPrerequisite -Name "Url Rewrite" -MsiPath "$NavDvdPath\Prerequisite Components\IIS URL Rewrite Module\rewrite_2.0_rtw_x64.msi" -MsiUrl "https://download.microsoft.com/download/C/9/E/C9E8180D-4E51-40A6-A9BF-776990D8BCA9/rewrite_amd64.msi"
+InstallPrerequisite -Name "OpenXML" -MsiPath "$NavDvdPath\Prerequisite Components\Open XML SDK 2.5 for Microsoft Office\OpenXMLSDKv25.msi" -MsiUrl "https://download.microsoft.com/download/5/5/3/553C731E-9333-40FB-ADE3-E02DC9643B31/OpenXMLSDKV25.msi"
+
+if (Test-Path "$NavDvdPath\Prerequisite Components\DotNetCore") {
+    $dotnetCoreExe = (Get-ChildItem -Path "$NavDvdPath\Prerequisite Components\DotNetCore" -Filter "*.exe").FullName
+} else {
+    Write-Host "Downloading DotNetCore"
+    $dotnetCoreDownloadUrl = "https://go.microsoft.com/fwlink/?LinkID=844461"
+    $dotnetCoreExe = "$runPath\install\dotnetcore.exe"
+    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+    (New-Object System.Net.WebClient).DownloadFile($dotnetCoreDownloadUrl, $dotnetCoreExe)
+}
+Write-Host "Installing DotNetCore"
+start-process $dotnetCoreExe -ArgumentList "/quiet" -Wait
+
 # start the SQL Server
 Write-Host "Starting Local SQL Server"
 Start-Service -Name $SqlBrowserServiceName -ErrorAction Ignore
 Start-Service -Name $SqlWriterServiceName -ErrorAction Ignore
 Start-Service -Name $SqlServiceName -ErrorAction Ignore
-
-# Prerequisites
-InstallPrerequisite -Name "Url Rewrite" -MsiPath "$NavDvdPath\Prerequisite Components\IIS URL Rewrite Module\rewrite_2.0_rtw_x64.msi" -MsiUrl "https://download.microsoft.com/download/C/9/E/C9E8180D-4E51-40A6-A9BF-776990D8BCA9/rewrite_amd64.msi"
-InstallPrerequisite -Name "SQL Clr Types" -MsiPath "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2015\SQLSysClrTypes.msi" -MsiUrl "https://download.microsoft.com/download/1/3/0/13089488-91FC-4E22-AD68-5BE58BD5C014/ENU/x86/SQLSysClrTypes.msi"
-InstallPrerequisite -Name "Report Viewer" -MsiPath "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2015\ReportViewer.msi" -MsiUrl "https://download.microsoft.com/download/A/1/2/A129F694-233C-4C7C-860F-F73139CF2E01/ENU/x86/ReportViewer.msi"
-InstallPrerequisite -Name "OpenXML" -MsiPath "$NavDvdPath\Prerequisite Components\Open XML SDK 2.5 for Microsoft Office\OpenXMLSDKv25.msi" -MsiUrl "https://download.microsoft.com/download/5/5/3/553C731E-9333-40FB-ADE3-E02DC9643B31/OpenXMLSDKV25.msi"
 
 # start IIS services
 Write-Host "Starting Internet Information Server"
@@ -45,17 +54,17 @@ Copy-Item -Path "$NavDvdPath\ServiceTier\System64Folder\NavSip.dll" -Destination
 
 Write-Host "Copying Web Client Files"
 Copy-Item -Path "$NavDvdPath\WebClient\Microsoft Dynamics NAV" -Destination "C:\Program Files\" -Recurse -Force
-Copy-Item -Path "$navDvdPath\WebClient\inetpub" -Destination $runPath -Recurse -Force
 
 Write-Host "Copying Windows Client Files"
 Copy-Item -Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force
 Copy-Item -Path "$navDvdPath\RoleTailoredClient\systemFolder\NavSip.dll" -Destination "C:\Windows\SysWow64\NavSip.dll" -Force -ErrorAction Ignore
 Copy-Item -Path "$navDvdPath\ClickOnceInstallerTools\Program Files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force
+Copy-Item -Path "$navDvdPath\*.vsix" -Destination $runPath
 
 Write-Host "Copying PowerShell Scripts"
 Copy-Item -Path "$navDvdPath\WindowsPowerShellScripts\Cloud\NAVAdministration\" -Destination $runPath -Recurse -Force
 
-"Test Assemblies","TestToolKit","UpgradeToolKit" | % {
+"ConfigurationPackages","Test Assemblies","TestToolKit","UpgradeToolKit","Extensions" | % {
     $dir = "$navDvdPath\$_" 
     if (Test-Path $dir -PathType Container)
     {
@@ -79,7 +88,7 @@ Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path
 Copy-Item -Path (Join-Path $runPath 'Install\t2embed.dll') -Destination "c:\windows\system32\t2embed.dll"
 
 $reportBuilderPath = "C:\Program Files (x86)\ReportBuilder"
-$reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder'
+$reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder2016'
 Write-Host "Copying ReportBuilder"
 New-Item $reportBuilderPath -ItemType Directory | Out-Null
 Copy-Item -Path "$reportBuilderSrc\*" -Destination "$reportBuilderPath\" -Recurse
@@ -151,17 +160,18 @@ if (Test-Path "$navDvdPath\Installers" -PathType Container) {
     }
 }
 
-Write-Host "Modifying NAV Service Tier Config File for Docker"
+Write-Host "Modifying Business Central Service Tier Config File for Docker"
 $CustomConfigFile =  Join-Path $serviceTierFolder "CustomSettings.config"
 $CustomConfig = [xml](Get-Content $CustomConfigFile)
 $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseServer']").Value = $databaseServer
 $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseInstance']").Value = $databaseInstance
 $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseName']").Value = "$databaseName"
-$customConfig.SelectSingleNode("//appSettings/add[@key='ServerInstance']").Value = "$ServerInstance"
+$customConfig.SelectSingleNode("//appSettings/add[@key='ServerInstance']").Value = "$serverInstance"
 $customConfig.SelectSingleNode("//appSettings/add[@key='ManagementServicesPort']").Value = "7045"
 $customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesPort']").Value = "7046"
 $customConfig.SelectSingleNode("//appSettings/add[@key='SOAPServicesPort']").Value = "7047"
 $customConfig.SelectSingleNode("//appSettings/add[@key='ODataServicesPort']").Value = "7048"
+$customConfig.SelectSingleNode("//appSettings/add[@key='DeveloperServicesPort']").Value = "7049"
 $customConfig.SelectSingleNode("//appSettings/add[@key='DefaultClient']").Value = "Web"
 $taskSchedulerKeyExists = ($customConfig.SelectSingleNode("//appSettings/add[@key='EnableTaskScheduler']") -ne $null)
 if ($taskSchedulerKeyExists) {
@@ -169,12 +179,12 @@ if ($taskSchedulerKeyExists) {
 }
 $CustomConfig.Save($CustomConfigFile)
 
-# Creating NAV Service
-Write-Host "Creating NAV Service Tier"
+# Creating Business Central Service
+Write-Host "Creating Business Central Service Tier"
 $serviceCredentials = New-Object System.Management.Automation.PSCredential ("NT AUTHORITY\SYSTEM", (new-object System.Security.SecureString))
 $serverFile = "$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe"
 $configFile = "$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe.config"
-New-Service -Name $NavServiceName -BinaryPathName """$serverFile"" `$$ServerInstance /config ""$configFile""" -DisplayName "Microsoft Dynamics NAV Server [$ServerInstance]" -Description "$ServerInstance" -StartupType manual -Credential $serviceCredentials -DependsOn @("HTTP") | Out-Null
+New-Service -Name $NavServiceName -BinaryPathName """$serverFile"" `$$ServerInstance /config ""$configFile""" -DisplayName "Dynamics 365 Business Central Server [$ServerInstance]" -Description "$serverInstance" -StartupType manual -Credential $serviceCredentials -DependsOn @("HTTP") | Out-Null
 
 $serverVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($serverFile)
 $versionFolder = ("{0}{1}" -f $serverVersion.FileMajorPart,$serverVersion.FileMinorPart)
@@ -185,14 +195,8 @@ New-ItemProperty -Path $registryPath -Name 'Installed' -Value 1 -Force | Out-Nul
 
 Install-NAVSipCryptoProvider
 
-Write-Host "Starting NAV Service Tier"
+Write-Host "Starting Business Central Service Tier"
 Start-Service -Name $NavServiceName -WarningAction Ignore
-
-if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
-    Write-Host "Importing CRONUS license file"
-    $licensefile = (Get-Item -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf").FullName
-    Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
-}
 
 $newConfigFile = Get-MyFilePath -FileName "powershell.exe.config"
 if (Test-Path $newConfigFile) {
@@ -214,6 +218,18 @@ if (Test-Path $newConfigFile) {
             Copy-Item -Path $newConfigFile -Destination $existingConfigFile -Force
         }
     }
+}
+
+if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
+    Write-Host "Importing CRONUS license file"
+    $licensefile = (Get-Item -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf").FullName
+    Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
+    
+    Write-Host "Generating Symbol Reference"
+    $pre = (get-process -Name "finsql" -ErrorAction Ignore) | % { $_.Id }
+    Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=generatesymbolreference, Database=CRONUS, ServerName=localhost\SQLEXPRESS, ntauthentication=1"
+    $procs = get-process -Name "finsql" -ErrorAction Ignore
+    $procs | Where-Object { $pre -notcontains $_.Id } | Wait-Process
 }
 
 $timespend = [Math]::Round([DateTime]::Now.Subtract($startTime).Totalseconds)

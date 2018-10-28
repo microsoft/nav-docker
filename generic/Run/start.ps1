@@ -18,7 +18,7 @@ function Get-MyFilePath([string]$FileName)
 }
 
 if ((Get-ComputerInfo).CsTotalPhysicalMemory -lt 3221225472) {
-    throw "At least 3Gb memory needs to be available to the NAV on Docker Container."
+    throw "At least 3Gb memory needs to be available to the Container."
 }
 
 $Source = @"

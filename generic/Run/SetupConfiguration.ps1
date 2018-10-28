@@ -17,7 +17,7 @@ $CustomConfig = [xml](Get-Content $CustomConfigFile)
 $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseServer']").Value = $databaseServer
 $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseInstance']").Value = $databaseInstance
 $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseName']").Value = "$databaseName"
-$customConfig.SelectSingleNode("//appSettings/add[@key='ServerInstance']").Value = "NAV"
+$customConfig.SelectSingleNode("//appSettings/add[@key='ServerInstance']").Value = "$serverInstance"
 $customConfig.SelectSingleNode("//appSettings/add[@key='ManagementServicesPort']").Value = "$managementServicesPort"
 $customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesPort']").Value = "$clientServicesPort"
 $customConfig.SelectSingleNode("//appSettings/add[@key='SOAPServicesPort']").Value = "$soapServicesPort"
@@ -39,16 +39,16 @@ if ($developerServicesKeyExists) {
 
 $customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesCredentialType']").Value = $auth
 if ($developerServicesKeyExists) {
-    $publicWebBaseUrl = "$protocol$publicDnsName$publicwebClientPort/NAV/"
+    $publicWebBaseUrl = "$protocol$publicDnsName$publicwebClientPort/$WebServerInstance/"
 } else {
-    $publicWebBaseUrl = "$protocol$publicDnsName$publicwebClientPort/NAV/WebClient/"
+    $publicWebBaseUrl = "$protocol$publicDnsName$publicwebClientPort/$WebServerInstance/WebClient/"
 }
 if ($WebClient -ne "N") {
     $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value = $publicWebBaseUrl
 }
-$CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicSOAPBaseUrl']").Value = "$protocol${publicDnsName}:$publicSoapPort/NAV/WS"
-$CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicODataBaseUrl']").Value = "$protocol${publicDnsName}:$publicODataPort/NAV/OData"
-$CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWinBaseUrl']").Value = "DynamicsNAV://${publicDnsName}:$publicWinClientPort/NAV/"
+$CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicSOAPBaseUrl']").Value = "$protocol${publicDnsName}:$publicSoapPort/$ServerInstance/WS"
+$CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicODataBaseUrl']").Value = "$protocol${publicDnsName}:$publicODataPort/$ServerInstance/OData"
+$CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWinBaseUrl']").Value = "DynamicsNAV://${publicDnsName}:$publicWinClientPort/$ServerInstance/"
 if ($navUseSSL) {
     $CustomConfig.SelectSingleNode("//appSettings/add[@key='ServicesCertificateThumbprint']").Value = "$certificateThumbprint"
     $CustomConfig.SelectSingleNode("//appSettings/add[@key='ServicesCertificateValidationEnabled']").Value = "false"
@@ -99,17 +99,17 @@ if ($auth -eq "AccessControlService") {
 $CustomConfig.Save($CustomConfigFile)
 
 $managementServicesPort,$soapServicesPort,$oDataServicesPort,$developerServicesPort | % {
-    netsh http add urlacl url=$protocol+:$_/NAV user="NT AUTHORITY\SYSTEM" | Out-Null
+    netsh http add urlacl url=$protocol+:$_/$ServerInstance user="NT AUTHORITY\SYSTEM" | Out-Null
     if ($servicesUseSSL) {
         netsh http add sslcert ipport=0.0.0.0:$_ certhash=$certificateThumbprint appid="{00112233-4455-6677-8899-AABBCCDDEEFF}" | Out-Null
     }
 }
 
 if ($navUseSSL) {
-    netsh http add urlacl url=https://+:$clientServicesPort/NAV user="NT AUTHORITY\SYSTEM" | Out-Null
+    netsh http add urlacl url=https://+:$clientServicesPort/$ServerInstance user="NT AUTHORITY\SYSTEM" | Out-Null
     netsh http add sslcert ipport=0.0.0.0:$clientServicesPort certhash=$certificateThumbprint appid="{00112233-4455-6677-8899-AABBCCDDEEFF}" | Out-Null
 } else {
-    netsh http add urlacl url=http://+:$clientServicesPort/NAV user="NT AUTHORITY\SYSTEM" | Out-Null
+    netsh http add urlacl url=http://+:$clientServicesPort/$ServerInstance user="NT AUTHORITY\SYSTEM" | Out-Null
 }
 
 if ($developerServicesKeyExists) {

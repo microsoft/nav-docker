@@ -3,7 +3,7 @@
 if ($isBcSandbox) {
     write-Host "Enabling Financials User Experience"
     $wwwRootPath = Get-WWWRootPath
-    $navsettingsFile = Join-Path $wwwRootPath "nav\navsettings.json"
+    $navsettingsFile = Join-Path $wwwRootPath "$webServerInstance\navsettings.json"
     $config = Get-Content $navSettingsFile | ConvertFrom-Json
     Add-Member -InputObject $config.NAVWebSettings -NotePropertyName "DefaultApplicationId" -NotePropertyValue "true" -ErrorAction SilentlyContinue
     $config.NAVWebSettings.DefaultApplicationId = "FIN"

@@ -146,7 +146,7 @@ $CustomConfig = [xml](Get-Content $CustomConfigFile)
 $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseServer']").Value = $databaseServer
 $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseInstance']").Value = $databaseInstance
 $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseName']").Value = "$databaseName"
-$customConfig.SelectSingleNode("//appSettings/add[@key='ServerInstance']").Value = "NAV"
+$customConfig.SelectSingleNode("//appSettings/add[@key='ServerInstance']").Value = "$ServerInstance"
 $customConfig.SelectSingleNode("//appSettings/add[@key='ManagementServicesPort']").Value = "7045"
 $customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesPort']").Value = "7046"
 $customConfig.SelectSingleNode("//appSettings/add[@key='SOAPServicesPort']").Value = "7047"
@@ -162,7 +162,7 @@ Write-Host "Creating NAV Service Tier"
 $serviceCredentials = New-Object System.Management.Automation.PSCredential ("NT AUTHORITY\SYSTEM", (new-object System.Security.SecureString))
 $serverFile = "$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe"
 $configFile = "$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe.config"
-New-Service -Name $NavServiceName -BinaryPathName """$serverFile"" `$NAV /config ""$configFile""" -DisplayName 'Microsoft Dynamics NAV Server [NAV]' -Description 'NAV' -StartupType manual -Credential $serviceCredentials -DependsOn @("HTTP") | Out-Null
+New-Service -Name $NavServiceName -BinaryPathName """$serverFile"" `$$ServerInstance /config ""$configFile""" -DisplayName "Microsoft Dynamics NAV Server [$ServerInstance]" -Description "$ServerInstance" -StartupType manual -Credential $serviceCredentials -DependsOn @("HTTP") | Out-Null
 
 $serverVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($serverFile)
 $versionFolder = ("{0}{1}" -f $serverVersion.FileMajorPart,$serverVersion.FileMinorPart)
@@ -176,7 +176,7 @@ Start-Service -Name $NavServiceName -WarningAction Ignore
 
 Write-Host "Importing CRONUS license file"
 $licensefile = (Get-Item -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf").FullName
-Import-NAVServerLicense -LicenseData ([Byte[]]$(Get-Content -Path $licensefile -Encoding Byte)) -ServerInstance 'NAV' -Database NavDatabase -WarningAction SilentlyContinue
+Import-NAVServerLicense -LicenseData ([Byte[]]$(Get-Content -Path $licensefile -Encoding Byte)) -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
 
 $newConfigFile = Get-MyFilePath -FileName "powershell.exe.config"
 if (Test-Path $newConfigFile) {
