@@ -57,6 +57,16 @@ if (!$restartingImage) {
             exit 1
         }
     }
+
+    if (!(Resolve-DnsName -Name download.microsoft.com -erroraction Ignore -Type CNAME)) {
+        Write-Host "WARNING: DNS resolution not working from within the container."
+    }
+
+    $timeZoneId = (Get-TimeZone).Id
+    $timeZone = Get-TimeZone -ListAvailable | Where-Object { $_.Id -eq $timeZoneId } 
+    if (!($timeZone)) {
+        Write-Host "WARNING: Container starts with TimeZone = $timeZoneId, which is not recognized in the list of TimeZones."
+    }
 }
 
 Write-Host "Using $auth Authentication"
@@ -222,7 +232,7 @@ if ($httpSite -ne "N") {
 }
 
 if ($containerAge -gt 60) {
-    Write-Host "You are running a container which is $containerAge days old.
+    Write-Host "WARNING: You are running a container which is $containerAge days old.
 Microsoft recommends that you always run the latest version of our containers."
     Write-Host
 }

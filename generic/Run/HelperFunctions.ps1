@@ -561,7 +561,10 @@ function InstallPrerequisite {
 
     if (!(Test-Path $MsiPath)) {
         Write-Host "Downloading $Name"
-        $MsiPath = Join-Path "c:\run\install" ([System.IO.Path]::GetFileName("$MsiPath"))
+        $MsiFolder = [System.IO.Path]::GetDirectoryName($MsiPath)
+        if (!(Test-Path $MsiFolder)) {
+            New-Item -Path $MsiFolder -ItemType Directory | Out-Null
+        }
         [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
         (New-Object System.Net.WebClient).DownloadFile($MsiUrl, $MsiPath)
     }

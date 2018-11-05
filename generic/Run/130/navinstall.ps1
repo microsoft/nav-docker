@@ -31,7 +31,11 @@ if (Test-Path "$NavDvdPath\Prerequisite Components\DotNetCore") {
 } else {
     Write-Host "Downloading DotNetCore"
     $dotnetCoreDownloadUrl = "https://go.microsoft.com/fwlink/?LinkID=844461"
-    $dotnetCoreExe = "$runPath\install\dotnetcore.exe"
+    $dotnetCoreExe = "$NavDvdPath\Prerequisite Components\DotNetCore\DotNetCore.1.0.4_1.1.1-WindowsHosting.exe"
+    $dotnetCoreFolder = [System.IO.Path]::GetDirectoryName($dotnetCoreExe)
+    if (!(Test-Path $dotnetCoreFolder)) {
+        New-Item -Path $dotnetCoreFolder -ItemType Directory | Out-Null
+    }
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
     (New-Object System.Net.WebClient).DownloadFile($dotnetCoreDownloadUrl, $dotnetCoreExe)
 }
