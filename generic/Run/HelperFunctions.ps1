@@ -77,7 +77,13 @@ function Restore-BacpacWithRetry
 		[int]$maxattempts = 10
     )
 
-    Add-Type -path "C:\Program Files (x86)\Microsoft SQL Server\130\DAC\bin\Microsoft.SqlServer.Dac.dll"
+    $dacdll = Get-Item "C:\Program Files\Microsoft SQL Server\*\DAC\bin\Microsoft.SqlServer.Dac.dll"
+    if (!($dacdll))
+    {
+        InstallPrerequisite -Name "Dac Framework 18.0" -MsiPath "c:\download\DacFramework.msi" -MsiUrl "https://download.microsoft.com/download/9/9/5/995E5614-49F9-48F0-85A5-2215518B85BD/EN/x64/DacFramework.msi"
+        $dacdll = Get-Item "C:\Program Files\Microsoft SQL Server\*\DAC\bin\Microsoft.SqlServer.Dac.dll"
+    }
+    Add-Type -path $dacdll.FullName
     $conn = "Data Source=$DatabaseServer\$DatabaseInstance;Initial Catalog=master;Connection Timeout=0;Integrated Security=True;"
 
     $attempt = 0
