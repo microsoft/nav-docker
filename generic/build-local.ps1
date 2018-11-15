@@ -32,14 +32,6 @@ $oss | ForEach-Object {
                  --tag $image `
                  $PSScriptRoot
     
-    docker rmi $image -f 2>NULL | Out-Null
-    docker build --build-arg baseimage=$baseimage `
-                 --build-arg created=$created `
-                 --build-arg tag=$tag `
-                 --build-arg osversion="$osversion" `
-                 --tag $image `
-                 $PSScriptRoot
-    
     if ($LASTEXITCODE -ne 0) {
         throw "Failed with exit code $LastExitCode"
     }
