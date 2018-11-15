@@ -1,6 +1,6 @@
 ﻿Param(
     [string] $acr = "navgeneric",
-    [string[]] $oss = @("1803","1709")
+    [string[]] $oss = @("ltsc2016")
 )
 
 . (Join-Path $PSScriptRoot "Settings.ps1")
@@ -32,17 +32,26 @@ $oss | ForEach-Object {
                  --tag $image `
                  $PSScriptRoot
     
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "SUCCESS"
+    docker rmi $image -f 2>NULL | Out-Null
+    docker build --build-arg baseimage=$baseimage `
+                 --build-arg created=$created `
+                 --build-arg tag=$tag `
+                 --build-arg osversion="$osversion" `
+                 --tag $image `
+                 $PSScriptRoot
+    
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed with exit code $LastExitCode"
+    }
+    Write-Host "SUCCESS"
 
-        $tags = @("microsoft/dynamics-nav:generic-$_")
-        if ($_ -eq "ltsc2016") {
-            $tags += "microsoft/dynamics-nav:generic"
-        }
-        
-        $tags | ForEach-Object {
-            docker tag $image $_
-            docker push $_
-        }
+    $tags = @("microsoft/dynamics-nav:generic-$_")
+    if ($_ -eq "ltsc2016") {
+        $tags += "microsoft/dynamics-nav:generic"
+    }
+    
+    $tags | ForEach-Object {
+        docker tag $image $_
+        docker push $_
     }
 }
