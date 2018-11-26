@@ -1,6 +1,6 @@
 ﻿Param(
     [string] $acr = "navgeneric",
-    [string[]] $oss = @("ltsc2016")
+    [string[]] $oss = @("ltsc2019","1803","1709")
 )
 
 . (Join-Path $PSScriptRoot "Settings.ps1")
