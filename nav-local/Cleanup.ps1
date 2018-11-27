@@ -6,7 +6,7 @@
 #
 # $json = '{
 #     "blobcontainer":  "<blobcontainer>",
-#     "countryblobname":  "<blobname>",
+#     "countryblobname":  "<blobname>"
 # }' | ConvertFrom-Json
 
-Remove-AzureStorageBlob -Context $context -Container $json.blobcontainer -Blob $json.countryblobname -Force -ErrorAction SilentlyContinue
+Remove-AzureStorageBlob -Context $context -Container $json.blobcontainer -Blob $json.countryblobname -Force -ErrorAction Ignore
