@@ -56,5 +56,11 @@ $json.platform | ForEach-Object {
             docker tag $image $_
             docker push $_
         }
+
+        $json.tags.Split(',') | ForEach-Object {
+            docker rmi $_ -f
+        }
+        docker rmi $image -f
+
     }
 }
