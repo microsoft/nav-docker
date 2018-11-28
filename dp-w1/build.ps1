@@ -25,7 +25,7 @@ $json.platform | ForEach-Object {
     docker images --format "{{.Repository}}:{{.Tag}}" | % { 
         if ($_ -eq $image) 
         {
-            $image | Remove-Image
+            docker rmi $image -f
         }
     }
 
