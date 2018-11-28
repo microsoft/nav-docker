@@ -50,8 +50,6 @@ $json.platform | ForEach-Object {
                  $PSScriptRoot
 
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "SUCCESS"
-
         $json.tags.Split(',') | ForEach-Object {
             docker tag $image $_
             docker push $_
@@ -61,6 +59,7 @@ $json.platform | ForEach-Object {
             docker rmi $_ -f
         }
         docker rmi $image -f
-
+    } else {
+        throw "Error building image"
     }
 }
