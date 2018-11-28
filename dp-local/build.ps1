@@ -4,26 +4,33 @@
 #
 # $json = '{
 #     "platform": "<platform ex. ltsc2019>",
-#     "baseimage": "<baseimage ex. microsoft/dynamics-nav:generic>",
-#     "navdvdbloburl":  "<url>",
-#     "vsixbloburl":  "<url>",
+#     "baseimage": "<baseimage ex. microsoft/dynamics-nav:9.0.43402.0>",
+#     "genericimage": "<genericimage ex. microsoft/dynamics-nav:generic>",
+#     "devpreviewbloburl":  "<url>",
 #     "country":  "<country>",
-#     "navversion":  "<version ex. 2016>",
-#     "legal":  "<legal url>",
-#     "cu":  "<cu ex. cu1>",
-#     "version":  "<version ex. 9.0.43402.0>",
-#     "tags":  "<tags ex. microsoft/dynamics-nav:9.0.43402.0-ltsc2019,microsoft/dynamics-nav:2016-cu1-ltsc2019,microsoft/dynamics-nav:2016-cu1-w1-ltsc2019>",
+#     "tags":  "<tags ex. microsoft/dynamics-nav:2016-cu1-dk-ltsc2019,microsoft/dynamics-nav:9.0.43402.0-dk-ltsc2019>",
 # }' | ConvertFrom-Json
-
-break
 
 $json.platform | ForEach-Object {
 
     $osSuffix = "-$_"
+
     $thisbaseimage = "$($json.baseimage)$osSuffix"
+    $thisgenericimage = "$($json.genericimage)$osSuffix"
     $image = "nav:$($json.version)-$($json.country)$osSuffix"
 
+    docker pull $thisgenericimage
+    $inspect = docker inspect $thisgenericimage | ConvertFrom-Json
+    $genericversion = [Version]::Parse("$($inspect.Config.Labels.tag)")
+
     docker pull $thisbaseimage
+    $inspect = docker inspect $thisbaseimage | ConvertFrom-Json
+    $baseversion = [Version]::Parse("$($inspect.Config.Labels.tag)")
+
+    if ($genericVersion -ne $baseversion) {
+        throw "Cannot build local image before w1 has been built"
+    }
+
     docker images --format "{{.Repository}}:{{.Tag}}" | % { 
         if ($_ -eq $image) 
         {
@@ -35,14 +42,9 @@ $json.platform | ForEach-Object {
     $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
 
     docker build --build-arg baseimage="$thisbaseimage" `
-                 --build-arg navdvdurl="$($json.navdvdbloburl)" `
-                 --build-arg vsixurl="$($json.vsixbloburl)" `
-                 --build-arg legal="$($json.legal)" `
                  --build-arg created="$created" `
-                 --build-arg nav="$($json.navversion)" `
-                 --build-arg cu="$($json.cu)" `
+                 --build-arg devpreviewurl="$($json.devpreviewbloburl)" `
                  --build-arg country="$($json.country)" `
-                 --build-arg version="$($json.version)" `
                  --tag $image `
                  $PSScriptRoot
 
@@ -53,5 +55,10 @@ $json.platform | ForEach-Object {
             docker tag $image $_
             docker push $_
         }
+
+        $json.tags.Split(',') | ForEach-Object {
+            docker rmi $_ -f
+        }
+        docker rmi $image -f
     }
 }

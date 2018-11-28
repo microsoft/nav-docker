@@ -15,7 +15,6 @@ $json.platform | ForEach-Object {
 
     $osSuffix = "-$_"
 
-    $baseimage = "$($json.genericimage)$osSuffix"
     $thisbaseimage = "$($json.baseimage)$osSuffix"
     $thisgenericimage = "$($json.genericimage)$osSuffix"
     $image = "nav:$($json.version)-$($json.country)$osSuffix"
@@ -49,7 +48,9 @@ $json.platform | ForEach-Object {
                  --tag $image `
                  $PSScriptRoot
 
-    if ($LASTEXITCODE -eq 0) {
+    if ($LASTEXITCODE) {
+        throw "Error building image"
+    } else {
         $json.tags.Split(',') | ForEach-Object {
             docker tag $image $_
             docker push $_
@@ -59,7 +60,5 @@ $json.platform | ForEach-Object {
             docker rmi $_ -f
         }
         docker rmi $image -f
-    } else {
-        throw "Error building image"
     }
 }

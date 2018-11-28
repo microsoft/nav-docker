@@ -15,6 +15,8 @@
 #     "tags":  "<tags ex. microsoft/dynamics-nav:9.0.43402.0-ltsc2019,microsoft/dynamics-nav:2016-cu1-ltsc2019,microsoft/dynamics-nav:2016-cu1-w1-ltsc2019>",
 # }' | ConvertFrom-Json
 
+break
+
 $json.platform | ForEach-Object {
 
     $osSuffix = "-$_"
@@ -37,19 +39,17 @@ $json.platform | ForEach-Object {
                  --build-arg vsixurl="$($json.vsixbloburl)" `
                  --build-arg legal="$($json.legal)" `
                  --build-arg created="$created" `
-                 --build-arg nav="$($json.navversion)" `
-                 --build-arg cu="$($json.cu)" `
                  --build-arg country="$($json.country)" `
                  --build-arg version="$($json.version)" `
                  --tag $image `
                  $PSScriptRoot
 
-    if ($LASTEXITCODE -eq 0) {
+    if ($LASTEXITCODE) {
+        throw "Error building image"
+    } else {
         $json.tags.Split(',') | ForEach-Object {
             docker tag $image $_
             docker push $_
         }
-    } else {
-        throw "Error building image"
     }
 }
