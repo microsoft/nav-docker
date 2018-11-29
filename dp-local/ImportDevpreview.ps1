@@ -51,17 +51,16 @@ Get-Item -Path "$devPreviewFolder\*.App.Bacpac" | % {
 
     & sqlcmd -d $dbName -Q 'update [dbo].[$ndo$tenantproperty] set tenantid=''default'';'
 
-    "ConfigurationPackages","TestToolKit","Extensions" | % {
-        if (Test-Path "c:\$_"-PathType Container) {
-            if ((Test-Path "$devPreviewFolder\$_" -PathType Container) -or ($country -ne "FinancialsW1")) {
+    # Remove ConfigurationPackages and Extensions
+    "ConfigurationPackages","TestToolKit","Extensions" | ForEach-Object {
+        if (Test-Path "$devPreviewFolder\$_" -PathType Container) {
+            if (Test-Path "c:\$_"-PathType Container) {
                 # remove old folder if a new folder exists (or not w1)
                 Write-Host "Remove old $_"
                 Remove-Item "c:\$_" -Recurse -Force
             }
-        }
-        if (Test-Path "$devPreviewFolder\$_" -PathType Container) {
             Write-Host "Copy $_"
-            Copy-Item -Path "$devPreviewFolder\$_" -Destination "c:\" -Recurse
+            Copy-Item -Path "$devPreviewFolder\$_" -Destination "c:\" -Recurse -Force
         }
     }
 
