@@ -10,6 +10,7 @@ ARG nav=""
 ARG cu=""
 ARG country=""
 ARG version=""
+ARG platform=""
 
 ENV DatabaseServer=localhost DatabaseInstance=SQLEXPRESS DatabaseName=CRONUS NAVDVDURL=$navdvdurl VSIXURL=$vsixurl IsBcSandbox=N
 
@@ -22,4 +23,5 @@ LABEL legal="$legal" \
       nav="$nav" \
       cu="$cu" \
       country="$country" \
-      version="$version"
+      version="$version" \
+      platform="$platform"

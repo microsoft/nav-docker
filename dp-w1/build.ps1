@@ -41,6 +41,7 @@ $json.platform | ForEach-Object {
                  --build-arg cu="$($json.cu)" `
                  --build-arg country="$($json.country)" `
                  --build-arg version="$($json.version)" `
+                 --build-arg platform="$($json.platformversion)" `
                  --tag $image `
                  $PSScriptRoot
 
@@ -48,9 +49,8 @@ $json.platform | ForEach-Object {
         throw "Error building image"
     } else {
         $json.tags.Split(',') | ForEach-Object {
-            Write-host $_
-            #docker tag $image $_
-            #docker push $_
+            docker tag $image $_
+            docker push $_
         }
     }
 }

@@ -15,7 +15,6 @@
 #     "tags":  "<tags ex. microsoft/dynamics-nav:9.0.43402.0-ltsc2019,microsoft/dynamics-nav:2016-cu1-ltsc2019,microsoft/dynamics-nav:2016-cu1-w1-ltsc2019>",
 # }' | ConvertFrom-Json
 
-if ($false) {
 $json.platform | ForEach-Object {
 
     $osSuffix = "-$_"
@@ -40,6 +39,7 @@ $json.platform | ForEach-Object {
                  --build-arg created="$created" `
                  --build-arg country="$($json.country)" `
                  --build-arg version="$($json.version)" `
+                 --build-arg platform="$($json.platformversion)" `
                  --tag $image `
                  $PSScriptRoot
 
@@ -51,5 +51,4 @@ $json.platform | ForEach-Object {
             docker push $_
         }
     }
-}
 }
