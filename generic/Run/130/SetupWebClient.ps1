@@ -29,6 +29,7 @@ Add-Member -InputObject $config.NAVWebSettings -NotePropertyName "RequireSSL" -N
 $config.NAVWebSettings.RequireSSL = $false
 Add-Member -InputObject $config.NAVWebSettings -NotePropertyName "PersonalizationEnabled" -NotePropertyValue "true" -ErrorAction SilentlyContinue
 $config.NAVWebSettings.PersonalizationEnabled = $true
+$config.NAVWebSettings.ManagementServicesPort = $ManagementServicesPort
 
 if ($customWebSettings -ne "") {
     Write-Host "Modifying Web Client config with settings from environment variable"        

@@ -158,14 +158,14 @@ New-NAVWebServerInstance -Server "localhost" `
                          -ServerInstance "$ServerInstance" `
                          -WebServerInstance "$WebServerInstance"
 
+$webConfigPath = "C:\inetpub\wwwroot\$WebServerInstance\web.config"
+$webConfig = [xml](Get-Content $webConfigPath)
 if ($customWebSettings -ne "") {
     Write-Host "Modifying Web Client config with settings from environment variable"        
-    $webConfigPath = "C:\inetpub\wwwroot\$WebServerInstance\web.config"
-    
-    $webConfig = [xml](Get-Content $webConfigPath)
     Set-ConfigSetting -customSettings $customWebSettings -parentPath "//configuration/DynamicsNAVSettings" -leafName "add" -customConfig $webConfig
-    $webConfig.Save($webConfigPath)
 }
+Set-ConfigSetting -customSettings "ManagementServicesPort=$ManagementServicesPort" -parentPath "//configuration/DynamicsNAVSettings" -leafName "add" -customConfig $webConfig
+$webConfig.Save($webConfigPath)
 
 # Give Everyone access to resources
 $ResourcesFolder = "$WebClientFolder".Replace('C:\Program Files\', 'C:\ProgramData\Microsoft\')
