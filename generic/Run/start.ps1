@@ -8,6 +8,12 @@ $navFSPath = "C:\NAVFS"
 $publicDnsNameFile = "$RunPath\PublicDnsName.txt"
 $restartingInstance = Test-Path -Path $publicDnsNameFile -PathType Leaf
 
+$myStart = Join-Path $myPath "start.ps1"
+if (Test-Path -Path $myStart) {
+    . $myStart
+    exit
+}
+
 function Get-MyFilePath([string]$FileName)
 {
     if ((Test-Path $myPath -PathType Container) -and (Test-Path (Join-Path $myPath $FileName) -PathType Leaf)) {
@@ -17,7 +23,7 @@ function Get-MyFilePath([string]$FileName)
     }
 }
 
-if ((Get-ComputerInfo).CsTotalPhysicalMemory -lt 3221225472) {
+if ((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory -lt 3221225472) {
     throw "At least 3Gb memory needs to be available to the Container."
 }
 
