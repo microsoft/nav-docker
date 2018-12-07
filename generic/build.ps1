@@ -3,7 +3,7 @@
 if ([System.Environment]::OSVersion.Version.Build -eq 14393) {
     $oss = @("ltsc2016") 
 } else {
-    $oss = @("1709","1803","ltsc2019")
+    $oss = @("ltsc2019","1709","1803")
 }
 
 $oss | ForEach-Object {
