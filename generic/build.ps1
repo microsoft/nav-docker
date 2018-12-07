@@ -1,4 +1,10 @@
-﻿. (Join-Path $PSScriptRoot "Settings.ps1")
+﻿Param( [PSCustomObject] $json )
+
+# Json format:
+#
+# $json = '{
+#     "version":  "<version ex. 0.0.8.1>",
+# }' | ConvertFrom-Json
 
 if ([System.Environment]::OSVersion.Version.Build -eq 14393) {
     $oss = @("ltsc2016") 
@@ -28,7 +34,7 @@ $oss | ForEach-Object {
     docker rmi $image -f 2>NULL | Out-Null
     docker build --build-arg baseimage=$baseimage `
                  --build-arg created=$created `
-                 --build-arg tag=$tag `
+                 --build-arg tag="$($json.version)" `
                  --build-arg osversion="$osversion" `
                  --tag $image `
                  $PSScriptRoot
