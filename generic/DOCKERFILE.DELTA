@@ -1,5 +1,0 @@
-ARG baseimage
-
-FROM $baseimage
-    
-COPY Run /Run/
