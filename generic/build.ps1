@@ -31,7 +31,13 @@ $oss | ForEach-Object {
     docker pull $baseimage
     $osversion = docker inspect --format "{{.OsVersion}}" $baseImage
 
-    docker rmi $image -f 2>NULL | Out-Null
+    docker images --format "{{.Repository}}:{{.Tag}}" | % { 
+        if ($_ -eq $image) 
+        {
+            docker rmi $image -f
+        }
+    }
+
     docker build --build-arg baseimage=$baseimage `
                  --build-arg created=$created `
                  --build-arg tag="$($json.version)" `
