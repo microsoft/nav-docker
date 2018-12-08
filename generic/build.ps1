@@ -8,8 +8,12 @@
 # }' | ConvertFrom-Json
 
 $os = $json.platform
-    
-$baseimage = "mcr.microsoft.com/windows/servercore:$os"
+
+if ($_ -eq "ltsc2019") {
+    $baseimage = "mcr.microsoft.com/windows/servercore:$_"
+} else {
+    $baseimage = "microsoft/dotnet-framework:4.7.2-runtime-windowsservercore-$_"
+}
 
 if ($os.StartsWith("ltsc")) {
     $isolation = "process"
