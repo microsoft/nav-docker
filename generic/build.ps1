@@ -14,16 +14,12 @@ if ([System.Environment]::OSVersion.Version.Build -eq 14393) {
 
 $oss | ForEach-Object {
     
-    if ($_ -eq "ltsc2019") {
-        $baseimage = "mcr.microsoft.com/windows/servercore:$_"
+    $baseimage = "mcr.microsoft.com/windows/servercore:$_"
+    
+    if ($_.StartsWith("ltsc")) {
+        $isolation = "process"
     } else {
-        $baseimage = "microsoft/dotnet-framework:4.7.2-runtime-windowsservercore-$_"
-    }
-
-    if ($_ -eq "ltsc2016") {
-        if ([System.Environment]::OSVersion.Version.Build -ne 14393) {
-            throw "ltsc2016 cannot be build on host OS other than ltsc2016"
-        }
+        $isolation = "hyperv"
     }
 
     $image = "generic:$_"
@@ -42,6 +38,7 @@ $oss | ForEach-Object {
                  --build-arg created=$created `
                  --build-arg tag="$($json.version)" `
                  --build-arg osversion="$osversion" `
+                 --isolation=$isolation `
                  --tag $image `
                  $PSScriptRoot
     
