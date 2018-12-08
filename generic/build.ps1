@@ -9,10 +9,10 @@
 
 $os = $json.platform
 
-if ($_ -eq "ltsc2019") {
-    $baseimage = "mcr.microsoft.com/windows/servercore:$_"
+if ($os -eq "ltsc2019") {
+    $baseimage = "mcr.microsoft.com/windows/servercore:$os"
 } else {
-    $baseimage = "microsoft/dotnet-framework:4.7.2-runtime-windowsservercore-$_"
+    $baseimage = "microsoft/dotnet-framework:4.7.2-runtime-windowsservercore-$os"
 }
 
 if ($os.StartsWith("ltsc")) {
