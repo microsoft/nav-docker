@@ -39,7 +39,7 @@ $databaseInstance = "SQLEXPRESS"
 $bak = (Get-ChildItem -Path "$countryFolder\*.bak")[0]
 $databaseFile = $bak.FullName
 
-$collation = (Invoke-Sqlcmd "RESTORE HEADERONLY FROM DISK = '$databaseFile'").Collation.Replace('_CS_','_CI_')
+$collation = (Invoke-Sqlcmd "RESTORE HEADERONLY FROM DISK = '$databaseFile'").Collation
 SetDatabaseServerCollation -collation $collation
 
 # Restore database
