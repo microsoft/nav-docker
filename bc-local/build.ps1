@@ -13,17 +13,24 @@
 
 $json.platform | ForEach-Object {
 
-    $osSuffix = "-$_"
+    $osSuffix = $_
+    $thisbaseimage = $json.baseimage
+    if (!($thisbaseimage.EndsWith($osSuffix))) {
+        $thisbaseimage += "-$osSuffix"
+    }
 
-    $thisbaseimage = "$($json.baseimage)$osSuffix"
-    $thisgenericimage = "$($json.genericimage)$osSuffix"
-    $image = "nav:$($json.version)-$($json.country)$osSuffix"
+    $thisgenericimage = $($json.genericimage)
+    if (!($thisgenericimage.EndsWith($osSuffix))) {
+        $thisgenericimage += "-$osSuffix"
+    }
+    
+    $image = "bc:$($json.version)-$($json.country)-$osSuffix"
 
-    docker pull $thisgenericimage
+    docker pull $thisgenericimage 2>NULL
     $inspect = docker inspect $thisgenericimage | ConvertFrom-Json
     $genericversion = [Version]::Parse("$($inspect.Config.Labels.tag)")
 
-    docker pull $thisbaseimage
+    docker pull $thisbaseimage 2>NULL
     $inspect = docker inspect $thisbaseimage | ConvertFrom-Json
     $baseversion = [Version]::Parse("$($inspect.Config.Labels.tag)")
 
@@ -51,14 +58,16 @@ $json.platform | ForEach-Object {
     if ($LASTEXITCODE) {
         throw "Error building image"
     } else {
-        $json.tags.Split(',') | ForEach-Object {
-            docker tag $image $_
-            docker push $_
-        }
+        if ($json.tags) {
+            $json.tags.Split(',') | ForEach-Object {
+                docker tag $image $_
+                docker push $_
+            }
 
-        $json.tags.Split(',') | ForEach-Object {
-            docker rmi $_ -f
+            $json.tags.Split(',') | ForEach-Object {
+                docker rmi $_ -f
+            }
+            docker rmi $image -f
         }
-        docker rmi $image -f
     }
 }

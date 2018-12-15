@@ -24,8 +24,13 @@ Start-Service -Name $SqlBrowserServiceName -ErrorAction Ignore
 Start-Service -Name $SqlWriterServiceName -ErrorAction Ignore
 Start-Service -Name $SqlServiceName -ErrorAction Ignore
 
-# Restore CRONUS Demo database to databases folder
+Write-Host "Remove CRONUS DB"
+$cronusFiles = Get-NavDatabaseFiles -DatabaseName "CRONUS"
+& sqlcmd -Q "ALTER DATABASE [CRONUS] SET OFFLINE WITH ROLLBACK IMMEDIATE"
+& sqlcmd -Q "DROP DATABASE [CRONUS]"
+$cronusFiles | % { remove-item $_.Path }
 
+# Restore CRONUS Demo database to databases folder
 Write-Host "Restore CRONUS Demo Database"
 $databaseName = "$env:DatabaseName"
 $databaseFolder = "c:\databases\$databaseName"
@@ -33,6 +38,9 @@ $databaseServer = "localhost"
 $databaseInstance = "SQLEXPRESS"
 $bak = (Get-ChildItem -Path "$countryFolder\*.bak")[0]
 $databaseFile = $bak.FullName
+
+$collation = (Invoke-Sqlcmd "RESTORE HEADERONLY FROM DISK = '$databaseFile'").Collation.Replace('_CS_','_CI_')
+SetDatabaseServerCollation -collation $collation
 
 # Restore database
 New-Item -Path $databaseFolder -itemtype Directory | Out-Null
@@ -90,12 +98,6 @@ Start-Service -Name $NavServiceName -WarningAction Ignore
 Write-Host "Import License file"
 $licensefile = Join-Path $countryFolder "Cronus.flf"
 Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance 'NAV' -Database NavDatabase -WarningAction SilentlyContinue
-
-Write-Host "Remove CRONUS DB"
-$cronusFiles = Get-NavDatabaseFiles -DatabaseName "CRONUS"
-& sqlcmd -Q "ALTER DATABASE [CRONUS] SET OFFLINE WITH ROLLBACK IMMEDIATE"
-& sqlcmd -Q "DROP DATABASE [CRONUS]"
-$cronusFiles | % { remove-item $_.Path }
 
 $serverFile = "$ServiceTierFolder\Microsoft.Dynamics.Nav.Server.exe"
 $serverVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($serverFile)

@@ -17,11 +17,14 @@
 
 $json.platform | ForEach-Object {
 
-    $osSuffix = "-$_"
-    $thisbaseimage = "$($json.baseimage)$osSuffix"
-    $image = "nav:$($json.version)-$($json.country)$osSuffix"
+    $osSuffix = $_
+    $thisbaseimage = $json.baseimage
+    if (!($thisbaseimage.EndsWith($osSuffix))) {
+        $thisbaseimage += "-$osSuffix"
+    }
+    $image = "dp:$($json.version)-base-$osSuffix"
 
-    docker pull $thisbaseimage
+    docker pull $thisbaseimage 2>NULL
     docker images --format "{{.Repository}}:{{.Tag}}" | % { 
         if ($_ -eq $image) 
         {
@@ -37,8 +40,6 @@ $json.platform | ForEach-Object {
                  --build-arg vsixurl="$($json.vsixbloburl)" `
                  --build-arg legal="$($json.legal)" `
                  --build-arg created="$created" `
-                 --build-arg nav="$($json.navversion)" `
-                 --build-arg cu="$($json.cu)" `
                  --build-arg country="$($json.country)" `
                  --build-arg version="$($json.version)" `
                  --build-arg platform="$($json.platformversion)" `
@@ -48,9 +49,11 @@ $json.platform | ForEach-Object {
     if ($LASTEXITCODE) {
         throw "Error building image"
     } else {
-        $json.tags.Split(',') | ForEach-Object {
-            docker tag $image $_
-            docker push $_
+        if ($json.tags) {
+            $json.tags.Split(',') | ForEach-Object {
+                docker tag $image $_
+                docker push $_
+            }
         }
     }
 }

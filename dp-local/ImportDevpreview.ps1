@@ -21,27 +21,53 @@ New-Item -Path $devPreviewFolder -ItemType Directory -ErrorAction Ignore | Out-N
 
 $DatabaseServer = "localhost"
 $DatabaseInstance = "SQLEXPRESS"
+$modelXmlName = ''
 
 Write-Host "Starting Local SQL Server"
 Start-Service -Name $SqlBrowserServiceName -ErrorAction Ignore
 Start-Service -Name $SqlWriterServiceName -ErrorAction Ignore
 Start-Service -Name $SqlServiceName -ErrorAction Ignore
 
+Write-Host "Remove CRONUS DB"
+$cronusFiles = Get-NavDatabaseFiles -DatabaseName "CRONUS"
+& sqlcmd -Q "ALTER DATABASE [CRONUS] SET OFFLINE WITH ROLLBACK IMMEDIATE"
+& sqlcmd -Q "DROP DATABASE [CRONUS]"
+$cronusFiles | % { remove-item $_.Path }
+
 # Restore SaasBacpacs if any
-Get-Item -Path "$devPreviewFolder\*.App.Bacpac" | % {
-    $country = $_.Name.SubString(0, $_.Name.Length-11)
+$appBacpac = Get-Item -Path "$devPreviewFolder\*.App.Bacpac"
+if ($appBacpac) {
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $modelXmlName = 'c:\run\model.xml'
+    # open ZIP archive for reading
+    $zip = [System.IO.Compression.ZipFile]::OpenRead($appBacpac.FullName)
+    $zip.Entries | Where-Object { $_.name -eq 'model.xml' } | % { [System.IO.Compression.ZipFileExtensions]::ExtractToFile($_, $modelXmlName, $true) }
+    $zip.Dispose()
+    Remove-Variable zip
+
+    $XPathForDBCollationNode = "/*[local-name()='DataSchemaModel']/*[local-name()='Model']/*[local-name()='Element'][@Type='SqlDatabaseOptions']/*[local-name()='Property'][@Name='Collation']/@Value"
+    $dbCollationNode = Select-Xml -Path $modelXmlName -XPath $XPathForDBCollationNode
+    $collation = $dbCollationNode.Node.Value.Replace('_CS_','_CI_')
+
+    SetDatabaseServerCollation -collation $collation
+
+    $country = $appBacpac.Name.SubString(0, $appBacpac.Name.Length-11)
     $dbName = "$Country"
     $appDbName = "$Country.AppDb"
 
     Write-Host "Restore $appDbName"
+    & sqlcmd -Q "CREATE DATABASE [$appDbName] COLLATE $collation"
     Restore-BacpacWithRetry -Bacpac "$devPreviewFolder\$Country.App.bacpac" -DatabaseName $appDbName
     Write-Host "Restore $dbName"
+    & sqlcmd -Q "CREATE DATABASE [$dbName] COLLATE $collation"
     Restore-BacpacWithRetry -Bacpac "$devPreviewFolder\$Country.Tenant.bacpac" -DatabaseName $dbName
 
     Write-Host "Remove App Part"
     Remove-NavApplication -DatabaseServer $DatabaseServer -DatabaseInstance $databaseInstance -DatabaseName $dbName -Force | Out-Null
     Write-Host "Import App Part"
-    Export-NavApplication -DatabaseServer $DatabaseServer -DatabaseInstance $databaseInstance -DatabaseName $appDbName -DestinationDatabase $dbName -Force | Out-Null
+    Invoke-sqlcmd -serverinstance "$DatabaseServer\$DatabaseInstance" -Database $appDbName -query 'CREATE USER "NT AUTHORITY\SYSTEM" FOR LOGIN "NT AUTHORITY\SYSTEM";'
+    Export-NavApplication -DatabaseServer $DatabaseServer -DatabaseInstance $databaseInstance -DatabaseName $appDbName -DestinationDatabase $dbName -Force -ServiceAccount "NT AUTHORITY\SYSTEM" | Out-Null
 
     Write-Host "Remove App Database"
     $appDbFiles = Get-NavDatabaseFiles -DatabaseName $appDbName
@@ -49,8 +75,11 @@ Get-Item -Path "$devPreviewFolder\*.App.Bacpac" | % {
     & sqlcmd -Q "DROP DATABASE [$appDbName]"
     $appDbFiles | % { remove-item $_.Path }
 
-    & sqlcmd -d $dbName -Q 'update [dbo].[$ndo$tenantproperty] set tenantid=''default'';'
+    & sqlcmd -d $dbName -Q 'update [dbo].[$ndo$tenantproperty] set tenantid=''default'''
 
+    & sqlcmd -d $dbName -Q "IF EXISTS (SELECT 'X' FROM sysusers WHERE name = 'NT AUTHORITY\SYSTEM' and isntuser = 1)
+              BEGIN DROP USER [NT AUTHORITY\SYSTEM] END"
+    
     # Remove ConfigurationPackages and Extensions
     "ConfigurationPackages","TestToolKit","Extensions" | ForEach-Object {
         if (Test-Path "$devPreviewFolder\$_" -PathType Container) {
@@ -64,7 +93,7 @@ Get-Item -Path "$devPreviewFolder\*.App.Bacpac" | % {
         }
     }
 
-    Write-Host "Change Configuration"
+    Write-Host "Change DatabaseName Configuration to $dbname"
     $CustomConfigFile =  Join-Path $ServiceTierFolder "CustomSettings.config"
     $CustomConfig = [xml](Get-Content $CustomConfigFile)
     $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseName']").Value = "$dbName"
@@ -93,12 +122,9 @@ Get-Item -Path "$devPreviewFolder\*.App.Bacpac" | % {
     $procs | Where-Object { $pre -notcontains $_.Id } | Wait-Process
 }
 
-Write-Host "Remove CRONUS DB"
-$cronusFiles = Get-NavDatabaseFiles -DatabaseName "CRONUS"
-& sqlcmd -Q "ALTER DATABASE [CRONUS] SET OFFLINE WITH ROLLBACK IMMEDIATE"
-& sqlcmd -Q "DROP DATABASE [CRONUS]"
-$cronusFiles | % { remove-item $_.Path }
-
 Write-Host "Cleanup"
 Remove-Item $devPreviewFile -Force
 Remove-Item $devPreviewFolder -Force -Recurse
+if ($modelXmlName) {
+    Remove-Item $modelXmlName -Force
+}

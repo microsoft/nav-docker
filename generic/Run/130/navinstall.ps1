@@ -117,7 +117,10 @@ if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
     $databaseFolder = "c:\databases"
     New-Item -Path $databaseFolder -itemtype Directory -ErrorAction Ignore | Out-Null
     $databaseFile = $bak.FullName
-    
+
+    $collation = (Invoke-Sqlcmd "RESTORE HEADERONLY FROM DISK = '$databaseFile'").Collation
+    SetDatabaseServerCollation -collation $collation
+
     New-NAVDatabase -DatabaseServer $databaseServer `
                     -DatabaseInstance $databaseInstance `
                     -DatabaseName "$databaseName" `
@@ -127,6 +130,12 @@ if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
 } else {
 
     if (Test-Path "$navDvdPath\databases") {
+
+        $collation = Get-Content -Path "$navDvdPath\databases\Collation.txt" -ErrorAction SilentlyContinue
+        if ($collation) {
+            SetDatabaseServerCollation -collation $collation
+        }
+
         Write-Host "Copying Cronus database"
         Copy-Item -path "$navDvdPath\databases" -Destination "c:\" -Recurse -Force
         $mdf = (Get-Item "C:\databases\*.mdf").FullName

@@ -270,7 +270,7 @@ function Test-NavDatabase
 
     $sqlCommandText = @"
 USE MASTER
-SELECT '1' FROM SYS.DATABASES WHERE NAME = '$DatabaseName'
+SELECT '1' FROM sys.sysdatabases WHERE name = '$DatabaseName'
 GO
 "@
 
@@ -576,4 +576,20 @@ function InstallPrerequisite {
     }
     Write-Host "Installing $Name"
     start-process $MsiPath -ArgumentList "/quiet /qn /passive" -Wait
+}
+
+function SetDatabaseServerCollation {
+    Param(
+        [string] $collation
+    )
+
+    $collation = $collation.Replace('_CS_','_CI_')
+    $oldcollation = Get-Content -Path "C:\Run\Collation.txt" -ErrorAction SilentlyContinue
+    if ("$oldcollation" -ne "$collation") {
+        Write-Host "Changing Database Server Collation to $collation"
+        $tempsapwd = ([Guid]::NewGuid()).ToString()
+        $sqlSetupExe = (Get-item "C:\Program Files\Microsoft SQL Server\*\Setup Bootstrap\*\Setup.exe").FullName
+        & $sqlSetupExe /q /ACTION=REBUILDDATABASE /INSTANCENAME=SQLEXPRESS /SQLSYSADMINACCOUNTS='BUILTIN\ADMINISTRATORS' /SAPWD=$tempsapwd /SQLCOLLATION=$collation
+        Set-Content -Path  "C:\Run\Collation.txt" -Value $collation
+    }
 }

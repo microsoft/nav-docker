@@ -2,7 +2,7 @@
 
 # Json format:
 #
-# $json = '{
+# $json = '{L
 #     "platform": "<platform ex. ltsc2019>",
 #     "baseimage": "<baseimage ex. microsoft/dynamics-nav:generic>",
 #     "navdvdbloburl":  "<url>",
@@ -17,11 +17,15 @@
 
 $json.platform | ForEach-Object {
 
-    $osSuffix = "-$_"
-    $thisbaseimage = "$($json.baseimage)$osSuffix"
-    $image = "nav:$($json.version)-$($json.country)$osSuffix"
+    $osSuffix = $_
+    $thisbaseimage = $json.baseimage
+    if (!($thisbaseimage.EndsWith($osSuffix))) {
+        $thisbaseimage += "-$osSuffix"
+    }
+    
+    $image = "nav:$($json.version)-base-$osSuffix"
 
-    docker pull $thisbaseimage
+    docker pull $thisbaseimage 2>NULL
     docker images --format "{{.Repository}}:{{.Tag}}" | % { 
         if ($_ -eq $image) 
         {
@@ -47,9 +51,11 @@ $json.platform | ForEach-Object {
     if ($LASTEXITCODE) {
         throw "Error building image"
     } else {
-        $json.tags.Split(',') | ForEach-Object {
-            docker tag $image $_
-            docker push $_
+        if ($json.tags) {
+            $json.tags.Split(',') | ForEach-Object {
+                docker tag $image $_
+                docker push $_
+            }
         }
     }
 }

@@ -2,28 +2,45 @@
 
 # Json format:
 #
-# $json = '{
-#     "platform": "<platform ex. ltsc2019>",
-#     "baseimage": "<baseimage ex. microsoft/dynamics-nav:9.0.43402.0>",
-#     "genericimage": "<genericimage ex. microsoft/dynamics-nav:generic>",
-#     "devpreviewbloburl":  "<url>",
-#     "country":  "<country>",
-#     "tags":  "<tags ex. microsoft/dynamics-nav:2016-cu1-dk-ltsc2019,microsoft/dynamics-nav:9.0.43402.0-dk-ltsc2019>",
-# }' | ConvertFrom-Json
+#{
+#    "version":  "13.1.25940.26534",
+#    "task":  "dp-local",
+#    "navversion":  "",
+#    "tags":  "mcrbusinesscentral.azurecr.io/public/businesscentral/sandbox:13.1.25940.26534-nl,mcrbusinesscentral.azurecr.io/public/businesscentral/sandbox:13.1.25940.26534-nl-ltsc2016",
+#    "genericimage":  "microsoft/dynamics-nav:generic",
+#    "registry":  "mcrbusinesscentral.azurecr.io/",
+#    "baseimage":  "mcrbusinesscentral.azurecr.io/public/businesscentral/sandbox:13.1.25940.26534-base",
+#    "disablestrongnamevalidation":  null,
+#    "platform":  "ltsc2016",
+#    "cu":  "",
+#    "country":  "NL",
+#    "blobcontainer":  "dvd",
+#    "maintainer":  "Dynamics SMB",
+#    "devpreviewblobname":  "69137e70-d76a-4e57-8939-80b0f5d53fab",
+#    "devpreviewbloburl":  "https://nav2016wswe0.blob.core.windows.net/dvd/69137e70-d76a-4e57-8939-80b0f5d53fab"
+#}
+
 
 $json.platform | ForEach-Object {
 
-    $osSuffix = "-$_"
+    $osSuffix = $_
+    $thisbaseimage = $json.baseimage
+    if (!($thisbaseimage.EndsWith($osSuffix))) {
+        $thisbaseimage += "-$osSuffix"
+    }
 
-    $thisbaseimage = "$($json.baseimage)$osSuffix"
-    $thisgenericimage = "$($json.genericimage)$osSuffix"
-    $image = "nav:$($json.version)-$($json.country)$osSuffix"
+    $thisgenericimage = $($json.genericimage)
+    if (!($thisgenericimage.EndsWith($osSuffix))) {
+        $thisgenericimage += "-$osSuffix"
+    }
 
-    docker pull $thisgenericimage
+    $image = "dp:$($json.version)-$($json.country) $osSuffix"
+
+    docker pull $thisgenericimage 2>NULL
     $inspect = docker inspect $thisgenericimage | ConvertFrom-Json
     $genericversion = [Version]::Parse("$($inspect.Config.Labels.tag)")
 
-    docker pull $thisbaseimage
+    docker pull $thisbaseimage 2>NULL
     $inspect = docker inspect $thisbaseimage | ConvertFrom-Json
     $baseversion = [Version]::Parse("$($inspect.Config.Labels.tag)")
 
@@ -51,14 +68,16 @@ $json.platform | ForEach-Object {
     if ($LASTEXITCODE) {
         throw "Error building image"
     } else {
-        $json.tags.Split(',') | ForEach-Object {
-            docker tag $image $_
-            docker push $_
-        }
+        if ($json.tags) {
+            $json.tags.Split(',') | ForEach-Object {
+                docker tag $image $_
+                docker push $_
+            }
 
-        $json.tags.Split(',') | ForEach-Object {
-            docker rmi $_ -f
+            $json.tags.Split(',') | ForEach-Object {
+                docker rmi $_ -f
+            }
+            docker rmi $image -f
         }
-        docker rmi $image -f
     }
 }
