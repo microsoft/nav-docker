@@ -36,11 +36,11 @@ $json.platform | ForEach-Object {
 
     $image = "dp:$($json.version)-$($json.country)-$osSuffix"
 
-    docker pull $thisgenericimage 2>NULL
+    docker pull $thisgenericimage 2>NUL
     $inspect = docker inspect $thisgenericimage | ConvertFrom-Json
     $genericversion = [Version]::Parse("$($inspect.Config.Labels.tag)")
 
-    docker pull $thisbaseimage 2>NULL
+    docker pull $thisbaseimage 2>NUL
     $inspect = docker inspect $thisbaseimage | ConvertFrom-Json
     $baseversion = [Version]::Parse("$($inspect.Config.Labels.tag)")
 

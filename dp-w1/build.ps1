@@ -24,7 +24,7 @@ $json.platform | ForEach-Object {
     }
     $image = "dp:$($json.version)-base-$osSuffix"
 
-    docker pull $thisbaseimage 2>NULL
+    docker pull $thisbaseimage 2>NUL
     docker images --format "{{.Repository}}:{{.Tag}}" | % { 
         if ($_ -eq $image) 
         {
