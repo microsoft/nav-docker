@@ -48,7 +48,7 @@ if ($appBacpac) {
 
     $XPathForDBCollationNode = "/*[local-name()='DataSchemaModel']/*[local-name()='Model']/*[local-name()='Element'][@Type='SqlDatabaseOptions']/*[local-name()='Property'][@Name='Collation']/@Value"
     $dbCollationNode = Select-Xml -Path $modelXmlName -XPath $XPathForDBCollationNode
-    $collation = $dbCollationNode.Node.Value.Replace('_CS_','_CI_')
+    $collation = $dbCollationNode.Node.Value
 
     SetDatabaseServerCollation -collation $collation
 
@@ -57,10 +57,8 @@ if ($appBacpac) {
     $appDbName = "$Country.AppDb"
 
     Write-Host "Restore $appDbName"
-    & sqlcmd -Q "CREATE DATABASE [$appDbName] COLLATE $collation"
     Restore-BacpacWithRetry -Bacpac "$devPreviewFolder\$Country.App.bacpac" -DatabaseName $appDbName
     Write-Host "Restore $dbName"
-    & sqlcmd -Q "CREATE DATABASE [$dbName] COLLATE $collation"
     Restore-BacpacWithRetry -Bacpac "$devPreviewFolder\$Country.Tenant.bacpac" -DatabaseName $dbName
 
     Write-Host "Remove App Part"
