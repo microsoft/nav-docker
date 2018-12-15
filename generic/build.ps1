@@ -46,15 +46,12 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "SUCCESS"
 
-if ($tags) {
-    $tags = @("microsoft/dynamics-nav:generic-$os")
-    if ($os -eq "ltsc2016") {
-        $tags += "microsoft/dynamics-nav:generic"
-    }
-    
-    $tags | ForEach-Object {
-        docker tag $image $_
-        docker push $_
-    }
+$tags = @("microsoft/dynamics-nav:generic-$os")
+if ($os -eq "ltsc2016") {
+    $tags += "microsoft/dynamics-nav:generic"
 }
 
+$tags | ForEach-Object {
+    docker tag $image $_
+    docker push $_
+}
