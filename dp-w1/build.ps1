@@ -15,6 +15,8 @@
 #     "tags":  "<tags ex. microsoft/dynamics-nav:9.0.43402.0-ltsc2019,microsoft/dynamics-nav:2016-cu1-ltsc2019,microsoft/dynamics-nav:2016-cu1-w1-ltsc2019>",
 # }' | ConvertFrom-Json
 
+cd $PSScriptRoot
+
 $json.platform | ForEach-Object {
 
     $osSuffix = $_
@@ -24,7 +26,7 @@ $json.platform | ForEach-Object {
     }
     $image = "dp:$($json.version)-base-$osSuffix"
 
-    docker pull $thisbaseimage 2>NUL
+    docker pull $thisbaseimage 2>NULL
     docker images --format "{{.Repository}}:{{.Tag}}" | % { 
         if ($_ -eq $image) 
         {

@@ -20,6 +20,7 @@
 #    "devpreviewbloburl":  "https://nav2016wswe0.blob.core.windows.net/dvd/69137e70-d76a-4e57-8939-80b0f5d53fab"
 #}
 
+cd $PSScriptRoot
 
 $json.platform | ForEach-Object {
 
@@ -36,11 +37,11 @@ $json.platform | ForEach-Object {
 
     $image = "dp:$($json.version)-$($json.country)-$osSuffix"
 
-    docker pull $thisgenericimage 2>NUL
+    docker pull $thisgenericimage 2>NULL
     $inspect = docker inspect $thisgenericimage | ConvertFrom-Json
     $genericversion = [Version]::Parse("$($inspect.Config.Labels.tag)")
 
-    docker pull $thisbaseimage 2>NUL
+    docker pull $thisbaseimage 2>NULL
     $inspect = docker inspect $thisbaseimage | ConvertFrom-Json
     $baseversion = [Version]::Parse("$($inspect.Config.Labels.tag)")
 

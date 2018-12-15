@@ -11,6 +11,8 @@
 #     "tags":  "<tags ex. microsoft/dynamics-nav:2016-cu1-dk-ltsc2019,microsoft/dynamics-nav:9.0.43402.0-dk-ltsc2019>",
 # }' | ConvertFrom-Json
 
+cd $PSScriptRoot
+
 $json.platform | ForEach-Object {
 
     $osSuffix = $_
@@ -26,11 +28,11 @@ $json.platform | ForEach-Object {
     
     $image = "bc:$($json.version)-$($json.country)-$osSuffix"
 
-    docker pull $thisgenericimage 2>NUL
+    docker pull $thisgenericimage 2>NULL
     $inspect = docker inspect $thisgenericimage | ConvertFrom-Json
     $genericversion = [Version]::Parse("$($inspect.Config.Labels.tag)")
 
-    docker pull $thisbaseimage 2>NUL
+    docker pull $thisbaseimage 2>NULL
     $inspect = docker inspect $thisbaseimage | ConvertFrom-Json
     $baseversion = [Version]::Parse("$($inspect.Config.Labels.tag)")
 
