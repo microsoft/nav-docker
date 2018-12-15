@@ -34,7 +34,7 @@ $json.platform | ForEach-Object {
         $thisgenericimage += "-$osSuffix"
     }
 
-    $image = "dp:$($json.version)-$($json.country) $osSuffix"
+    $image = "dp:$($json.version)-$($json.country)-$osSuffix"
 
     docker pull $thisgenericimage 2>NULL
     $inspect = docker inspect $thisgenericimage | ConvertFrom-Json
