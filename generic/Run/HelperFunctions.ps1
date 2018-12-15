@@ -583,7 +583,6 @@ function SetDatabaseServerCollation {
         [string] $collation
     )
 
-    $collation = $collation.Replace('_CS_','_CI_')
     $oldcollation = Get-Content -Path "C:\Run\Collation.txt" -ErrorAction SilentlyContinue
     if ("$oldcollation" -ne "$collation") {
         Write-Host "Changing Database Server Collation to $collation"
