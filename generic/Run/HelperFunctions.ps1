@@ -269,7 +269,7 @@ function Test-NavDatabase
     )
 
     $sqlCommandText = @"
-USE MASTER
+USE [master]
 SELECT '1' FROM sys.sysdatabases WHERE name = '$DatabaseName'
 GO
 "@
