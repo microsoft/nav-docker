@@ -205,3 +205,5 @@ $enableApiServices = ($env:enableApiServices -eq "Y")
 $customNavSettings = "$env:customNavSettings"
 $customWebSettings = "$env:customWebSettings"
 $customWinSettings = "$env:customWinSettings"
+
+$enableWarningsInLog = ($env:enableWarningsInLog -eq "Y")
