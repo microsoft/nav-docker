@@ -115,6 +115,9 @@ if ($navUseSSL) {
 if ($developerServicesKeyExists) {
     $serverConfigFile = Join-Path $ServiceTierFolder "Microsoft.Dynamics.Nav.Server.exe.config"
     $serverConfig = [xml](Get-Content -Path $serverConfigFile)
-    $serverConfig.SelectSingleNode("//configuration/runtime/NetFx40_LegacySecurityPolicy").enabled = "false"
+    $legacySecurityPolicyNode = $serverConfig.SelectSingleNode("//configuration/runtime/NetFx40_LegacySecurityPolicy")
+    if ($legacySecurityPolicyNode) {
+        $legacySecurityPolicyNode.enabled = "false"
+    }
     $serverConfig.Save($serverConfigFile)
 }
