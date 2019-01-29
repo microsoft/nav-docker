@@ -107,7 +107,7 @@ if ($serverVersion.FileMajorPart -ge 11) {
     $pre = (get-process -Name "finsql" -ErrorAction Ignore) | % { $_.Id }
     Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=generatesymbolreference, Database=$databaseName, ServerName=localhost\SQLEXPRESS, ntauthentication=1"
     $procs = get-process -Name "finsql" -ErrorAction Ignore
-    $procs | Where-Object { $pre -notcontains $_.Id } | Wait-Process -Timeout 1800
+    $procs | Where-Object { $pre -notcontains $_.Id } | Wait-Process -Timeout 1800 -ErrorAction Ignore
 }
 
 Write-Host "Cleanup"
