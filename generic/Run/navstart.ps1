@@ -140,19 +140,18 @@ if (!($service)) {
     Restart-Service -Name $NavServiceName -WarningAction Ignore
 }
 
-. (Get-MyFilePath "SetupLicense.ps1")
-
-if ($multitenant) {
-    . (Get-MyFilePath "SetupTenant.ps1")
-}
-
-
 $wwwRootPath = Get-WWWRootPath
 $httpPath = Join-Path $wwwRootPath "http"
 
 if ($newPublicDnsName -and $webClient -ne "N") {
     . (Get-MyFilePath "SetupWebClient.ps1")
     . (Get-MyFilePath "SetupWebConfiguration.ps1")
+}
+
+. (Get-MyFilePath "SetupLicense.ps1")
+
+if ($multitenant) {
+    . (Get-MyFilePath "SetupTenant.ps1")
 }
 
 if (!$restartingInstance) {
