@@ -57,10 +57,10 @@ try {
             $startTime = [DateTime]::Now
             $foldersArray = $folders -split ","
             foreach ($folder in $foldersArray) {
-                $folderValue = $folder -split "="
-                $dir = $folderValue[0]
-                $value = $folderValue[1].Split('\')[0]
-                $subfolder = $folderValue[1].Split('\')[1]
+                $idx = $folder.indexof('=')
+                $dir = $folder.Substring(0,$idx)
+                $value = $folder.Substring($idx+1).Split('\')[0]
+                $subfolder = $folder.Substring($idx+1).Split('\')[1]
                 Write-Host "Downloading $value to $dir"
                 if (-not (Test-Path $dir)) {
                     New-Item $dir -ItemType Directory | Out-Null

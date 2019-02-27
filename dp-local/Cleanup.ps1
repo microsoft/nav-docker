@@ -9,4 +9,6 @@
 #     "devpreviewblobname":  "<blobname>"
 # }' | ConvertFrom-Json
 
-Remove-AzureStorageBlob -Context $context -Container $json.blobcontainer -Blob $json.devpreviewblobname -Force -ErrorAction Ignore
+if ($json.devpreviewblobname) {
+    Remove-AzureStorageBlob -Context $context -Container $json.blobcontainer -Blob $json.devpreviewblobname -Force -ErrorAction Ignore
+}
