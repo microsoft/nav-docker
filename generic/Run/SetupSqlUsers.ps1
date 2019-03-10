@@ -10,7 +10,7 @@
 if ($securePassword) {
     Write-Host "Setting SA Password and enabling SA"
     $sqlcmd = "ALTER LOGIN sa with password='" + ([System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)).Replace('"','""').Replace('''','''''')) + "',CHECK_POLICY = OFF;ALTER LOGIN sa ENABLE;"
-    & sqlcmd -S "$databaseServer\$databaseInstance" -Q $sqlcmd
+    Invoke-SqlCmd -ServerInstance "$databaseServer\$databaseInstance" -QueryTimeout 0 -ErrorAction Stop -Query $sqlcmd
 
 	if ($auth -ne "Windows" -and $username -ne "") {
 		Write-Host "Creating $username as SQL User and add to sysadmin"
@@ -27,7 +27,7 @@ if ($securePassword) {
 			ALTER LOGIN [$username] ENABLE
 			GO"
 			
-		& sqlcmd -S "$databaseServer\$databaseInstance" -Q $sqlcmd
+		Invoke-SqlCmd -ServerInstance "$databaseServer\$databaseInstance" -QueryTimeout 0 -ErrorAction Stop -Query $sqlcmd
 	}
 } else {
 	if ($auth -eq "Windows" -and $username -ne "") {
@@ -45,6 +45,6 @@ if ($securePassword) {
 			ALTER LOGIN [$username] ENABLE
 			GO"
 			
-		& sqlcmd -S "$databaseServer\$databaseInstance" -Q $sqlcmd
+		Invoke-SqlCmd -ServerInstance "$databaseServer\$databaseInstance" -QueryTimeout 0 -ErrorAction Stop -Query $sqlcmd
 	}
 }
