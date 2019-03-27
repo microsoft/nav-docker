@@ -90,6 +90,7 @@ Copy-Item -Path (Join-Path $roleTailoredClientFolder "*office*.dll") -Destinatio
 Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path $roleTailoredClientFolder 'hlink.dll')
 Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path $serviceTierFolder 'hlink.dll')
 Copy-Item -Path (Join-Path $runPath 'Install\t2embed.dll') -Destination "c:\windows\system32\t2embed.dll"
+Copy-Item -Path (Join-Path $runPath 'Install\Microsoft.IdentityModel.dll') -Destination (Join-Path $serviceTierFolder 'Microsoft.IdentityModel.dll')
 
 $reportBuilderPath = "C:\Program Files (x86)\ReportBuilder"
 $reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder2016'
