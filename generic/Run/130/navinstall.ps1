@@ -67,6 +67,9 @@ Copy-Item -Path "$navDvdPath\*.vsix" -Destination $runPath
 
 Write-Host "Copying PowerShell Scripts"
 Copy-Item -Path "$navDvdPath\WindowsPowerShellScripts\Cloud\NAVAdministration\" -Destination $runPath -Recurse -Force
+if (Test-Path "$navDvdPath\WindowsPowerShellScripts\WebSearch") {
+    Copy-Item -Path "$navDvdPath\WindowsPowerShellScripts\WebSearch\" -Destination $runPath -Recurse -Force
+}
 
 "ConfigurationPackages","Test Assemblies","TestToolKit","UpgradeToolKit","Extensions" | % {
     $dir = "$navDvdPath\$_" 
