@@ -7,6 +7,14 @@ if ($servicesUseSSL) {
     $certparam += @{CertificateThumbprint = $certificateThumbprint}
 }
 
+Write-Host "Registering event sources"
+"MicrosoftDynamicsNAVClientWebClient","MicrosoftDynamicsNAVClientClientService" | % {
+    if (-not [System.Diagnostics.EventLog]::SourceExists($_)) {
+        $frameworkDir =  (Get-Item "HKLM:\SOFTWARE\Microsoft\.NETFramework").GetValue("InstallRoot")
+        New-EventLog -LogName Application -Source $_ -MessageResourceFile (get-item (Join-Path $frameworkDir "*\EventLogMessages.dll")).FullName
+    }
+}
+
 Write-Host "Creating DotNetCore Web Server Instance"
 $publishFolder = "$webClientFolder\WebPublish"
 
