@@ -42,9 +42,9 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "SUCCESS"
 
-$tags = @("microsoft/dynamics-nav:generic-$os","mcr.microsoft.com/dynamicsnav:generic-$os")
+$tags = @("microsoft/dynamics-nav:generic-$os","mcrbusinesscentral.azurecr.io/public/dynamicsnav:generic-$os")
 if ($os -eq "ltsc2016") {
-    $tags += @("microsoft/dynamics-nav:generic","mcr.microsoft.com/dynamicsnav:generic")
+    $tags += @("microsoft/dynamics-nav:generic","mcrbusinesscentral.azurecr.io/public/dynamicsnav:generic")
 }
 
 $tags | ForEach-Object {
