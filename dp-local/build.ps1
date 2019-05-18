@@ -31,6 +31,7 @@ $json.platform | ForEach-Object {
     }
 
     $thisgenericimage = $($json.genericimage)
+    $thisgenericimage = $thisgenericimage.Replace("microsoft/dynamics-nav:generic","mcr.microsoft.com/dynamicsnav:generic")
     if (!($thisgenericimage.EndsWith($osSuffix))) {
         $thisgenericimage += "-$osSuffix"
     }
