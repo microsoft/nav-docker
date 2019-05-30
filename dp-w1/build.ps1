@@ -42,6 +42,7 @@ $json.platform | ForEach-Object {
                  --build-arg vsixurl="$($json.vsixbloburl)" `
                  --build-arg legal="$($json.legal)" `
                  --build-arg created="$created" `
+                 --build-arg cu="$($json.cu)" `
                  --build-arg country="$($json.country)" `
                  --build-arg version="$($json.version)" `
                  --build-arg platform="$($json.platformversion)" `
