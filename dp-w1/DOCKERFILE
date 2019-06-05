@@ -16,6 +16,8 @@ COPY ./buildimage.ps1 /Run/buildimage.ps1
 
 RUN \Run\buildimage.ps1
 
+ENV DatabaseServer="" DatabaseInstance="" DatabaseName=""
+
 LABEL legal="$legal" \
       created="$created" \
       nav="" \
