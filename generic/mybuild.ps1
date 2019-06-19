@@ -1,7 +1,19 @@
-﻿$baseimage = "mcr.microsoft.com/windows/servercore/insider:10.0.18362.53"
+﻿$os = (Get-CimInstance Win32_OperatingSystem)
+if ($os.OSType -ne 18 -or !$os.Version.StartsWith("10.0.")) {
+    throw "Unknown Host Operating System"
+}
+$UBR = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name UBR).UBR
+$hostOsVersion = [System.Version]::Parse("$($os.Version).$UBR")
+
+Write-Host "Host OS Version is $hostOsVersion"
+
+#$baseimage = "mcr.microsoft.com/windows/servercore/insider:$hostOsVersion"
+
+$baseimage = "mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-1903"
 $isolation = "process"
 $image = "mygeneric"
-$genericVersion = "0.0.9.6"
+$genericVersion = "0.0.9.8"
+$created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm") 
 
 docker pull $baseimage
 $osversion = docker inspect --format "{{.OsVersion}}" $baseImage

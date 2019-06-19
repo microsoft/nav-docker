@@ -7,6 +7,18 @@
 #     "version":  "<version ex. 0.0.8.1>"
 # }' | ConvertFrom-Json
 
+$myos = (Get-CimInstance Win32_OperatingSystem)
+if ($myos.OSType -ne 18 -or !$myos.Version.StartsWith("10.0.")) {
+    throw "Unknown Host Operating System"
+}
+
+if ($myos.Version -eq "10.0.18362") {
+    $json = '{
+        "platform": "1903",
+        "version":  "0.0.9.7"
+    }' | ConvertFrom-Json
+}
+
 $os = $json.platform
 
 $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:4.7.2-windowsservercore-$os"
@@ -16,11 +28,15 @@ if ($os.StartsWith("ltsc")) {
 } else {
     $isolation = "hyperv"
 }
-
+if ($os -eq "1903") {
+    $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-$os"
+    $isolation = "process"
+}
 $image = "generic:$os"
 
 docker pull $baseimage
 $osversion = docker inspect --format "{{.OsVersion}}" $baseImage
+$created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm") 
 
 docker images --format "{{.Repository}}:{{.Tag}}" | % { 
     if ($_ -eq $image) 

@@ -90,8 +90,13 @@ if (($webClient -ne "N") -or ($httpSite -ne "N")) {
 }
 
 $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName
-$roleTailoredClientFolder = (Get-Item "C:\Program Files (x86)\Microsoft Dynamics NAV\*\RoleTailored Client").FullName
-$clickOnceInstallerToolsFolder = (Get-Item "C:\Program Files (x86)\Microsoft Dynamics NAV\*\ClickOnce Installer Tools").FullName
+$roleTailoredClientItem = Get-Item "C:\Program Files (x86)\Microsoft Dynamics NAV\*\RoleTailored Client" -ErrorAction Ignore
+if ($roleTailoredClientItem) {
+    $roleTailoredClientFolder = $roleTailoredClientItem.FullName
+}
+else {
+    $roleTailoredClientFolder = ""
+}
 $WebClientFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Web Client")[0]
 $NAVAdministrationScriptsFolder = (Get-Item "$runPath\NAVAdministration").FullName
 $CustomConfigFile = Join-Path $serviceTierFolder "CustomSettings.config"
@@ -176,8 +181,18 @@ if (!$restartingInstance) {
 }
 
 if ($newPublicDnsName -and $httpSite -ne "N" -and $clickOnce -eq "Y") {
-    Write-Host "Creating ClickOnce Manifest"
-    . (Get-MyFilePath "SetupClickOnce.ps1")
+
+    $setupClickOnceScript = Get-MyFilePath "SetupClickOnce.ps1"
+
+    if (Test-Path $setupClickOnceScript) {
+        Write-Host "Creating ClickOnce Manifest"
+        $clickOnceInstallerToolsFolder = (Get-Item "C:\Program Files (x86)\Microsoft Dynamics NAV\*\ClickOnce Installer Tools").FullName
+        . $setupClickOnceScript
+    } else
+    {
+        Write-Host "Skipping clickOnce, ClickOnce is not supported by this version"
+        $ClickOnce = "N"
+    }
 }
 
 . (Get-MyFilePath "AdditionalSetup.ps1")

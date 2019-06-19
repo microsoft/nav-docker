@@ -101,7 +101,7 @@ Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance 'NAV' -Databas
 
 $serverFile = "$ServiceTierFolder\Microsoft.Dynamics.Nav.Server.exe"
 $serverVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($serverFile)
-if ($serverVersion.FileMajorPart -ge 11) {
+if ($serverVersion.FileMajorPart -ge 11 -and $serverVersion.FileMajorPart -lt 15) {
     $roleTailoredClientFolder = (Get-Item "C:\Program Files (x86)\Microsoft Dynamics NAV\*\RoleTailored Client").FullName
     Write-Host "Generating Symbol Reference"
     $pre = (get-process -Name "finsql" -ErrorAction Ignore) | % { $_.Id }

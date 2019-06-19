@@ -104,8 +104,16 @@ if ($appBacpac) {
     $licensefile = (Get-Item "$devPreviewFolder\*.flf").FullName
     Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance 'NAV' -Database NavDatabase -WarningAction SilentlyContinue
 
-    $roleTailoredClientFolder = (Get-Item "C:\Program Files (x86)\Microsoft Dynamics NAV\*\RoleTailored Client").FullName
-    Import-Module "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Apps.Management.psd1" -wa SilentlyContinue
+    $serverFile = "$ServiceTierFolder\Microsoft.Dynamics.Nav.Server.exe"
+    $serverVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($serverFile)
+    if ($serverVersion.FileMajorPart -lt 15) {
+        $roleTailoredClientFolder = (Get-Item "C:\Program Files (x86)\Microsoft Dynamics NAV\*\RoleTailored Client").FullName
+        Import-Module "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Apps.Management.psd1" -wa SilentlyContinue
+    }
+    else {
+        Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Apps.Management.psd1" -wa SilentlyContinue
+    }
+
     Write-Host "Uninstall apps"
     Get-NAVAppInfo NAV | Where-Object { $_.publisher -ne "Microsoft" } | Uninstall-NAVApp -WarningAction Ignore
     Write-Host "Unpublish apps"
@@ -113,11 +121,13 @@ if ($appBacpac) {
     Write-Host "Unpublish apps"
     Get-NAVAppInfo NAV | Where-Object { $_.publisher -ne "Microsoft" } | Unpublish-NAVApp -ErrorAction Ignore
 
-    Write-Host "Generate Symbol Reference"
-    $pre = (get-process -Name "finsql" -ErrorAction Ignore) | % { $_.Id }
-    Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=generatesymbolreference, Database=$dbName, ServerName=$databaseServer\$databaseInstance, ntauthentication=1"
-    $procs = get-process -Name "finsql" -ErrorAction Ignore
-    $procs | Where-Object { $pre -notcontains $_.Id } | Wait-Process -Timeout 1800 -ErrorAction Ignore
+    if ($serverVersion.FileMajorPart -lt 15) {
+        Write-Host "Generate Symbol Reference"
+        $pre = (get-process -Name "finsql" -ErrorAction Ignore) | % { $_.Id }
+        Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=generatesymbolreference, Database=$dbName, ServerName=$databaseServer\$databaseInstance, ntauthentication=1"
+        $procs = get-process -Name "finsql" -ErrorAction Ignore
+        $procs | Where-Object { $pre -notcontains $_.Id } | Wait-Process -Timeout 1800 -ErrorAction Ignore
+    }
 }
 
 Write-Host "Cleanup"
