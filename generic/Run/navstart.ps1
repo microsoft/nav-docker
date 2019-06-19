@@ -47,7 +47,7 @@ set the environment variable ACCEPT_EULA to 'Y' if you accept the agreement."
     exit 1
 }
 
-if (!$restartingImage) {
+if (!$restartingInstance) {
     $containerAge = [System.DateTime]::Now.Subtract((Get-Item "C:\RUN").CreationTime).Days
     if ($containerAge -gt 90) {
         if ($Accept_outdated -ne "Y") {
