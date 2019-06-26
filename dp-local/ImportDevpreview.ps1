@@ -102,7 +102,7 @@ if ($appBacpac) {
 
     Write-Host "Import License file"
     $licensefile = (Get-Item "$devPreviewFolder\*.flf").FullName
-    Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance 'NAV' -Database NavDatabase -WarningAction SilentlyContinue
+    Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
 
     $serverFile = "$ServiceTierFolder\Microsoft.Dynamics.Nav.Server.exe"
     $serverVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($serverFile)
@@ -115,11 +115,11 @@ if ($appBacpac) {
     }
 
     Write-Host "Uninstall apps"
-    Get-NAVAppInfo NAV | Where-Object { $_.publisher -ne "Microsoft" } | Uninstall-NAVApp -WarningAction Ignore
+    Get-NAVAppInfo $ServerInstance | Where-Object { $_.publisher -ne "Microsoft" } | Uninstall-NAVApp -WarningAction Ignore
     Write-Host "Unpublish apps"
-    Get-NAVAppInfo NAV | Where-Object { $_.publisher -ne "Microsoft" } | Unpublish-NAVApp -ErrorAction Ignore
+    Get-NAVAppInfo $ServerInstance | Where-Object { $_.publisher -ne "Microsoft" } | Unpublish-NAVApp -ErrorAction Ignore
     Write-Host "Unpublish apps"
-    Get-NAVAppInfo NAV | Where-Object { $_.publisher -ne "Microsoft" } | Unpublish-NAVApp -ErrorAction Ignore
+    Get-NAVAppInfo $ServerInstance | Where-Object { $_.publisher -ne "Microsoft" } | Unpublish-NAVApp -ErrorAction Ignore
 
     if ($serverVersion.FileMajorPart -lt 15) {
         Write-Host "Generate Symbol Reference"
