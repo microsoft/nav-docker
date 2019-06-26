@@ -140,7 +140,7 @@ if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
         Copy-Item -path "$navDvdPath\databases" -Destination "c:\" -Recurse -Force
         $mdf = (Get-Item "C:\databases\*.mdf").FullName
         $ldf = (Get-Item "C:\databases\*.ldf").FullName
-        $databaseName = (Get-Item "C:\databases\*.mdf").BaseName
+        $databaseName = "CRONUS"
         $databaseServer = "localhost"
         $databaseInstance = "SQLEXPRESS"
     } else {
