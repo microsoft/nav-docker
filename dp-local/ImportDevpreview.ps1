@@ -5,8 +5,8 @@ $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Servic
 Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
 
 . (Join-Path $PSScriptRoot "HelperFunctions.ps1")
+. (Join-Path $PSScriptRoot "ServiceSettings.ps1")
 
-$NavServiceName = 'MicrosoftDynamicsNavServer$NAV'
 $SqlServiceName = 'MSSQL$SQLEXPRESS'
 $SqlWriterServiceName = "SQLWriter"
 $SqlBrowserServiceName = "SQLBrowser"
@@ -97,7 +97,7 @@ if ($appBacpac) {
     $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseName']").Value = "$dbName"
     $CustomConfig.Save($CustomConfigFile)
 
-    Write-Host "Start NAV Service Tier"
+    Write-Host "Start Service Tier"
     Start-Service -Name $NavServiceName -WarningAction Ignore
 
     Write-Host "Import License file"
