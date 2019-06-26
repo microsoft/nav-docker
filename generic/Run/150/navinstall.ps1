@@ -149,7 +149,7 @@ if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
     $attachcmd = @"
 USE [master]
 GO
-CREATE DATABASE [CRONUS] ON (FILENAME = '$mdf'),(FILENAME = '$ldf') FOR ATTACH
+CREATE DATABASE [$databaseName] ON (FILENAME = '$mdf'),(FILENAME = '$ldf') FOR ATTACH
 GO
 "@
     Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -QueryTimeOut 0 -ea Stop -Query $attachcmd
