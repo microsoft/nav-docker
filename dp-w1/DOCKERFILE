@@ -6,6 +6,7 @@ ARG navdvdurl=""
 ARG vsixurl=""
 ARG legal=""
 ARG created=""
+ARG cu=""
 ARG country=""
 ARG version=""
 ARG platform=""
@@ -19,7 +20,7 @@ RUN \Run\buildimage.ps1
 LABEL legal="$legal" \
       created="$created" \
       nav="" \
-      cu="" \
+      cu="$cu" \
       country="$country" \
       version="$version" \
       platform="$platform"
