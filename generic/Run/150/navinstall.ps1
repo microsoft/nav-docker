@@ -67,7 +67,9 @@ if (Test-Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics N
 
 Write-Host "Copying ModernDev Files"
 Copy-Item -Path "$navDvdPath\*.vsix" -Destination $runPath
-Copy-Item -Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files\" -Recurse -Force
+if (Test-Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV") {
+    Copy-Item -Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files\" -Recurse -Force
+}
 if (!(Test-Path (Join-Path $runPath "*.vsix"))) {
     Copy-Item -Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV\*\AL Development Environment\*.vsix" -Destination $runPath -Force
 }
