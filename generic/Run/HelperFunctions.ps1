@@ -97,7 +97,7 @@ function Restore-BacpacWithRetry
             break
         } catch {
             if ($attempt -ge $maxattempts) {
-                Write-Error "Error restoring Database, giving up..."
+                Write-Warning "Error restoring Database, giving up..."
                 throw
             }
             Write-Warning "Error restoring Database, retrying"
@@ -347,12 +347,12 @@ function Mount-NavDatabase
 
     Write-Host "Mounting Database for $TenantID on server $DatabaseServerInstance"
     
-    $Params = @{}
+    $Params = @{ "Force"=$true }
     if ($TenantId -eq "default") {
         $Params += @{"AllowAppDatabaseWrite"=$true }
     }
     if ($DatabaseCredentials) {
-        $Params += @{ "DatabaseCredentials"=$DatabaseCredentials; "Force"=$true }
+        $Params += @{ "DatabaseCredentials"=$DatabaseCredentials }
     }
     
     $CustomConfigFile =  Join-Path $ServiceTierFolder "CustomSettings.config"

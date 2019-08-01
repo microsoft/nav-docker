@@ -44,6 +44,11 @@ if ($restartingInstance) {
         New-Item -Path $databaseFolder -itemtype Directory | Out-Null
     }
 
+    $databaseServerInstance = $databaseServer
+    if ("$databaseInstance" -ne "") {
+        $databaseServerInstance += "\$databaseInstance"
+    }
+
     if (!$multitenant) {
         New-NAVDatabase -DatabaseServer $databaseServer `
                         -DatabaseInstance $databaseInstance `
@@ -51,7 +56,7 @@ if ($restartingInstance) {
                         -FilePath "$databaseFile" `
                         -DestinationPath "$databaseFolder" `
                         -Timeout $SqlTimeout | Out-Null
-        Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=upgradedatabase, Database=$databaseName, ServerName=$databaseServer\$databaseInstance, ntauthentication=1" -Wait
+        Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=upgradedatabase, Database=$databaseName, ServerName=$databaseServerInstance, ntauthentication=1, logFile=c:\run\errorlog.txt" -Wait
 
     } else {
         New-NAVDatabase -DatabaseServer $databaseServer `
@@ -60,13 +65,9 @@ if ($restartingInstance) {
                         -FilePath "$databaseFile" `
                         -DestinationPath "$databaseFolder" `
                         -Timeout $SqlTimeout | Out-Null
-        Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=upgradedatabase, Database=$databaseName, ServerName=$databaseServer\$databaseInstance, ntauthentication=1" -Wait
+        Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=upgradedatabase, Database=$databaseName, ServerName=$databaseServerInstance, ntauthentication=1, logFile=c:\run\errorlog.txt" -Wait
 
         Write-Host "Exporting Application to $DatabaseName"
-        $databaseServerInstance = $databaseServer
-        if ("$databaseInstance" -ne "") {
-            $databaseServerInstance += "\$databaseInstance"
-        }
         Invoke-sqlcmd -serverinstance $databaseServerInstance -Database "tenant" -query 'CREATE USER "NT AUTHORITY\SYSTEM" FOR LOGIN "NT AUTHORITY\SYSTEM";'
         Export-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -DestinationDatabaseName $databaseName -Force -ServiceAccount 'NT AUTHORITY\SYSTEM' | Out-Null
         Write-Host "Removing Application from tenant"

@@ -61,13 +61,15 @@ Copy-Item -Path "$NavDvdPath\WebClient\Microsoft Dynamics NAV" -Destination "C:\
 
 if (Test-Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV\*\RoleTailored Client" -PathType Container) {
     Write-Host "Copying Client Files"
-    Copy-Item -Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force -Filter "*.dll"
+    Copy-Item -Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force
 }
 
 Write-Host "Copying ModernDev Files"
+Copy-Item -Path "$navDvdPath\*.vsix" -Destination $runPath
 Copy-Item -Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files\" -Recurse -Force
-$vsixFile = Get-Item "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV\*\AL Development Environment\*.vsix"
-Copy-Item -Path $vsixFile -Destination "$runPath\AL-$($setupVersion).vsix" -Force
+if (!(Test-Path (Join-Path $runPath "*.vsix"))) {
+    Copy-Item -Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV\*\AL Development Environment\*.vsix" -Destination $runPath -Force
+}
 
 Write-Host "Copying PowerShell Scripts"
 Copy-Item -Path "$navDvdPath\WindowsPowerShellScripts\Cloud\NAVAdministration\" -Destination $runPath -Recurse -Force

@@ -15,7 +15,7 @@ if ($myos.OSType -ne 18 -or !$myos.Version.StartsWith("10.0.")) {
 if ($myos.Version -eq "10.0.18362") {
     $json = '{
         "platform": "1903",
-        "version":  "0.0.9.8"
+        "version":  "0.0.9.91"
     }' | ConvertFrom-Json
 }
 
