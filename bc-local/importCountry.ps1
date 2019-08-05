@@ -5,6 +5,7 @@ $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Servic
 Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
 
 . (Join-Path $PSScriptRoot "HelperFunctions.ps1")
+. (Join-Path $PSScriptRoot "ServiceSettings.ps1")
 
 $SqlServiceName = 'MSSQL$SQLEXPRESS'
 $SqlWriterServiceName = "SQLWriter"
