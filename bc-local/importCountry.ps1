@@ -6,7 +6,6 @@ Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
 
 . (Join-Path $PSScriptRoot "HelperFunctions.ps1")
 
-$NavServiceName = 'MicrosoftDynamicsNavServer$NAV'
 $SqlServiceName = 'MSSQL$SQLEXPRESS'
 $SqlWriterServiceName = "SQLWriter"
 $SqlBrowserServiceName = "SQLBrowser"
