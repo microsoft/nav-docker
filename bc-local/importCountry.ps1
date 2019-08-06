@@ -97,7 +97,7 @@ Start-Service -Name $NavServiceName -WarningAction Ignore
 
 Write-Host "Import License file"
 $licensefile = Join-Path $countryFolder "Cronus.flf"
-Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance 'NAV' -Database NavDatabase -WarningAction SilentlyContinue
+Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
 
 $serverFile = "$ServiceTierFolder\Microsoft.Dynamics.Nav.Server.exe"
 $serverVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($serverFile)
