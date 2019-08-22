@@ -1,13 +1,39 @@
-﻿if ("$env:NAVDVDURL" -ne "") {
+﻿$timeoutWebclientCode = @"
+using System.Net;
+
+public class TimeoutWebClient : WebClient
+{
+    public int TimeoutSeconds;
+
+    protected override WebRequest GetWebRequest(System.Uri address)
+    {
+        WebRequest request = base.GetWebRequest(address);
+        if (request != null)
+        {
+           request.Timeout = TimeoutSeconds * 1000;
+        }
+        return request;
+    }
+
+    public TimeoutWebClient()
+    {
+        TimeoutSeconds = 600; // Timeout value by default
+    }
+}
+"@;
+
+Add-Type -TypeDefinition $timeoutWebclientCode -Language CSharp
+
+if ("$env:NAVDVDURL" -ne "") {
     Write-Host "Downloading NAVDVD"
-    (New-Object System.Net.WebClient).DownloadFile("$env:NAVDVDURL", "C:\NAVDVD.zip")
+    (New-Object TimeoutWebClient).DownloadFile("$env:NAVDVDURL", "C:\NAVDVD.zip")
     [Reflection.Assembly]::LoadWithPartialName("System.IO.Compression.Filesystem") | Out-Null
     [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\NAVDVD.zip","C:\NAVDVD\")
     Remove-Item -Path "C:\NAVDVD.zip" -Force
 }
 if ("$env:VSIXURL" -ne "") {
     Write-Host "Downloading VSIX"
-    (New-Object System.Net.WebClient).DownloadFile("$env:VSIXURL", ("C:\NAVDVD\"+"$env:VSIXURL".Substring("$env:VSIXURL".LastIndexOf("/")+1)))
+    (New-Object TimeoutWebClient).DownloadFile("$env:VSIXURL", ("C:\NAVDVD\"+"$env:VSIXURL".Substring("$env:VSIXURL".LastIndexOf("/")+1)))
 }
 
 $setupVersion = (Get-Item -Path "c:\navdvd\setup.exe").VersionInfo.FileVersion
