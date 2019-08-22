@@ -15,7 +15,7 @@ if ($myos.OSType -ne 18 -or !$myos.Version.StartsWith("10.0.")) {
 if ($myos.Version -eq "10.0.18362") {
     $json = '{
         "platform": "1903",
-        "version":  "0.0.9.91"
+        "version":  "0.0.9.92"
     }' | ConvertFrom-Json
 }
 
@@ -58,9 +58,9 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "SUCCESS"
 
-$tags = @("microsoft/dynamics-nav:generic-$os","mcrbusinesscentral.azurecr.io/public/dynamicsnav:generic-$os")
+$tags = @("mcrbusinesscentral.azurecr.io/public/dynamicsnav:generic-$os","mcrbusinesscentral.azurecr.io/public/dynamicsnav:generic-$($json.version)-$os")
 if ($os -eq "ltsc2016") {
-    $tags += @("microsoft/dynamics-nav:generic","mcrbusinesscentral.azurecr.io/public/dynamicsnav:generic")
+    $tags += @("mcrbusinesscentral.azurecr.io/public/dynamicsnav:generic")
 }
 
 $tags | ForEach-Object {
