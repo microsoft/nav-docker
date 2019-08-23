@@ -79,7 +79,7 @@ if ($appBacpac) {
               BEGIN DROP USER [NT AUTHORITY\SYSTEM] END"
     
     # Remove ConfigurationPackages and Extensions
-    "ConfigurationPackages","TestToolKit","Extensions","Applications" | ForEach-Object {
+    "ConfigurationPackages","TestToolKit","Extensions","Applications.$Country" | ForEach-Object {
         if (Test-Path "$devPreviewFolder\$_" -PathType Container) {
             if (Test-Path "c:\$_"-PathType Container) {
                 # remove old folder if a new folder exists (or not w1)
