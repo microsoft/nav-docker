@@ -22,6 +22,7 @@ New-Item -Path $devPreviewFolder -ItemType Directory -ErrorAction Ignore | Out-N
 $DatabaseServer = "localhost"
 $DatabaseInstance = "SQLEXPRESS"
 $modelXmlName = ''
+$country = $env:COUNTRY
 
 Write-Host "Starting Local SQL Server"
 Start-Service -Name $SqlBrowserServiceName -ErrorAction Ignore
@@ -52,14 +53,13 @@ if ($appBacpac) {
 
     SetDatabaseServerCollation -collation $collation
 
-    $country = $appBacpac.Name.SubString(0, $appBacpac.Name.Length-11)
-    $dbName = "$Country"
-    $appDbName = "$Country.AppDb"
+    $dbName = $appBacpac.Name.SubString(0, $appBacpac.Name.Length-11)
+    $appDbName = "$dbName.AppDb"
 
     Write-Host "Restore $appDbName"
-    Restore-BacpacWithRetry -Bacpac "$devPreviewFolder\$Country.App.bacpac" -DatabaseName $appDbName
+    Restore-BacpacWithRetry -Bacpac "$devPreviewFolder\$dbName.App.bacpac" -DatabaseName $appDbName
     Write-Host "Restore $dbName"
-    Restore-BacpacWithRetry -Bacpac "$devPreviewFolder\$Country.Tenant.bacpac" -DatabaseName $dbName
+    Restore-BacpacWithRetry -Bacpac "$devPreviewFolder\$dbName.Tenant.bacpac" -DatabaseName $dbName
 
     Write-Host "Remove App Part"
     Remove-NavApplication -DatabaseServer $DatabaseServer -DatabaseInstance $databaseInstance -DatabaseName $dbName -Force | Out-Null
