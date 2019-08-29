@@ -31,6 +31,16 @@ Get-ChildItem -Path $PSScriptRoot -Directory | where-object { [Int]::TryParse($_
 
 . (Join-Path $PSScriptRoot "navinstall.ps1")
 
+if ($versionNo -eq "150") {
+    $mockAssembliesFolder = "C:\Test Assemblies\Mock Assemblies"
+    if (!(Test-Path $mockAssembliesFolder)) {
+        New-Item $mockAssembliesFolder -ItemType Directory | Out-Null
+        $mockTestDll = Join-Path $mockAssembliesFolder "MockTest.dll"
+        (New-Object System.Net.WebClient).DownloadFile("https://bcdocker.blob.core.windows.net/public/MockTest.dll", $mockTestDll)
+        Unblock-File $mockTestDll
+    }
+}
+
 if ("$env:NAVDVDURL" -ne "") {
     while (Test-Path -Path "C:\NAVDVD" -PathType Container) {
         try {
