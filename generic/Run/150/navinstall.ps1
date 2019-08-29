@@ -89,14 +89,6 @@ if (Test-Path "$navDvdPath\WindowsPowerShellScripts\WebSearch") {
     }
 }
 
-$mockAssembliesFolder = "C:\Test Assemblies\Mock Assemblies"
-if (!(Test-Path $mockAssembliesFolder)) {
-    New-Item $mockAssembliesFolder -ItemType Directory | Out-Null
-    $mockTestDll = Join-Path $mockAssembliesFolder "MockTest.dll"
-    (New-Object System.Net.WebClient).DownloadFile("https://bcdocker.blob.core.windows.net/public/MockTest.dll", $mockTestDll)
-    Unblock-File $mockTestDll
-}
-
 $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName
 
 # Due to dependencies from finsql.exe, we have to copy hlink.dll and ReportBuilder in place inside the container
