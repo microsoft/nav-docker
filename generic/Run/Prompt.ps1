@@ -34,6 +34,7 @@ if ($roleTailoredClientItem) {
     }
 }
 else {
+    $roleTailoredClientFolder = ""
     $NavIde = ""
     if (Test-Path "$serviceTierFolder\Microsoft.Dynamics.Nav.Apps.Management.psd1") {
         Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Apps.Management.psd1" -wa SilentlyContinue

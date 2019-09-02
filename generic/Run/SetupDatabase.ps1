@@ -56,8 +56,10 @@ if ($restartingInstance) {
                         -FilePath "$databaseFile" `
                         -DestinationPath "$databaseFolder" `
                         -Timeout $SqlTimeout | Out-Null
-        Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=upgradedatabase, Database=$databaseName, ServerName=$databaseServerInstance, ntauthentication=1, logFile=c:\run\errorlog.txt" -Wait
 
+        if ($roleTailoredClientFolder) {
+            Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=upgradedatabase, Database=$databaseName, ServerName=$databaseServerInstance, ntauthentication=1, logFile=c:\run\errorlog.txt" -Wait
+        }
     } else {
         New-NAVDatabase -DatabaseServer $databaseServer `
                         -DatabaseInstance $databaseInstance `
@@ -65,7 +67,10 @@ if ($restartingInstance) {
                         -FilePath "$databaseFile" `
                         -DestinationPath "$databaseFolder" `
                         -Timeout $SqlTimeout | Out-Null
-        Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=upgradedatabase, Database=$databaseName, ServerName=$databaseServerInstance, ntauthentication=1, logFile=c:\run\errorlog.txt" -Wait
+
+        if ($roleTailoredClientFolder) {
+            Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=upgradedatabase, Database=$databaseName, ServerName=$databaseServerInstance, ntauthentication=1, logFile=c:\run\errorlog.txt" -Wait
+        }
 
         Write-Host "Exporting Application to $DatabaseName"
         Invoke-sqlcmd -serverinstance $databaseServerInstance -Database "tenant" -query 'CREATE USER "NT AUTHORITY\SYSTEM" FOR LOGIN "NT AUTHORITY\SYSTEM";'
