@@ -17,6 +17,9 @@ $roleTailoredClientItem = Get-Item "C:\Program Files (x86)\Microsoft Dynamics NA
 if ($roleTailoredClientItem) {
     $roleTailoredClientFolder = $roleTailoredClientItem.FullName
     $NavIde = Join-Path $roleTailoredClientFolder "finsql.exe"
+    if (!(Test-Path $NavIde)) {
+        $NavIde = ""
+    }
     if (Test-Path "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Ide.psm1") {
         Import-Module "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Ide.psm1" -wa SilentlyContinue
     }

@@ -57,7 +57,7 @@ if ($restartingInstance) {
                         -DestinationPath "$databaseFolder" `
                         -Timeout $SqlTimeout | Out-Null
 
-        if ($roleTailoredClientFolder) {
+        if ($roleTailoredClientFolder -and (Test-Path "$roleTailoredClientFolder\finsql.exe")) {
             Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=upgradedatabase, Database=$databaseName, ServerName=$databaseServerInstance, ntauthentication=1, logFile=c:\run\errorlog.txt" -Wait
         }
     } else {
@@ -68,7 +68,7 @@ if ($restartingInstance) {
                         -DestinationPath "$databaseFolder" `
                         -Timeout $SqlTimeout | Out-Null
 
-        if ($roleTailoredClientFolder) {
+        if ($roleTailoredClientFolder -and (Test-Path "$roleTailoredClientFolder\finsql.exe")) {
             Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=upgradedatabase, Database=$databaseName, ServerName=$databaseServerInstance, ntauthentication=1, logFile=c:\run\errorlog.txt" -Wait
         }
 
