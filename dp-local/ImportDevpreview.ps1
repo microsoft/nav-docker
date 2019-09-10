@@ -114,6 +114,11 @@ if ($appBacpac) {
         Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Apps.Management.psd1" -wa SilentlyContinue
     }
 
+    Write-Host "Apps:"
+    Get-NAVAppInfo $ServerInstance | % {
+        Write-Host "$($_.publisher) $($_.Name) $($_.Version)"
+    }
+
     Write-Host "Uninstall apps"
     Get-NAVAppInfo $ServerInstance | Where-Object { $_.publisher -ne "Microsoft" } | Uninstall-NAVApp -WarningAction Ignore
     Write-Host "Unpublish apps"
