@@ -76,7 +76,7 @@ if (Test-Path "$countryFolder\Installers" -PathType Container) {
     }
 }
 
-"ConfigurationPackages","TestToolKit","UpgradeToolKit","Extensions" | % {
+"ConfigurationPackages","TestToolKit","UpgradeToolKit","Extensions","Applications" | % {
     if (Test-Path "c:\$_"-PathType Container) {
         Write-Host "Remove old $_"
         Remove-Item "c:\$_" -Recurse -Force
