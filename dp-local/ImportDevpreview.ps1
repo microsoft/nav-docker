@@ -120,12 +120,17 @@ if ($appBacpac) {
         $appInfo = Get-Content $appInfoFile | ConvertFrom-Json
         $appInfo | Where-Object { $_.publisher -eq "Microsoft" } | % {
             $appFile = Join-Path $path ([Uri]::EscapeDataString($_.path))
-            Publish-NavApp -ServerInstance $ServerInstance -Path $appFile -SkipVerification
-            $version = $_.Version
-            if ($version.StartsWith('~')) { $version = $version.SubString(1) }
-            Sync-NavApp -ServerInstance $serverInstance -Name $_.Name -Version $Version
-            if (-not ($_.PublishOnly)) {
-                Install-NavApp -ServerInstance $serverInstance -Name $_.Name -Version $Version
+            try {
+                Publish-NavApp -ServerInstance $ServerInstance -Path $appFile -SkipVerification
+                $version = $_.Version
+                if ($version.StartsWith('~')) { $version = $version.SubString(1) }
+                Sync-NavApp -ServerInstance $serverInstance -Name $_.Name -Version $Version
+                if (-not ($_.PublishOnly)) {
+                    Install-NavApp -ServerInstance $serverInstance -Name $_.Name -Version $Version
+                }
+            }
+            catch {
+                Write-Host "Error $($_.Exception.Message)"
             }
         }
     }
