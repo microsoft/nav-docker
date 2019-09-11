@@ -114,25 +114,29 @@ if ($appBacpac) {
         Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Apps.Management.psd1" -wa SilentlyContinue
     }
 
-    Write-Host "Apps:"
-    Get-NAVAppInfo $ServerInstance | % {
-        Write-Host "$($_.publisher) $($_.Name) $($_.Version)"
-    }
-
-    if ($serverVersion.FileMajorPart -ge 15) {
-        $baseapp = Get-NavAppInfo $ServerInstance | Where-Object { "$($_.AppId)" -eq "437dbf0e-84ff-417a-965d-ed2bb9650972" -and $_.Publisher -eq "Microsoft" -and $_.Name -eq "Base Application" }
-        $systemapp = Get-NavAppInfo $ServerInstance | Where-Object { "$($_.AppId)" -eq "63ca2fa4-4f03-4f2b-a480-172fef340d3f" -and $_.Publisher -eq "microsoft" -and $_.Name -eq "System Application" }
-        if ((-not $baseapp) -or (-not $systemapp)) {
-            throw "Apps are not present"
+    $path = Join-Path $devPreviewFolder "extensions"
+    if (Test-Path $path) {
+        $appInfoFile = Join-Path $path "AppInfo.Financials.json"
+        $appInfo = Get-Content $appInfoFile | ConvertFrom-Json
+        $appInfo | Where-Object { $_.publisher -eq "Microsoft" } | % {
+            $appFile = Join-Path $path ([Uri]::EscapeDataString($_.path))
+            Publish-NavApp -ServerInstance $ServerInstance -Path $appFile -SkipVerification
+            $version = $_.Version
+            if ($version.StartsWith('~')) { $version = $version.SubString(1) }
+            Sync-NavApp -ServerInstance $serverInstance -Name $_.Name -Version $Version
+            if (-not ($_.PublishOnly)) {
+                Install-NavApp -ServerInstance $serverInstance -Name $_.Name -Version $Version
+            }
         }
     }
-
-    Write-Host "Uninstall apps"
-    Get-NAVAppInfo $ServerInstance | Where-Object { $_.publisher -ne "Microsoft" } | Uninstall-NAVApp -WarningAction Ignore
-    Write-Host "Unpublish apps"
-    Get-NAVAppInfo $ServerInstance | Where-Object { $_.publisher -ne "Microsoft" } | Unpublish-NAVApp -ErrorAction Ignore
-    Write-Host "Unpublish apps"
-    Get-NAVAppInfo $ServerInstance | Where-Object { $_.publisher -ne "Microsoft" } | Unpublish-NAVApp -ErrorAction Ignore
+    else {
+        Write-Host "Uninstall apps"
+        Get-NAVAppInfo $ServerInstance | Where-Object { $_.publisher -ne "Microsoft" } | Uninstall-NAVApp -WarningAction Ignore
+        Write-Host "Unpublish apps"
+        Get-NAVAppInfo $ServerInstance | Where-Object { $_.publisher -ne "Microsoft" } | Unpublish-NAVApp -ErrorAction Ignore
+        Write-Host "Unpublish apps"
+        Get-NAVAppInfo $ServerInstance | Where-Object { $_.publisher -ne "Microsoft" } | Unpublish-NAVApp -ErrorAction Ignore
+    }
 
     if ($serverVersion.FileMajorPart -lt 15) {
         Write-Host "Generate Symbol Reference"
