@@ -100,10 +100,6 @@ if ($appBacpac) {
     Write-Host "Start Service Tier"
     Start-Service -Name $NavServiceName -WarningAction Ignore
 
-    Write-Host "Import License file"
-    $licensefile = (Get-Item "$devPreviewFolder\*.flf").FullName
-    Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
-
     $serverFile = "$ServiceTierFolder\Microsoft.Dynamics.Nav.Server.exe"
     $serverVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($serverFile)
     if ($serverVersion.FileMajorPart -lt 15) {
@@ -116,25 +112,32 @@ if ($appBacpac) {
 
     $path = Join-Path $devPreviewFolder "extensions"
     if (Test-Path $path) {
+        Write-Host "Import Temp License file"
+        $licensefile = Get-Item "c:\agent\license.flf"
+        Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
+
         $appInfoFile = Join-Path $path "AppInfo.Financials.json"
         $appInfo = Get-Content $appInfoFile | ConvertFrom-Json
         $appInfo | Where-Object { $_.publisher -eq "Microsoft" } | % {
             $appFile = Join-Path $path ([Uri]::EscapeDataString($_.path))
-            try {
-                Publish-NavApp -ServerInstance $ServerInstance -Path $appFile -SkipVerification
-                $version = $_.Version
-                if ($version.StartsWith('~')) { $version = $version.SubString(1) }
-                Sync-NavApp -ServerInstance $serverInstance -Name $_.Name -Version $Version
-                if (-not ($_.PublishOnly)) {
-                    Install-NavApp -ServerInstance $serverInstance -Name $_.Name -Version $Version
-                }
-            }
-            catch {
-                Write-Host "Error $($_.Exception.Message)"
+            Publish-NavApp -ServerInstance $ServerInstance -Path $appFile -SkipVerification
+            $version = $_.Version
+            if ($version.StartsWith('~')) { $version = $version.SubString(1) }
+            Sync-NavApp -ServerInstance $serverInstance -Name $_.Name -Version $Version
+            if (-not ($_.PublishOnly)) {
+                Install-NavApp -ServerInstance $serverInstance -Name $_.Name -Version $Version
             }
         }
+
+        Write-Host "Import License file"
+        $licensefile = (Get-Item "$devPreviewFolder\*.flf").FullName
+        Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
     }
     else {
+        Write-Host "Import License file"
+        $licensefile = (Get-Item "$devPreviewFolder\*.flf").FullName
+        Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
+
         Write-Host "Uninstall apps"
         Get-NAVAppInfo $ServerInstance | Where-Object { $_.publisher -ne "Microsoft" } | Uninstall-NAVApp -WarningAction Ignore
         Write-Host "Unpublish apps"
