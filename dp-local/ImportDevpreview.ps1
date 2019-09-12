@@ -113,7 +113,7 @@ if ($appBacpac) {
     $path = Join-Path $devPreviewFolder "extensions"
     if (Test-Path $path) {
         Write-Host "Import Temp License file"
-        $licensefile = Get-Item "c:\agent\license.flf"
+        $licensefile = "$devPreviewFolder\temp.license"
         Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
 
         $appInfoFile = Join-Path $path "AppInfo.Financials.json"
