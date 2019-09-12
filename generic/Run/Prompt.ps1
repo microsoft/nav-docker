@@ -32,6 +32,9 @@ if ($roleTailoredClientItem) {
     if (Test-Path "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Apps.Tools.psd1") {
         Import-Module "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Apps.Tools.psd1" -wa SilentlyContinue
     }
+    elseif (Test-Path "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Apps.Tools.dll") {
+        Import-Module "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Apps.Tools.dll" -wa SilentlyContinue
+    }
     if (Test-Path "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Model.Tools.psd1") {
         Import-Module "$roleTailoredClientFolder\Microsoft.Dynamics.Nav.Model.Tools.psd1" -wa SilentlyContinue
     }

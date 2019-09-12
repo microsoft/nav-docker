@@ -63,12 +63,14 @@ if (Test-Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics N
     Write-Host "Copying Client Files"
     Copy-Item -Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force -Filter "*.dll"
     Copy-Item -Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force -Filter "*.exe"
+    Copy-Item -Path "$navDvdPath\RoleTailoredClient\systemFolder\NavSip.dll"              -Destination "C:\Windows\SysWow64\NavSip.dll"   -Force -ErrorAction Ignore
 }
 
 if (Test-Path "$navDvdPath\LegacyDlls\program files\Microsoft Dynamics NAV\*\RoleTailored Client" -PathType Container) {
     Write-Host "Copying Client Files"
     Copy-Item -Path "$navDvdPath\LegacyDlls\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force -Filter "*.dll"
     Copy-Item -Path "$navDvdPath\LegacyDlls\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force -Filter "*.exe"
+    Copy-Item -Path "$navDvdPath\LegacyDlls\systemFolder\NavSip.dll"              -Destination "C:\Windows\SysWow64\NavSip.dll"   -Force -ErrorAction Ignore
 }
 
 Write-Host "Copying ModernDev Files"
