@@ -110,12 +110,11 @@ if ($appBacpac) {
         Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Apps.Management.psd1" -wa SilentlyContinue
     }
 
+    $licensefile = "$devPreviewFolder\temp.license"
     $path = Join-Path $devPreviewFolder "extensions"
-    if (Test-Path $path) {
+    if ((Test-Path $licensefile) -and (Test-Path $path)) {
         Write-Host "Import Temp License file"
-        $licensefile = "$devPreviewFolder\temp.license"
         Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
-
         $appInfoFile = Join-Path $path "AppInfo.Financials.json"
         $appInfo = Get-Content $appInfoFile | ConvertFrom-Json
         $appInfo | Where-Object { $_.publisher -eq "Microsoft" } | % {
