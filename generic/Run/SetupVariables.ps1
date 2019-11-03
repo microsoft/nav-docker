@@ -153,7 +153,14 @@ if ("$env:webClientPort" -ne "") {
     $webClientPort = "$env:webClientPort"
 }
 
-if ("$fileSharePort" -eq "")          { $fileSharePort      = "8080" }
+if ("$fileSharePort" -eq "")          { 
+    if ($webClientPort -eq "8080") {
+        $httpSite = "N"
+    }
+    else {
+        $fileSharePort = "8080"
+    }
+}
 if ("$managementServicesPort" -eq "") { $managementServicesPort = "7045" }
 if ("$clientServicesPort" -eq "")     { $clientServicesPort = "7046" }
 if ("$soapServicesPort" -eq "")       { $soapServicesPort   = "7047" }
