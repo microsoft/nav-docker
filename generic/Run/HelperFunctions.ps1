@@ -230,21 +230,22 @@ function Copy-NavDatabase
             }
         } else {
 
-            $backupQuery = "backup database [$SourceDatabaseName] to disk = 'C:\$sourceDatabaseName.bak' with init, stats=10;"
+            $files = Invoke-SqlCmdWithRetry -DatabaseServer $databaseServer `
+                                   -DatabaseInstance $databaseInstance `
+                                   -DatabaseCredentials $databaseCredentials `
+                                   -Query "SELECT f.Name,f.Physical_name FROM sys.sysdatabases db INNER JOIN sys.master_files f ON f.database_id = db.dbid WHERE db.name = '$SourceDatabaseName'"
+            $dbfolder = [System.IO.Path]::GetDirectoryName($files[0].Physical_name).TrimEnd('\')
+
+            $backupQuery = "backup database [$SourceDatabaseName] to disk = '$dbfolder\$sourceDatabaseName.bak' with init, stats=10;"
             Write-Host $backupQuery
             Invoke-SqlCmdWithRetry -DatabaseServer $databaseServer `
                                    -DatabaseInstance $databaseInstance `
                                    -DatabaseCredentials $databaseCredentials `
                                    -Query $backupQuery
 
+            $move = (($files | % { $_.name+[System.IO.Path]::GetExtension($_.physical_name) }) -join "', move '").Replace(".mdf","' to '$dbfolder\$DestinationDatabaseName.mdf").Replace(".ldf","' to '$dbfolder\$DestinationDatabaseName.ldf")
 
-            $files = Invoke-SqlCmdWithRetry -DatabaseServer $databaseServer `
-                                   -DatabaseInstance $databaseInstance `
-                                   -DatabaseCredentials $databaseCredentials `
-                                   -Query "SELECT f.Name,f.Physical_name FROM sys.sysdatabases db INNER JOIN sys.master_files f ON f.database_id = db.dbid WHERE db.name = '$SourceDatabaseName'" | % { $_.name+[System.IO.Path]::GetExtension($_.physical_name) }
-            $move = ($files -join "', move '").Replace(".mdf","' to 'C:\$DestinationDatabaseName.mdf").Replace(".ldf","' to 'C:\$DestinationDatabaseName.ldf")
-
-            $restoreQuery = "restore database [$DestinationDatabaseName] from disk = 'C:\$sourceDatabaseName.bak' with stats=10, recovery, move '$move'"
+            $restoreQuery = "restore database [$DestinationDatabaseName] from disk = '$dbfolder\$sourceDatabaseName.bak' with stats=10, recovery, move '$move'"
             Write-Host $restoreQuery
             Invoke-SqlCmdWithRetry -DatabaseServer $databaseServer `
                                    -DatabaseInstance $databaseInstance `
@@ -389,7 +390,8 @@ function Invoke-SqlCmdWithRetry
         [Parameter(Mandatory=$false)]
         [System.Management.Automation.PSCredential]$databaseCredentials,
         [Parameter(Mandatory=$true)]
-        [string]$Query
+        [string]$Query,
+        [int]$maxattempts = 0
     )
 
     $DatabaseServerInstance = "$DatabaseServer"
@@ -405,9 +407,11 @@ function Invoke-SqlCmdWithRetry
         $DatabaseServerParams += @{ 'Username' = $databaseCredentials.UserName; 'Password' = ([System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($databaseCredentials.Password))) }
     }
 
-    $maxattempts = 10
-    if ($DatabaseServer -eq 'localhost') {
-        $maxattempts = 3
+    if ($maxattempts -eq 0) {
+        $maxattempts = 10
+        if ($DatabaseServer -eq 'localhost') {
+            $maxattempts = 3
+        }
     }
     $attempt = 1
     $success = $false
