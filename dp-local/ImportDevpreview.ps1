@@ -117,16 +117,20 @@ if ($appBacpac) {
         Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
         $appInfoFile = Join-Path $path "AppInfo.Financials.json"
         $appInfo = Get-Content $appInfoFile | ConvertFrom-Json
+        $installedApps = @()
         "System Application","Base Application","Application","Intelligent Cloud Base","*" | % {
             $installAppName = $_
             $appInfo | Where-Object { $_.publisher -eq "Microsoft" -and $_.name -like $installAppName } | % {
-                $appFile = Join-Path $path ([Uri]::EscapeDataString($_.path))
-                Publish-NavApp -ServerInstance $ServerInstance -Path $appFile -SkipVerification
-                $version = $_.Version
-                if ($version.StartsWith('~')) { $version = $version.SubString(1) }
-                Sync-NavApp -ServerInstance $serverInstance -Name $_.Name -Version $Version
-                if (-not ($_.PublishOnly)) {
-                    Install-NavApp -ServerInstance $serverInstance -Name $_.Name -Version $Version
+                if (!($installedApps.Contains($_.name))) {
+                    $appFile = Join-Path $path ([Uri]::EscapeDataString($_.path))
+                    Publish-NavApp -ServerInstance $ServerInstance -Path $appFile -SkipVerification
+                    $version = $_.Version
+                    if ($version.StartsWith('~')) { $version = $version.SubString(1) }
+                    Sync-NavApp -ServerInstance $serverInstance -Name $_.Name -Version $Version
+                    if (-not ($_.PublishOnly)) {
+                        Install-NavApp -ServerInstance $serverInstance -Name $_.Name -Version $Version
+                    }
+                    $installedApps += $_.name
                 }
             }
         }
