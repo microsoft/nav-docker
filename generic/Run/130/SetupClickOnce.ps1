@@ -115,6 +115,11 @@ $applicationManifestFile = Join-Path $clickOnceApplicationFilesDirectoryFinsql '
     Replace('"msil"', '"x86"').
     Replace('<commandLine file="Microsoft.Dynamics.Nav.Client.exe" parameters="" />','<commandLine file="finsql.exe" parameters="" />').
     Replace('name="Microsoft.Dynamics.Nav.Client" version="8.0.0.0"','name="finsql" version="0.0.0.0"').
+    Replace('name="Microsoft.Dynamics.Nav.Client" version="9.0.0.0"','name="finsql" version="0.0.0.0"').
+    Replace('name="Microsoft.Dynamics.Nav.Client" version="10.0.0.0"','name="finsql" version="0.0.0.0"').
+    Replace('name="Microsoft.Dynamics.Nav.Client" version="11.0.0.0"','name="finsql" version="0.0.0.0"').
+    Replace('name="Microsoft.Dynamics.Nav.Client" version="12.0.0.0"','name="finsql" version="0.0.0.0"').
+    Replace('name="Microsoft.Dynamics.Nav.Client" version="13.0.0.0"','name="finsql" version="0.0.0.0"').
     Replace('name="Microsoft.Dynamics.Nav.Client" version="14.0.0.0"','name="finsql" version="0.0.0.0"') | Set-Content $applicationManifestFile
 $applicationIdentityName = "$clickOnceIdentity Finsql ClickOnce"
 $applicationIdentityVersion = (Get-Item -Path (Join-Path $clickOnceApplicationFilesDirectoryFinsql 'finsql.exe')).VersionInfo.FileVersion

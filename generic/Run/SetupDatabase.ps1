@@ -48,6 +48,7 @@ if ($restartingInstance) {
     if ("$databaseInstance" -ne "") {
         $databaseServerInstance += "\$databaseInstance"
     }
+    Write-Host "Using database server $databaseServerInstance"
 
     if (!$multitenant) {
         New-NAVDatabase -DatabaseServer $databaseServer `
@@ -79,26 +80,28 @@ if ($restartingInstance) {
         Remove-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -Force | Out-Null
     }
 
-} elseif ("$appBacpac" -ne "" -and "$tenantBacpac" -ne "") {
+} elseif ("$appBacpac" -ne "") {
 
     # appBacpac and tenantBacpac specified - restore and use
     
     $dbName = "app"
     $appBacpac, $tenantBacpac | % {
-        if ($_.StartsWith("https://") -or $_.StartsWith("http://"))
-        {
-            $databaseFile = (Join-Path $runPath "${dbName}.bacpac")
-            Write-Host "Downloading ${dbName}.bacpac"
-            (New-Object System.Net.WebClient).DownloadFile($_, $databaseFile)
-        } else {
-            if (!(Test-Path -Path $_ -PathType Leaf)) {
-        	    Write-Error "ERROR: Database Backup File not found."
-                Write-Error "The file must be uploaded to the container or available on a share."
-                exit 1
+        if ($_) {
+            if ($_.StartsWith("https://") -or $_.StartsWith("http://"))
+            {
+                $databaseFile = (Join-Path $runPath "${dbName}.bacpac")
+                Write-Host "Downloading ${dbName}.bacpac"
+                (New-Object System.Net.WebClient).DownloadFile($_, $databaseFile)
+            } else {
+                if (!(Test-Path -Path $_ -PathType Leaf)) {
+            	    Write-Error "ERROR: Database Backup File not found."
+                    Write-Error "The file must be uploaded to the container or available on a share."
+                    exit 1
+                }
+                $databaseFile = $_
             }
-            $databaseFile = $_
+            Restore-BacpacWithRetry -Bacpac $databaseFile -DatabaseName $dbName
         }
-        Restore-BacpacWithRetry -Bacpac $databaseFile -DatabaseName $dbName
         $dbName = "tenant"
     }
 

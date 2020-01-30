@@ -38,7 +38,6 @@ if ("$acsUri" -ne "") {
         $acsUri += "%26wreply=$publicWebBaseUrl"
     }
 }
-
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key=""ACSUri""]").value = "$acsUri"
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='DnsIdentity']").value = "$dnsIdentity"
 $clientUserSettings.SelectSingleNode("//configuration/appSettings/add[@key='ClientServicesCredentialType']").value = "$Auth"
@@ -115,7 +114,13 @@ $applicationManifestFile = Join-Path $clickOnceApplicationFilesDirectoryFinsql '
 (Get-Content $applicationManifestFile).
     Replace('"msil"', '"x86"').
     Replace('<commandLine file="Microsoft.Dynamics.Nav.Client.exe" parameters="" />','<commandLine file="finsql.exe" parameters="" />').
-    Replace('name="Microsoft.Dynamics.Nav.Client" version="8.0.0.0"','name="finsql" version="0.0.0.0"') | Set-Content $applicationManifestFile
+    Replace('name="Microsoft.Dynamics.Nav.Client" version="8.0.0.0"','name="finsql" version="0.0.0.0"').
+    Replace('name="Microsoft.Dynamics.Nav.Client" version="9.0.0.0"','name="finsql" version="0.0.0.0"').
+    Replace('name="Microsoft.Dynamics.Nav.Client" version="10.0.0.0"','name="finsql" version="0.0.0.0"').
+    Replace('name="Microsoft.Dynamics.Nav.Client" version="11.0.0.0"','name="finsql" version="0.0.0.0"').
+    Replace('name="Microsoft.Dynamics.Nav.Client" version="12.0.0.0"','name="finsql" version="0.0.0.0"').
+    Replace('name="Microsoft.Dynamics.Nav.Client" version="13.0.0.0"','name="finsql" version="0.0.0.0"').
+    Replace('name="Microsoft.Dynamics.Nav.Client" version="14.0.0.0"','name="finsql" version="0.0.0.0"') | Set-Content $applicationManifestFile
 $applicationIdentityName = "$clickOnceIdentity Finsql ClickOnce"
 $applicationIdentityVersion = (Get-Item -Path (Join-Path $clickOnceApplicationFilesDirectoryFinsql 'finsql.exe')).VersionInfo.FileVersion
 
