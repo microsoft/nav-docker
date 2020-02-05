@@ -18,14 +18,14 @@ if ($myos.OSType -ne 18 -or !$myos.Version.StartsWith("10.0.")) {
 if ($myos.BuildNumber -ge 18362) {
     $json = '{
         "platform": "1903",
-        "version":  $version
+        "version": "$version"
     }' | ConvertFrom-Json
 }
 
 if ($myos.BuildNumber -ge 18363) {
     $json = '{
         "platform": "1903,1909",
-        "version":  $version
+        "version": "$version"
     }' | ConvertFrom-Json
 }
 
