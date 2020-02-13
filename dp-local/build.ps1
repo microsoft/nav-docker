@@ -64,6 +64,7 @@ $json.platform | ForEach-Object {
                  --build-arg created="$created" `
                  --build-arg devpreviewurl="$($json.devpreviewbloburl)" `
                  --build-arg country="$($json.country)" `
+                 --isolation=hyperv `
                  --tag $image `
                  $PSScriptRoot
 

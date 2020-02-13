@@ -34,12 +34,6 @@ $json.platform.Split(',') | ForEach-Object {
     $version = $json.version
 
     $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-$os"
-    
-    if ($os.StartsWith("ltsc")) {
-        $isolation = "process"
-    } else {
-        $isolation = "hyperv"
-    }
     $image = "generic:$os"
     
     docker pull $baseimage
@@ -57,7 +51,7 @@ $json.platform.Split(',') | ForEach-Object {
                  --build-arg created=$created `
                  --build-arg tag="$version" `
                  --build-arg osversion="$osversion" `
-                 --isolation=$isolation `
+                 --isolation=hyperv `
                  --tag $image `
                  $PSScriptRoot
     

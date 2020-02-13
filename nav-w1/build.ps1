@@ -47,6 +47,7 @@ $json.platform | ForEach-Object {
                  --build-arg cu="$($json.cu)" `
                  --build-arg country="$($json.country)" `
                  --build-arg version="$($json.version)" `
+                 --isolation=hyperv `
                  --tag $image `
                  $PSScriptRoot
 
