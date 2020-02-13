@@ -64,7 +64,7 @@ $json.platform | ForEach-Object {
         $isolation = "process"
     }
     else {
-        $isolation = "hyperv"
+        $isolation = "process"
     }
 
     docker build --build-arg baseimage="$thisbaseimage" `
