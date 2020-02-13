@@ -15,7 +15,8 @@ RUN Add-WindowsFeature Web-Server,web-AppInit,web-Asp-Net45,web-Windows-Auth,web
     Stop-Service 'W3SVC' ; \
     Set-Service 'W3SVC' -startuptype manual ; \
     Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\Dnscache\Parameters' -Name ServerPriorityTimeLimit -Value 0 -Type DWord; \
-    Invoke-WebRequest -Uri 'https://go.microsoft.com/fwlink/?linkid=829176' -OutFile sqlexpress.exe ; \
+    Set-ItemProperty -Path "HKLM:\system\CurrentControlSet\control" -name ServicesPipeTimeout -Value 300000 -Type DWORD -Force; \
+     Invoke-WebRequest -Uri 'https://go.microsoft.com/fwlink/?linkid=829176' -OutFile sqlexpress.exe ; \
     Start-Process -Wait -FilePath .\sqlexpress.exe -ArgumentList /qs, /x:setup ; \
     .\setup\setup.exe /q /ACTION=Install /INSTANCENAME=SQLEXPRESS /FEATURES=SQLEngine /UPDATEENABLED=0 /SQLSVCACCOUNT='NT AUTHORITY\System' /SQLSYSADMINACCOUNTS='BUILTIN\ADMINISTRATORS' /TCPENABLED=1 /NPENABLED=0 /IACCEPTSQLSERVERLICENSETERMS ; \
     While (!(get-service 'MSSQL$SQLEXPRESS' -ErrorAction SilentlyContinue)) { Start-Sleep -Seconds 5 } ; \
