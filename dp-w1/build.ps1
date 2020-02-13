@@ -37,6 +37,13 @@ $json.platform | ForEach-Object {
     Write-Host "Build $image from $thisbaseimage"
     $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
 
+    if ($osSuffix -eq "ltsc2016") {
+        $isolation = "process"
+    }
+    else {
+        $isolation = "hyperv"
+    }
+
     docker build --build-arg baseimage="$thisbaseimage" `
                  --build-arg navdvdurl="$($json.navdvdbloburl)" `
                  --build-arg vsixurl="$($json.vsixbloburl)" `
@@ -46,7 +53,7 @@ $json.platform | ForEach-Object {
                  --build-arg country="$($json.country)" `
                  --build-arg version="$($json.version)" `
                  --build-arg platform="$($json.platformversion)" `
-                 --isolation=hyperv `
+                 --isolation=$isolation `
                  --tag $image `
                  $PSScriptRoot
 

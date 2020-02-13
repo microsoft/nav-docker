@@ -46,12 +46,19 @@ $json.platform.Split(',') | ForEach-Object {
             docker rmi $image -f
         }
     }
+
+    if ($os -eq "ltsc2016") {
+        $isolation = "process"
+    }
+    else {
+        $isolation = "hyperv"
+    }
     
     docker build --build-arg baseimage=$baseimage `
                  --build-arg created=$created `
                  --build-arg tag="$version" `
                  --build-arg osversion="$osversion" `
-                 --isolation=hyperv `
+                 --isolation=$isolation `
                  --tag $image `
                  $PSScriptRoot
     
