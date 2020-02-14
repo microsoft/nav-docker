@@ -54,6 +54,7 @@ $json.platform | ForEach-Object {
                  --build-arg version="$($json.version)" `
                  --build-arg platform="$($json.platformversion)" `
                  --isolation=$isolation `
+                 --memory 10G `
                  --tag $image `
                  $PSScriptRoot
 

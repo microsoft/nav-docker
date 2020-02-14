@@ -23,7 +23,7 @@ if ($myos.BuildNumber -ge 18362) {
 
 if ($myos.BuildNumber -ge 18363) {
     $json = '{
-        "platform": "1903,1909",
+        "platform": "ltsc2016,ltsc2019,1903,1909",    
         "version": "0.0.9.99"
     }' | ConvertFrom-Json
 }
@@ -47,18 +47,14 @@ $json.platform.Split(',') | ForEach-Object {
         }
     }
 
-    if ($os -eq "ltsc2016") {
-        $isolation = "process"
-    }
-    else {
-        $isolation = "hyperv"
-    }
+    $isolation = "hyperv"
     
     docker build --build-arg baseimage=$baseimage `
                  --build-arg created=$created `
                  --build-arg tag="$version" `
                  --build-arg osversion="$osversion" `
                  --isolation=$isolation `
+                 --memory 8G `
                  --tag $image `
                  $PSScriptRoot
     

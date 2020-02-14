@@ -72,6 +72,7 @@ $json.platform | ForEach-Object {
                  --build-arg devpreviewurl="$($json.devpreviewbloburl)" `
                  --build-arg country="$($json.country)" `
                  --isolation=$isolation `
+                 --memory 10G `
                  --tag $image `
                  $PSScriptRoot
 
