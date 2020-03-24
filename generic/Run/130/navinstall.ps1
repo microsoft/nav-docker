@@ -144,7 +144,7 @@ if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
         Copy-Item -path "$navDvdPath\databases" -Destination "c:\" -Recurse -Force
         $mdf = (Get-Item "C:\databases\*.mdf").FullName
         $ldf = (Get-Item "C:\databases\*.ldf").FullName
-        $databaseName = (Get-Item "C:\databases\*.mdf").BaseName
+        $databaseName = "CRONUS"
         $databaseServer = "localhost"
         $databaseInstance = "SQLEXPRESS"
     } else {
@@ -153,7 +153,7 @@ if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
     $attachcmd = @"
 USE [master]
 GO
-CREATE DATABASE [CRONUS] ON (FILENAME = '$mdf'),(FILENAME = '$ldf') FOR ATTACH
+CREATE DATABASE [$databaseName] ON (FILENAME = '$mdf'),(FILENAME = '$ldf') FOR ATTACH
 GO
 "@
     Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -QueryTimeOut 0 -ea Stop -Query $attachcmd
