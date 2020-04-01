@@ -39,7 +39,7 @@ $json.platform | ForEach-Object {
     $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
 
     if ($osSuffix -eq "ltsc2016") {
-        $isolation = "process"
+        $isolation = "hyperv"
     }
     else {
         $isolation = "hyperv"
