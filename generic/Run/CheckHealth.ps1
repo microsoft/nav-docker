@@ -3,11 +3,32 @@
     $CustomConfigFile = Join-Path (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName "CustomSettings.config"
     $CustomConfig = [xml](Get-Content $CustomConfigFile)
     $publicWebBaseUrl = $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWebBaseUrl']").Value
-    $serverInstance = $CustomConfig.SelectSingleNode("//appSettings/add[@key='ServerInstance']").Value
-    if ($publicWebBaseUrl -ne "") {
+    if ($publicWebBaseUrl -ne "" -or "$env:healthCheckBaseUrl" -ne "") {
         # WebClient installed use WebClient base Health endpoint
-        if (!($publicWebBaseUrl.EndsWith("/"))) { $publicWebBaseUrl += "/" }
-        $result = Invoke-WebRequest -Uri "${publicWebBaseUrl}Health/System" -UseBasicParsing -TimeoutSec 10
+        $healthCheckBaseUrl = $publicWebBaseUrl
+        if ("$env:healthCheckBaseUrl" -ne "") { $healthCheckBaseUrl = "$env:healthCheckBaseUrl" }
+        if (!($healthCheckBaseUrl.EndsWith("/"))) { $healthCheckBaseUrl += "/" }
+        if ($healthCheckBaseUrl.StartsWith("https")) {
+            if (-not("dummy" -as [type])) {
+                add-type -TypeDefinition @"
+using System;
+using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
+public static class Dummy {
+    public static bool ReturnTrue(object sender,
+        X509Certificate certificate,
+        X509Chain chain,
+        SslPolicyErrors sslPolicyErrors) { return true; }
+    public static RemoteCertificateValidationCallback GetDelegate() {
+        return new RemoteCertificateValidationCallback(Dummy.ReturnTrue);
+    }
+}
+"@
+            }
+            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = [dummy]::GetDelegate()
+        }
+        $result = Invoke-WebRequest -Uri "${healthCheckBaseUrl}Health/System" -UseBasicParsing -TimeoutSec 10
         if ($result.StatusCode -eq 200 -and ((ConvertFrom-Json $result.Content).result)) {
             # Web Client Health Check Endpoint will test Web Client, Service Tier and Database Connection
             exit 0
