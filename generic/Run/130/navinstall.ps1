@@ -230,3 +230,6 @@ if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
 $timespend = [Math]::Round([DateTime]::Now.Subtract($startTime).Totalseconds)
 Write-Host "Installation took $timespend seconds"
 Write-Host "Installation complete"
+
+Write-Host "Stopping Business Central Service Tier"
+Stop-Service -Name $NavServiceName -WarningAction Ignore
