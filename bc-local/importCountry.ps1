@@ -1,4 +1,30 @@
-﻿$ErrorActionPreference = "Stop"
+﻿$timeoutWebclientCode = @"
+using System.Net;
+
+public class TimeoutWebClient : WebClient
+{
+    public int TimeoutSeconds;
+
+    protected override WebRequest GetWebRequest(System.Uri address)
+    {
+        WebRequest request = base.GetWebRequest(address);
+        if (request != null)
+        {
+           request.Timeout = TimeoutSeconds * 1000;
+        }
+        return request;
+    }
+
+    public TimeoutWebClient()
+    {
+        TimeoutSeconds = 600; // Timeout value by default
+    }
+}
+"@;
+
+Add-Type -TypeDefinition $timeoutWebclientCode -Language CSharp
+
+$ErrorActionPreference = "Stop"
 Write-Host "Importing Country"
 
 $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName
@@ -13,7 +39,7 @@ $SqlBrowserServiceName = "SQLBrowser"
 
 Write-Host "Downloading database $env:COUNTRYURL"
 $countryFile = "C:\COUNTRY.zip"
-(New-Object System.Net.WebClient).DownloadFile("$env:COUNTRYURL", $countryFile)
+(New-Object TimeoutWebClient).DownloadFile("$env:COUNTRYURL", $countryFile)
 [Reflection.Assembly]::LoadWithPartialName("System.IO.Compression.Filesystem") | Out-Null
 $countryFolder = "$PSScriptRoot\Country"
 New-Item -Path $countryFolder -ItemType Directory -ErrorAction Ignore | Out-Null
