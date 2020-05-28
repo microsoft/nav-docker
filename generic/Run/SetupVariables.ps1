@@ -200,9 +200,9 @@ $locale = "$env:locale"
 if ($locale)  {
     $cultureInfo = new-object System.Globalization.CultureInfo $locale
     $regionInfo = new-object System.Globalization.RegionInfo $locale
-    Set-WinHomeLocation -GeoId $regionInfo.GeoId
-    Set-WinSystemLocale -SystemLocale $cultureInfo
-    Set-Culture -CultureInfo $cultureInfo
+    try { Set-WinHomeLocation -GeoId $regionInfo.GeoId   } catch {}
+    try { Set-WinSystemLocale -SystemLocale $cultureInfo } catch {}
+    try { Set-Culture -CultureInfo $cultureInfo          } catch {}
 }
 
 $isBcSandbox = ($env:isBcSandbox -eq "Y")
