@@ -92,15 +92,16 @@ Set-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -value "$repor
 
 Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
 
+$databaseServer = "localhost"
+$databaseInstance = "SQLEXPRESS"
+$databaseName = "CRONUS"
+
 # Restore CRONUS Demo database to databases folder
 if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
     Write-Host "Restoring CRONUS Demo Database"
     $bak = (Get-ChildItem -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\*.bak")[0]
     
     # Restore database
-    $databaseServer = "localhost"
-    $databaseInstance = "SQLEXPRESS"
-    $databaseName = "CRONUS"
     $databaseFolder = "c:\databases"
     New-Item -Path $databaseFolder -itemtype Directory -ErrorAction Ignore | Out-Null
     $databaseFile = $bak.FullName
@@ -128,18 +129,16 @@ if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
         $mdf = (Get-Item "C:\databases\*.mdf").FullName
         $ldf = (Get-Item "C:\databases\*.ldf").FullName
         $databaseName = (Get-Item "C:\databases\*.mdf").BaseName
-        $databaseServer = "localhost"
-        $databaseInstance = "SQLEXPRESS"
-    } else {
-        throw "No database found"
-    }
-    $attachcmd = @"
+        $attachcmd = @"
 USE [master]
 GO
 CREATE DATABASE [CRONUS] ON (FILENAME = '$mdf'),(FILENAME = '$ldf') FOR ATTACH
 GO
 "@
-    Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -QueryTimeOut 0 -ea Stop -Query $attachcmd
+        Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -QueryTimeOut 0 -ea Stop -Query $attachcmd
+    } else {
+        Write-Host "Skipping restore of Cronus database"
+    }
 }
 
 # run local installers if present
@@ -194,18 +193,19 @@ New-ItemProperty -Path $registryPath -Name 'Installed' -Value 1 -Force | Out-Nul
 
 Install-NAVSipCryptoProvider
 
-Write-Host "Starting NAV Service Tier"
-Start-Service -Name $NavServiceName -WarningAction Ignore
+if (Test-Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\Cronus.flf") {
 
-if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
+    Write-Host "Starting NAV Service Tier"
+    Start-Service -Name $NavServiceName -WarningAction Ignore
+
     Write-Host "Importing CRONUS license file"
     $licensefile = (Get-Item -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf").FullName
     Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
+
+    Write-Host "Stopping NAV Service Tier"
+    Stop-Service -Name $NavServiceName -WarningAction Ignore
 }
 
 $timespend = [Math]::Round([DateTime]::Now.Subtract($startTime).Totalseconds)
 Write-Host "Installation took $timespend seconds"
 Write-Host "Installation complete"
-
-Write-Host "Stopping NAV Service Tier"
-Stop-Service -Name $NavServiceName -WarningAction Ignore

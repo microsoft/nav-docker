@@ -64,6 +64,12 @@ Copy-Item -Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics
 Copy-Item -Path "$navDvdPath\RoleTailoredClient\systemFolder\NavSip.dll" -Destination "C:\Windows\SysWow64\NavSip.dll" -Force -ErrorAction Ignore
 Copy-Item -Path "$navDvdPath\ClickOnceInstallerTools\Program Files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force
 Copy-Item -Path "$navDvdPath\*.vsix" -Destination $runPath
+if (Test-Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV") {
+    Copy-Item -Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files\" -Recurse -Force
+}
+if (!(Test-Path (Join-Path $runPath "*.vsix"))) {
+    Copy-Item -Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV\*\*\*.vsix" -Destination $runPath -Force
+}
 
 Write-Host "Copying PowerShell Scripts"
 Copy-Item -Path "$navDvdPath\WindowsPowerShellScripts\Cloud\NAVAdministration\" -Destination $runPath -Recurse -Force
@@ -109,15 +115,16 @@ Set-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -value "$repor
 
 Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
 
+$databaseServer = "localhost"
+$databaseInstance = "SQLEXPRESS"
+$databaseName = "CRONUS"
+
 # Restore CRONUS Demo database to databases folder
 if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
     Write-Host "Restoring CRONUS Demo Database"
     $bak = (Get-ChildItem -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\*.bak")[0]
     
     # Restore database
-    $databaseServer = "localhost"
-    $databaseInstance = "SQLEXPRESS"
-    $databaseName = "CRONUS"
     $databaseFolder = "c:\databases"
     New-Item -Path $databaseFolder -itemtype Directory -ErrorAction Ignore | Out-Null
     $databaseFile = $bak.FullName
@@ -144,19 +151,16 @@ if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
         Copy-Item -path "$navDvdPath\databases" -Destination "c:\" -Recurse -Force
         $mdf = (Get-Item "C:\databases\*.mdf").FullName
         $ldf = (Get-Item "C:\databases\*.ldf").FullName
-        $databaseName = "CRONUS"
-        $databaseServer = "localhost"
-        $databaseInstance = "SQLEXPRESS"
-    } else {
-        throw "No database found"
-    }
-    $attachcmd = @"
+        $attachcmd = @"
 USE [master]
 GO
 CREATE DATABASE [$databaseName] ON (FILENAME = '$mdf'),(FILENAME = '$ldf') FOR ATTACH
 GO
 "@
-    Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -QueryTimeOut 0 -ea Stop -Query $attachcmd
+        Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -QueryTimeOut 0 -ea Stop -Query $attachcmd
+    } else {
+        Write-Host "Skipping restore of Cronus database"
+    }
 }
 
 # run local installers if present
@@ -212,10 +216,10 @@ New-ItemProperty -Path $registryPath -Name 'Installed' -Value 1 -Force | Out-Nul
 
 Install-NAVSipCryptoProvider
 
-Write-Host "Starting Business Central Service Tier"
-Start-Service -Name $NavServiceName -WarningAction Ignore
+if (Test-Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf") {
+    Write-Host "Starting Business Central Service Tier"
+    Start-Service -Name $NavServiceName -WarningAction Ignore
 
-if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
     Write-Host "Importing CRONUS license file"
     $licensefile = (Get-Item -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf").FullName
     Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
@@ -225,11 +229,11 @@ if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
     Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=generatesymbolreference, Database=CRONUS, ServerName=localhost\SQLEXPRESS, ntauthentication=1"
     $procs = get-process -Name "finsql" -ErrorAction Ignore
     $procs | Where-Object { $pre -notcontains $_.Id } | Wait-Process
+
+    Write-Host "Stopping Business Central Service Tier"
+    Stop-Service -Name $NavServiceName -WarningAction Ignore
 }
 
 $timespend = [Math]::Round([DateTime]::Now.Subtract($startTime).Totalseconds)
 Write-Host "Installation took $timespend seconds"
 Write-Host "Installation complete"
-
-Write-Host "Stopping Business Central Service Tier"
-Stop-Service -Name $NavServiceName -WarningAction Ignore

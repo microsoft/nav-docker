@@ -181,9 +181,9 @@ Write-Host "Importing CRONUS license file"
 $licensefile = (Get-Item -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf").FullName
 Import-NAVServerLicense -LicenseData ([Byte[]]$(Get-Content -Path $licensefile -Encoding Byte)) -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
 
+Write-Host "Stopping NAV Service Tier"
+Stop-Service -Name $NavServiceName -WarningAction Ignore
+
 $timespend = [Math]::Round([DateTime]::Now.Subtract($startTime).Totalseconds)
 Write-Host "Installation took $timespend seconds"
 Write-Host "Installation complete"
-
-Write-Host "Stopping NAV Service Tier"
-Stop-Service -Name $NavServiceName -WarningAction Ignore
