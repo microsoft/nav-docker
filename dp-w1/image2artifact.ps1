@@ -58,7 +58,7 @@ else {
     }
 }
 
-$blobContext = New-AzStorageContext -StorageAccountName $json.storageAccountName -StorageAccountKey $json.storageAccountKey
+$blobContext = New-AzureStorageContext -StorageAccountName $json.storageAccountName -StorageAccountKey $json.storageAccountKey
 
 # Pull if image doesn't exist
 $existingImage = docker images --format "{{.Repository}}:{{.Tag}}" | Where-Object { $_ -eq $json.imageName }
@@ -78,7 +78,7 @@ $platformUrl = "https://$($json.storageAccountName).blob.core.windows.net/platfo
 if ($json.country -eq "base" -or ($json.country -eq "w1" -and $json.sandbox)) {
 
     # generate platform
-    $blob = Get-AzStorageBlob -Context $blobContext -Container "platform" -Blob $platform -ErrorAction SilentlyContinue
+    $blob = Get-AzureStorageBlob -Context $blobContext -Container "platform" -Blob $platform -ErrorAction SilentlyContinue
     if ($json.rebuild -or !($blob)) {
 
         # Create Platform and application-w1 artifact
@@ -120,8 +120,8 @@ if ($json.country -eq "base" -or ($json.country -eq "w1" -and $json.sandbox)) {
             $manifest | ConvertTo-Json -Depth 99 | Set-Content -Path (Join-Path $folder "manifest.json")
             Compress-Archive -Path "$folder\*" -DestinationPath $archive -CompressionLevel Optimal
         
-            New-AzStorageContainer -Name "application-w1" -Context $blobContext -Permission Container -ErrorAction Ignore | Out-Null
-            Set-AzStorageBlobContent -File $archive -Context $blobContext -Container "application-w1" -Blob $version -Force | Out-Null
+            New-AzureStorageContainer -Name "application-w1" -Context $blobContext -Permission Container -ErrorAction Ignore | Out-Null
+            Set-AzureStorageBlobContent -File $archive -Context $blobContext -Container "application-w1" -Blob $version -Force | Out-Null
 
     
             # create redir artifacts
@@ -158,10 +158,10 @@ if ($json.country -eq "base" -or ($json.country -eq "w1" -and $json.sandbox)) {
                 }
             }
     
-            New-AzStorageContainer -Name $redirFolderName -Context $blobContext -Permission Container -ErrorAction Ignore | Out-Null
+            New-AzureStorageContainer -Name $redirFolderName -Context $blobContext -Permission Container -ErrorAction Ignore | Out-Null
             $imageNameTags | % {
                 Write-Host "Tag $_"
-                Set-AzStorageBlobContent -File $redirmanifestZipFile -Context $blobContext -Container $redirFolderName -Blob "$redirPrefix$_" -Force | Out-Null
+                Set-AzureStorageBlobContent -File $redirmanifestZipFile -Context $blobContext -Container $redirFolderName -Blob "$redirPrefix$_" -Force | Out-Null
             }
     
             Remove-Item $folder -Recurse -Force
@@ -184,8 +184,8 @@ if ($json.country -eq "base" -or ($json.country -eq "w1" -and $json.sandbox)) {
     
             Compress-Archive -Path "$folder\*" -DestinationPath $archive -CompressionLevel Optimal
         
-            New-AzStorageContainer -Name "platform" -Context $blobContext -Permission Container -ErrorAction Ignore | Out-Null
-            Set-AzStorageBlobContent -File $archive -Context $blobContext -Container "platform" -Blob $platform -Force | Out-Null
+            New-AzureStorageContainer -Name "platform" -Context $blobContext -Permission Container -ErrorAction Ignore | Out-Null
+            Set-AzureStorageBlobContent -File $archive -Context $blobContext -Container "platform" -Blob $platform -Force | Out-Null
     
         }
         finally {
@@ -246,8 +246,8 @@ else {
         $appArchive = "$folder.zip"
         Compress-Archive -Path "$folder\*" -DestinationPath $appArchive -CompressionLevel Optimal
     
-        New-AzStorageContainer -Name "sandbox-$country" -Context $blobContext -Permission Container -ErrorAction Ignore | Out-Null
-        Set-AzStorageBlobContent -File $appArchive -Context $blobContext -Container "sandbox-$country" -Blob $version -Force | Out-Null
+        New-AzureStorageContainer -Name "sandbox-$country" -Context $blobContext -Permission Container -ErrorAction Ignore | Out-Null
+        Set-AzureStorageBlobContent -File $appArchive -Context $blobContext -Container "sandbox-$country" -Blob $version -Force | Out-Null
 
         $applicationArtifactUrl = "https://$($json.storageAccountName).blob.core.windows.net/sandbox-$country/$Version"
 
@@ -282,10 +282,10 @@ else {
             }
         }
 
-        New-AzStorageContainer -Name $redirFolderName -Context $blobContext -Permission Container -ErrorAction Ignore | Out-Null
+        New-AzureStorageContainer -Name $redirFolderName -Context $blobContext -Permission Container -ErrorAction Ignore | Out-Null
         $imageNameTags | % {
             Write-Host "Tag $_"
-            Set-AzStorageBlobContent -File $redirmanifestZipFile -Context $blobContext -Container $redirFolderName -Blob "$redirPrefix$_" -Force | Out-Null
+            Set-AzureStorageBlobContent -File $redirmanifestZipFile -Context $blobContext -Container $redirFolderName -Blob "$redirPrefix$_" -Force | Out-Null
         }
     }
     finally {
