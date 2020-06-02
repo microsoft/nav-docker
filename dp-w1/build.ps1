@@ -13,6 +13,11 @@
 #     "cu":  "<cu ex. cu1>",
 #     "version":  "<version ex. 9.0.43402.0>",
 #     "tags":  "<tags ex. microsoft/dynamics-nav:9.0.43402.0-ltsc2019,microsoft/dynamics-nav:2016-cu1-ltsc2019,microsoft/dynamics-nav:2016-cu1-w1-ltsc2019>",
+#     "storageAccountName": "account name if artifacts should be created"
+#     "storageAccountKey": "account key if artifacts should be created"
+#     "insider": $true/$false
+#     "master": $true/$false
+#     "latest": $true/$false
 # }' | ConvertFrom-Json
 
 cd $PSScriptRoot
@@ -67,5 +72,24 @@ $json.platform | ForEach-Object {
                 docker push $_
             }
         }
+
+        if ($osSuffix -eq "ltsc2019" -and ($json.PSObject.Properties.Name -eq "storageAccountName")) {
+            if (($json.storageAccountName -ne "") -and ($json.storageAccountKey -ne "")) {
+                $artifactjson = @{
+                    "storageAccountName" = $json.storageAccountName
+                    "storageAccountKey" = $json.storageAccountKey
+                    "imageName" = $image
+                    "version" = $json.version
+                    "country" = "base"
+                    "insider" = $json.insider
+                    "master" = $json.master
+                    "latest" = $json.latest
+                    "rebuild" = $true
+                    "sandbox" = $true
+                }
+                . (Join-Path $PSScriptRoot "..\dp-w1\image2artifact.ps1") -json $artifactjson
+            }
+        }
+
     }
 }

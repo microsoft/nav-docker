@@ -18,6 +18,11 @@
 #    "maintainer":  "Dynamics SMB",
 #    "devpreviewblobname":  "69137e70-d76a-4e57-8939-80b0f5d53fab",
 #    "devpreviewbloburl":  "https://nav2016wswe0.blob.core.windows.net/dvd/69137e70-d76a-4e57-8939-80b0f5d53fab"
+#    "storageAccountName": "account name if artifacts should be created"
+#    "storageAccountKey": "account key if artifacts should be created"
+#    "insider": $true/$false
+#    "master": $true/$false
+#    "latest": $true/$false
 #}
 
 cd $PSScriptRoot
@@ -83,6 +88,24 @@ $json.platform | ForEach-Object {
             $json.tags.Split(',') | ForEach-Object {
                 docker tag $image $_
                 docker push $_
+            }
+
+            if ($osSuffix -eq "ltsc2019" -and ($json.PSObject.Properties.Name -eq "storageAccountName")) {
+                if (($json.storageAccountName -ne "") -and ($json.storageAccountKey -ne "")) {
+                    $artifactjson = @{
+                        "storageAccountName" = $json.storageAccountName
+                        "storageAccountKey" = $json.storageAccountKey
+                        "imageName" = $image
+                        "version" = $json.version
+                        "country" = $json.country.ToLowerInvariant()
+                        "insider" = $json.insider
+                        "master" = $json.master
+                        "latest" = $json.latest
+                        "rebuild" = $true
+                        "sandbox" = $true
+                    }
+                    . (Join-Path $PSScriptRoot "..\dp-w1\image2artifact.ps1") -json $artifactjson
+                }
             }
 
             $json.tags.Split(',') | ForEach-Object {
