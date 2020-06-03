@@ -1,8 +1,8 @@
-﻿Param( [PSCustomObject] $json )
+﻿Param( [PSCustomObject] $artifactJson )
 
 # Json format:
 #
-# $json = @{
+# $artifactJson = @{
 #    "storageAccountName" = "accountname"
 #    "storageAccountKey" = "accountkey"
 #    "imageName" = "image"
@@ -36,8 +36,8 @@ $credential = New-Object pscredential 'admin', (ConvertTo-SecureString -String '
 
 $ErrorActionPreference = "STOP"
 
-if ($json.insider) {
-    if ($json.master) {
+if ($artifactJson.insider) {
+    if ($artifactJson.master) {
         $repo = "bcinsider.azurecr.io/bcsandbox-master:"
         $redirFolderName = "bcsandbox-master"
         $redirPrefix = ""
@@ -49,7 +49,7 @@ if ($json.insider) {
     $containerPermission = "Off"
 }
 else {
-    if ($json.sandbox) {
+    if ($artifactJson.sandbox) {
         $redirFolderName = "businesscentral"
         $redirPrefix = "sandbox/"
     }
@@ -60,28 +60,28 @@ else {
     $containerPermission = "Container"
 }
 
-$blobContext = New-AzureStorageContext -StorageAccountName $json.storageAccountName -StorageAccountKey $json.storageAccountKey
+$blobContext = New-AzureStorageContext -StorageAccountName $artifactJson.storageAccountName -StorageAccountKey $artifactJson.storageAccountKey
 
 # Pull if image doesn't exist
-$existingImage = docker images --format "{{.Repository}}:{{.Tag}}" | Where-Object { $_ -eq $json.imageName }
+$existingImage = docker images --format "{{.Repository}}:{{.Tag}}" | Where-Object { $_ -eq $artifactJson.imageName }
 if (!($existingImage)) {
-    docker pull $json.imageName
+    docker pull $artifactJson.imageName
 }
 
-$inspect = docker inspect $json.imageName | ConvertFrom-Json
+$inspect = docker inspect $artifactJson.imageName | ConvertFrom-Json
 $platform = $inspect.Config.Labels.platform
 $nav = $inspect.Config.Labels.nav
 $cu = $inspect.Config.Labels.cu
 $version = $inspect.Config.Labels.version
 $country = $inspect.Config.Labels.country.ToLowerInvariant()
 
-$platformUrl = "https://$($json.storageAccountName).blob.core.windows.net/platform/$platform"
+$platformUrl = "https://$($artifactJson.storageAccountName).blob.core.windows.net/platform/$platform"
 
-if ($json.country -eq "base" -or ($json.country -eq "w1" -and $json.sandbox)) {
+if ($artifactJson.country -eq "base" -or ($artifactJson.country -eq "w1" -and $artifactJson.sandbox)) {
 
     # generate platform
     $blob = Get-AzureStorageBlob -Context $blobContext -Container "platform" -Blob $platform -ErrorAction SilentlyContinue
-    if ($json.rebuild -or !($blob)) {
+    if ($artifactJson.rebuild -or !($blob)) {
 
         # Create Platform and application-w1 artifact
         $baseContainerName = "base"
@@ -89,7 +89,7 @@ if ($json.country -eq "base" -or ($json.country -eq "w1" -and $json.sandbox)) {
             -accept_outdated `
             -accept_eula `
             -containerName $baseContainerName `
-            -imageName $json.imageName `
+            -imageName $artifactJson.imageName `
             -auth NavUserPassword `
             -updateHosts `
             -memoryLimit "8g" `
@@ -102,7 +102,7 @@ if ($json.country -eq "base" -or ($json.country -eq "w1" -and $json.sandbox)) {
     
             # Create application-w1 artifact
     
-            $applicationUrl = "https://$($json.storageAccountName).blob.core.windows.net/application-w1/$Version"
+            $applicationUrl = "https://$($artifactJson.storageAccountName).blob.core.windows.net/application-w1/$Version"
             New-Item -Path $folder -ItemType Directory | Out-Null
             $databaseFolder = Join-Path $folder 'database'
             
@@ -130,7 +130,7 @@ if ($json.country -eq "base" -or ($json.country -eq "w1" -and $json.sandbox)) {
     
             $redirmanifest = @{
                 "applicationUrl" = $applicationUrl
-                "isBcSandbox" = $json.sandbox
+                "isBcSandbox" = $artifactJson.sandbox
             }
     
             Remove-Item $folder -Recurse -Force
@@ -143,19 +143,19 @@ if ($json.country -eq "base" -or ($json.country -eq "w1" -and $json.sandbox)) {
             $redirmanifestZipFile = Join-Path $folder "manifest.zip"
             Compress-Archive -Path $redirmanifestFile -DestinationPath $redirmanifestZipFile -CompressionLevel NoCompression
     
-            $imageNameTags = @("$version-$($json.country)")
-            if ($json.country -eq "w1") {
+            $imageNameTags = @("$version-$($artifactJson.country)")
+            if ($artifactJson.country -eq "w1") {
                 $imageNameTags += @("$version")
             }
             if ($cu) {
-                $imageNameTags += @("$cu-$($json.country)")
-                if ($json.country -eq "w1") {
+                $imageNameTags += @("$cu-$($artifactJson.country)")
+                if ($artifactJson.country -eq "w1") {
                     $imageNameTags += @("$cu")
                 }
             }
             if ($latest) {
-                $imageNameTags += @("$($json.country)")
-                if ($json.country -eq "w1") {
+                $imageNameTags += @("$($artifactJson.country)")
+                if ($artifactJson.country -eq "w1") {
                     $imageNameTags += @("latest")
                 }
             }
@@ -205,12 +205,12 @@ if ($json.country -eq "base" -or ($json.country -eq "w1" -and $json.sandbox)) {
 else {
     $countryContainerName = "$country$($version.replace('.',''))"
 
-    Write-Host "Create container $countryContainerName from $($json.imageName)"
+    Write-Host "Create container $countryContainerName from $($artifactJson.imageName)"
     New-NavContainer `
         -accept_outdated `
         -accept_eula `
         -containerName $countryContainerName `
-        -imageName $json.imageName `
+        -imageName $artifactJson.imageName `
         -auth NavUserPassword `
         -updateHosts `
         -memoryLimit "8g" `
@@ -242,7 +242,7 @@ else {
             "nav" = "$nav"
             "cu" = "$cu"
             "country" = $country
-            "isBcSandbox" = $json.sandbox
+            "isBcSandbox" = $artifactJson.sandbox
         }
         $manifest | ConvertTo-Json -Depth 99 | Set-Content -Path (Join-Path $folder "manifest.json")
         $appArchive = "$folder.zip"
@@ -251,11 +251,11 @@ else {
         New-AzureStorageContainer -Name "sandbox-$country" -Context $blobContext -Permission $containerPermission -ErrorAction Ignore | Out-Null
         Set-AzureStorageBlobContent -File $appArchive -Context $blobContext -Container "sandbox-$country" -Blob $version -Force | Out-Null
 
-        $applicationArtifactUrl = "https://$($json.storageAccountName).blob.core.windows.net/sandbox-$country/$Version"
+        $applicationArtifactUrl = "https://$($artifactJson.storageAccountName).blob.core.windows.net/sandbox-$country/$Version"
 
         $redirmanifest = @{
             "applicationUrl" = $applicationArtifactUrl
-            "isBcSandbox" = $json.sandbox
+            "isBcSandbox" = $artifactJson.sandbox
         }
 
         Remove-Item $folder -Recurse -Force
@@ -303,5 +303,5 @@ else {
 }
 
 if (!($existingImage)) {
-    docker rmi $json.imageName -f
+    docker rmi $artifactJson.imageName -f
 }
