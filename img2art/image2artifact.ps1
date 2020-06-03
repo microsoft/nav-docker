@@ -301,4 +301,7 @@ else {
 
     Remove-NavContainer $countryContainerName
 }
-docker rmi $json.imageName -f
+
+if (!($existingImage)) {
+    docker rmi $json.imageName -f
+}
