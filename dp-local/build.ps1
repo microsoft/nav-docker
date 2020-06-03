@@ -104,7 +104,7 @@ $json.platform | ForEach-Object {
                         "rebuild" = $true
                         "sandbox" = $true
                     }
-                    . (Join-Path $PSScriptRoot "..\dp-w1\image2artifact.ps1") -json $artifactjson
+                    . (Join-Path $PSScriptRoot "..\img2art\image2artifact.ps1") -json $artifactjson
                 }
             }
 

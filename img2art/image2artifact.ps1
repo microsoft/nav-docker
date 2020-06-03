@@ -46,6 +46,7 @@ if ($json.insider) {
         $redirFolderName = "bcsandbox"
         $redirPrefix = ""
     }
+    $containerPermission = "Off"
 }
 else {
     if ($json.sandbox) {
@@ -56,6 +57,7 @@ else {
         $redirFolderName = "businesscentral"
         $redirPrefix = "onprem/"
     }
+    $containerPermission = "Container"
 }
 
 $blobContext = New-AzureStorageContext -StorageAccountName $json.storageAccountName -StorageAccountKey $json.storageAccountKey
@@ -120,7 +122,7 @@ if ($json.country -eq "base" -or ($json.country -eq "w1" -and $json.sandbox)) {
             $manifest | ConvertTo-Json -Depth 99 | Set-Content -Path (Join-Path $folder "manifest.json")
             Compress-Archive -Path "$folder\*" -DestinationPath $archive -CompressionLevel Optimal
         
-            New-AzureStorageContainer -Name "application-w1" -Context $blobContext -Permission Container -ErrorAction Ignore | Out-Null
+            New-AzureStorageContainer -Name "application-w1" -Context $blobContext -Permission $containerPermission -ErrorAction Ignore | Out-Null
             Set-AzureStorageBlobContent -File $archive -Context $blobContext -Container "application-w1" -Blob $version -Force | Out-Null
 
     
@@ -158,7 +160,7 @@ if ($json.country -eq "base" -or ($json.country -eq "w1" -and $json.sandbox)) {
                 }
             }
     
-            New-AzureStorageContainer -Name $redirFolderName -Context $blobContext -Permission Container -ErrorAction Ignore | Out-Null
+            New-AzureStorageContainer -Name $redirFolderName -Context $blobContext -Permission $containerPermission -ErrorAction Ignore | Out-Null
             $imageNameTags | % {
                 Write-Host "Tag $_"
                 Set-AzureStorageBlobContent -File $redirmanifestZipFile -Context $blobContext -Container $redirFolderName -Blob "$redirPrefix$_" -Force | Out-Null
@@ -184,7 +186,7 @@ if ($json.country -eq "base" -or ($json.country -eq "w1" -and $json.sandbox)) {
     
             Compress-Archive -Path "$folder\*" -DestinationPath $archive -CompressionLevel Optimal
         
-            New-AzureStorageContainer -Name "platform" -Context $blobContext -Permission Container -ErrorAction Ignore | Out-Null
+            New-AzureStorageContainer -Name "platform" -Context $blobContext -Permission $containerPermission -ErrorAction Ignore | Out-Null
             Set-AzureStorageBlobContent -File $archive -Context $blobContext -Container "platform" -Blob $platform -Force | Out-Null
     
         }
@@ -246,7 +248,7 @@ else {
         $appArchive = "$folder.zip"
         Compress-Archive -Path "$folder\*" -DestinationPath $appArchive -CompressionLevel Optimal
     
-        New-AzureStorageContainer -Name "sandbox-$country" -Context $blobContext -Permission Container -ErrorAction Ignore | Out-Null
+        New-AzureStorageContainer -Name "sandbox-$country" -Context $blobContext -Permission $containerPermission -ErrorAction Ignore | Out-Null
         Set-AzureStorageBlobContent -File $appArchive -Context $blobContext -Container "sandbox-$country" -Blob $version -Force | Out-Null
 
         $applicationArtifactUrl = "https://$($json.storageAccountName).blob.core.windows.net/sandbox-$country/$Version"
@@ -282,7 +284,7 @@ else {
             }
         }
 
-        New-AzureStorageContainer -Name $redirFolderName -Context $blobContext -Permission Container -ErrorAction Ignore | Out-Null
+        New-AzureStorageContainer -Name $redirFolderName -Context $blobContext -Permission $containerPermission -ErrorAction Ignore | Out-Null
         $imageNameTags | % {
             Write-Host "Tag $_"
             Set-AzureStorageBlobContent -File $redirmanifestZipFile -Context $blobContext -Container $redirFolderName -Blob "$redirPrefix$_" -Force | Out-Null
