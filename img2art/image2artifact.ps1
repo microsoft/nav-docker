@@ -153,7 +153,7 @@ if ($artifactJson.country -eq "base" -or ($artifactJson.country -eq "w1" -and $a
                     $imageNameTags += @("$cu")
                 }
             }
-            if ($latest) {
+            if ($artifactJson.latest) {
                 $imageNameTags += @("$($artifactJson.country)")
                 if ($artifactJson.country -eq "w1") {
                     $imageNameTags += @("latest")
@@ -277,7 +277,7 @@ else {
                 $imageNameTags += @("$cu")
             }
         }
-        if ($latest) {
+        if ($artifactJson.latest) {
             $imageNameTags += @("$country")
             if ($country -eq "w1") {
                 $imageNameTags += @("latest")
