@@ -75,12 +75,21 @@ $cu = $inspect.Config.Labels.cu
 $version = $inspect.Config.Labels.version
 $country = $inspect.Config.Labels.country.ToLowerInvariant()
 
-$platformUrl = "https://$($artifactJson.storageAccountName).blob.core.windows.net/platform/$platform"
+if ($artifactJson.sandbox) {
+    $containerName = "sandbox"
+    $baseName = "base"
+}
+else {
+    $containerName = "onprem"
+    $baseName = "w1"
+}
+
+$platformUrl = "$containerName/$version/platform"
 
 if ($artifactJson.country -eq "base" -or ($artifactJson.country -eq "w1" -and $artifactJson.sandbox)) {
 
     # generate platform
-    $blob = Get-AzureStorageBlob -Context $blobContext -Container "platform" -Blob $platform -ErrorAction SilentlyContinue
+    $blob = Get-AzureStorageBlob -Context $blobContext -Container $containerName -Blob "$version/platform" -ErrorAction SilentlyContinue
     if ($artifactJson.rebuild -or !($blob)) {
 
         # Create Platform and application-w1 artifact
@@ -102,7 +111,7 @@ if ($artifactJson.country -eq "base" -or ($artifactJson.country -eq "w1" -and $a
     
             # Create application-w1 artifact
     
-            $applicationUrl = "https://$($artifactJson.storageAccountName).blob.core.windows.net/application-w1/$Version"
+            $applicationUrl = "$containerName/$version/$baseName"
             New-Item -Path $folder -ItemType Directory | Out-Null
             $databaseFolder = Join-Path $folder 'database'
             
@@ -118,19 +127,19 @@ if ($artifactJson.country -eq "base" -or ($artifactJson.country -eq "w1" -and $a
                 "nav" = "$nav"
                 "cu" = "$cu"
                 "country" = $country
+                "isBcSandbox" = $artifactJson.sandbox
             }
+
             $manifest | ConvertTo-Json -Depth 99 | Set-Content -Path (Join-Path $folder "manifest.json")
             Compress-Archive -Path "$folder\*" -DestinationPath $archive -CompressionLevel Optimal
         
-            New-AzureStorageContainer -Name "application-w1" -Context $blobContext -Permission $containerPermission -ErrorAction Ignore | Out-Null
-            Set-AzureStorageBlobContent -File $archive -Context $blobContext -Container "application-w1" -Blob $version -Force | Out-Null
+            New-AzureStorageContainer -Name $containerName -Context $blobContext -Permission $containerPermission -ErrorAction Ignore | Out-Null
+            Set-AzureStorageBlobContent -File $archive -Context $blobContext -Container $containerName -Blob "$version/$baseName" -Force | Out-Null
 
-    
             # create redir artifacts
     
             $redirmanifest = @{
                 "applicationUrl" = $applicationUrl
-                "isBcSandbox" = $artifactJson.sandbox
             }
     
             Remove-Item $folder -Recurse -Force
@@ -186,8 +195,8 @@ if ($artifactJson.country -eq "base" -or ($artifactJson.country -eq "w1" -and $a
     
             Compress-Archive -Path "$folder\*" -DestinationPath $archive -CompressionLevel Optimal
         
-            New-AzureStorageContainer -Name "platform" -Context $blobContext -Permission $containerPermission -ErrorAction Ignore | Out-Null
-            Set-AzureStorageBlobContent -File $archive -Context $blobContext -Container "platform" -Blob $platform -Force | Out-Null
+            New-AzureStorageContainer -Name $containerName -Context $blobContext -Permission $containerPermission -ErrorAction Ignore | Out-Null
+            Set-AzureStorageBlobContent -File $archive -Context $blobContext -Container $containerName -Blob "$version/platform" -Force | Out-Null
     
         }
         finally {
@@ -248,14 +257,13 @@ else {
         $appArchive = "$folder.zip"
         Compress-Archive -Path "$folder\*" -DestinationPath $appArchive -CompressionLevel Optimal
     
-        New-AzureStorageContainer -Name "sandbox-$country" -Context $blobContext -Permission $containerPermission -ErrorAction Ignore | Out-Null
-        Set-AzureStorageBlobContent -File $appArchive -Context $blobContext -Container "sandbox-$country" -Blob $version -Force | Out-Null
+        New-AzureStorageContainer -Name $containerName -Context $blobContext -Permission $containerPermission -ErrorAction Ignore | Out-Null
+        Set-AzureStorageBlobContent -File $appArchive -Context $blobContext -Container $containerName -Blob "$version\$country" -Force | Out-Null
 
-        $applicationArtifactUrl = "https://$($artifactJson.storageAccountName).blob.core.windows.net/sandbox-$country/$Version"
+        $applicationArtifactUrl = "$containerName/$Version/$country"
 
         $redirmanifest = @{
             "applicationUrl" = $applicationArtifactUrl
-            "isBcSandbox" = $artifactJson.sandbox
         }
 
         Remove-Item $folder -Recurse -Force
