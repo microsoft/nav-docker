@@ -105,10 +105,13 @@ try {
     
             if (-not (Test-Path $navDvdPath -PathType Container)) {
                 if (!($artifactUrl)) {
-                    $artifactUrl = $env:ArtifactUrl
+                    $artifactUrl = "$env:ArtifactUrl"
                 }
 
                 if ($artifactUrl) {
+
+                    Write-Host "Using artifactUrl $($artifactUrl.split('?')[0])"
+
                     if (-not (Test-Path $dlPath)) {
                         New-Item $dlPath -ItemType Directory | Out-Null
                         $dlPathCreated = $true
@@ -131,21 +134,47 @@ try {
     
                         if ($appManifest.PSObject.Properties.name -eq "applicationUrl") {
                             $redir = $true
+
+                            Set-Content -Path (Join-Path $appArtifactPath 'lastused') -Value "$([datetime]::UtcNow.Ticks)"
                             $artifactUrl = $appManifest.ApplicationUrl
+                            if ($artifactUrl -notlike 'https://*') {
+                                $artifactUrl = "https://$($appUri.Host)/$artifactUrl$($appUri.Query)"
+                            }
                         }
     
                     } while ($redir)
     
+                    Set-Content -Path (Join-Path $appArtifactPath 'lastused') -Value "$([datetime]::UtcNow.Ticks)"
                     $database = $appManifest.database
                     $databasePath = Join-Path $appArtifactPath $database
-                    $licenseFile = $appManifest.licenseFile
-                    $licenseFilePath = Join-Path $appArtifactPath $licenseFile
+                    $licenseFile = ""
+                    if ($appManifest.PSObject.Properties.name -eq "licenseFile") {
+                        $licenseFile = $appManifest.licenseFile
+                        if ($licenseFile) {
+                            $licenseFilePath = Join-Path $appArtifactPath $licenseFile
+                        }
+                    }
+                    if ($appManifest.PSObject.Properties.name -eq "isBcSandbox") {
+                        if ($appManifest.isBcSandbox) {
+                            $env:IsBcSandbox = "Y"
+                        }
+                    }
     
-                    $platformUrl = $appManifest.platformUrl
+                    if ($appManifest.PSObject.Properties.name -eq "platformUrl") {
+                        $platformUrl = $appManifest.platformUrl
+                    }
+                    else {
+                        $platformUrl = "$($appUri.AbsolutePath.Substring(0,$appUri.AbsolutePath.LastIndexOf('/')))/platform$($appUri.Query)"
+                    }
+
+                    if ($platformUrl -notlike 'https://*') {
+                        $platformUrl = "https://$($appUri.Host)/$platformUrl$($appUri.Query)"
+                    }
                     $platformUri = [Uri]::new($platformUrl)
                      
                     $platformArtifactPath = Join-Path $dlPath $platformUri.AbsolutePath
-    
+                    Write-Host "Using Platform Artifacts from $platformArtifactPath"
+                    
                     if (-not (Test-Path $platformArtifactPath)) {
                         Write-Host "Downloading platform artifact $($platformUri.AbsolutePath) - $platformUrl"
                         (New-Object MyWebClient).DownloadFile($platformUrl, "c:\run\platform.zip")
@@ -174,27 +203,31 @@ try {
     
                     New-Item $navDvdPath -ItemType Directory | Out-Null
                     $navDvdPathCreated = $true
+                    Write-Host "Copying Platform Artifact"
                     Copy-Item -Path "$platformArtifactPath\*" -Destination $navDvdPath -Force -Recurse
+
+                    Set-Content -Path (Join-Path $platformArtifactPath 'lastused') -Value "$([datetime]::UtcNow.Ticks)"
                     
                     $useBakFile = ("$env:bakfile" -ne "")
-                    $useForeignDb = (!("$env:databaseServer" -eq "" -and "$env:databaseInstance" -eq "") -or ("$env:databaseServer" -eq "localhost" -and "$env:databaseInstance" -eq "SQLEXPRESS"))
+                    $useForeignDb = !(("$env:databaseServer" -eq "" -and "$env:databaseInstance" -eq "") -or ("$env:databaseServer" -eq "localhost" -and "$env:databaseInstance" -eq "SQLEXPRESS"))
                     $useOwnLicenseFile = ("$env:licenseFile" -ne "")
 
                     if (!($useBakFile -or $useForeignDb)) {
                         $dbPath = Join-Path $navDvdPath "SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\ver\Database"
                         New-Item $dbPath -ItemType Directory | Out-Null
+                        Write-Host "Copy Database"
                         Copy-Item -path $databasePath -Destination $dbPath -Force
-                        if (!$useOwnLicenseFile) {
+                        if ($licenseFile -and !$useOwnLicenseFile) {
+                            Write-Host "Copy Licensefile"
                             Copy-Item -path $licenseFilePath -Destination $dbPath -Force
                         }
                     }
-    
-                    "Installers", "ConfigurationPackages", "TestToolKit", "UpgradeToolKit", "Extensions", "Applications" | % {
+
+                    "Installers", "ConfigurationPackages", "TestToolKit", "UpgradeToolKit", "Extensions", "Applications","Applications.*" | % {
                         $appSubFolder = Join-Path $appArtifactPath $_
                         if (Test-Path "$appSubFolder" -PathType Container) {
                             $destFolder = Join-Path $navDvdPath $_
                             if (Test-Path $destFolder) {
-                                Write-Host "Remove w1 version of $_"
                                 Remove-Item -path $destFolder -Recurse -Force
                             }
                             Write-Host "Copy $_"
@@ -203,7 +236,7 @@ try {
                     }
                 }
             }
-
+            
             if (Test-Path $navDvdPath -PathType Container) {
                 $setupVersion = (Get-Item -Path "$navDvdPath\ServiceTier\program files\Microsoft Dynamics NAV\*\Service\Microsoft.Dynamics.Nav.Server.exe").VersionInfo.FileVersion
                 $versionNo = [Int]::Parse($setupVersion.Split('.')[0]+$setupVersion.Split('.')[1])
@@ -221,7 +254,7 @@ try {
                 Get-ChildItem -Path "C:\Run" -Directory | where-object { [Int]::TryParse($_.Name, [ref]$null) } | % {
                     Remove-Item (Join-Path "C:\Run" $_.Name) -Recurse -Force -ErrorAction Ignore
                 }
-        
+                
                 . (Get-MyFilePath "navinstall.ps1")
             } else {
                 throw "You must share a DVD folder to $navDvdPath or a file system to $navFSPath in order to run the generic image"
