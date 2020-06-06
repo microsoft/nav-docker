@@ -203,8 +203,15 @@ try {
     
                     New-Item $navDvdPath -ItemType Directory | Out-Null
                     $navDvdPathCreated = $true
-                    Write-Host "Copying Platform Artifact"
-                    Copy-Item -Path "$platformArtifactPath\*" -Destination $navDvdPath -Force -Recurse
+                    Write-Host "Copying Platform Artifacts"
+                    Get-ChildItem -Path $platformArtifactPath | % {
+                        if ($_.PSIsContainer) {
+                            Copy-Item -Path $_.FullName -Destination $navDvdPath -Recurse
+                        }
+                        else {
+                            Copy-Item -Path $_.FullName -Destination $navDvdPath
+                        }
+                    }
 
                     Set-Content -Path (Join-Path $platformArtifactPath 'lastused') -Value "$([datetime]::UtcNow.Ticks)"
                     
@@ -212,6 +219,7 @@ try {
                     $useForeignDb = !(("$env:databaseServer" -eq "" -and "$env:databaseInstance" -eq "") -or ("$env:databaseServer" -eq "localhost" -and "$env:databaseInstance" -eq "SQLEXPRESS"))
                     $useOwnLicenseFile = ("$env:licenseFile" -ne "")
 
+                    Write-Host "Copying Application Artifacts"
                     if (!($useBakFile -or $useForeignDb)) {
                         $dbPath = Join-Path $navDvdPath "SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\ver\Database"
                         New-Item $dbPath -ItemType Directory | Out-Null
