@@ -1,12 +1,11 @@
 ﻿$push = $true
 $RootPath = $PSScriptRoot
-$version = "0.0.9.102"
+$version = "0.1.0.1"
 $basetags = (get-navcontainerimagetags -imageName "mcr.microsoft.com/dotnet/framework/runtime").tags | Where-Object { $_.StartsWith('4.8-20') } | Sort-Object -Descending  | Where-Object { -not $_.endswith("-1803") }
 
 #throw "go?"
 
-#0..($basetags.Count-1) | % {
-0..0 | % {
+0..($basetags.Count-1) | % {
     $tag = $basetags[$_]
     $dt = $tag.SubString(4,8)
     $os = $tag.SubString($tag.LastIndexOf('-')+1)
@@ -49,6 +48,10 @@ $basetags = (get-navcontainerimagetags -imageName "mcr.microsoft.com/dotnet/fram
             Write-Host "Push $_"
             docker tag $image $_
             docker push $_
+        }
+        $tags | ForEach-Object {
+            Write-Host "Remove $_"
+            docker rmi $_
         }
         docker rmi $image
         docker rmi $baseimage

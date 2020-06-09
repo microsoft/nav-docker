@@ -176,7 +176,7 @@ try {
                     Write-Host "Using Platform Artifacts from $platformArtifactPath"
                     
                     if (-not (Test-Path $platformArtifactPath)) {
-                        Write-Host "Downloading platform artifact $($platformUri.AbsolutePath) - $platformUrl"
+                        Write-Host "Downloading platform artifact $($platformUri.AbsolutePath)"
                         (New-Object MyWebClient).DownloadFile($platformUrl, "c:\run\platform.zip")
                         Write-Host "Unpacking platform artifact"
                         Expand-Archive -Path "c:\run\platform.zip" -DestinationPath $platformArtifactPath -Force
