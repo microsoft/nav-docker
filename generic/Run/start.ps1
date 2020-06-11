@@ -164,7 +164,7 @@ try {
                         $platformUrl = $appManifest.platformUrl
                     }
                     else {
-                        $platformUrl = "$($appUri.AbsolutePath.Substring(0,$appUri.AbsolutePath.LastIndexOf('/')))/platform$($appUri.Query)"
+                        $platformUrl = "$($appUri.AbsolutePath.Substring(0,$appUri.AbsolutePath.LastIndexOf('/')))/platform$($appUri.Query)".Trim('/')
                     }
 
                     if ($platformUrl -notlike 'https://*') {
