@@ -1,6 +1,6 @@
 ﻿$push = $true
 $RootPath = $PSScriptRoot
-$version = "0.1.0.1"
+$version = "0.1.0.2"
 $basetags = (get-navcontainerimagetags -imageName "mcr.microsoft.com/dotnet/framework/runtime").tags | Where-Object { $_.StartsWith('4.8-20') } | Sort-Object -Descending  | Where-Object { -not $_.endswith("-1803") }
 
 #throw "go?"
