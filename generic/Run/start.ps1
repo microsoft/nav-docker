@@ -57,6 +57,8 @@ $Source = @"
 Add-Type -TypeDefinition $Source -Language CSharp -WarningAction SilentlyContinue | Out-Null
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
+. (Get-MyFilePath "HelperFunctions.ps1")
+
 try {
 
     if (!$restartingInstance) {
@@ -112,41 +114,16 @@ try {
 
                     Write-Host "Using artifactUrl $($artifactUrl.split('?')[0])"
 
-                    if (-not (Test-Path $dlPath)) {
-                        New-Item $dlPath -ItemType Directory | Out-Null
-                        $dlPathCreated = $true
-                    }
-    
-                    do {
-                        $redir = $false
-                        $appUri = [Uri]::new($artifactUrl)
-    
-                        $appArtifactPath = Join-Path $dlPath $appUri.AbsolutePath
-                        if (-not (Test-Path $appArtifactPath)) {
-                            Write-Host "Downloading application artifact $($appUri.AbsolutePath)"
-                            (New-Object MyWebClient).DownloadFile($artifactUrl, "c:\run\app.zip")
-                            Write-Host "Unpacking application artifact"
-                            Expand-Archive -Path "c:\run\app.zip" -DestinationPath $appArtifactPath -Force
-                        }
-    
-                        $appManifestPath = Join-Path $appArtifactPath "manifest.json"
-                        $appManifest = Get-Content $appManifestPath | ConvertFrom-Json
-    
-                        if ($appManifest.PSObject.Properties.name -eq "applicationUrl") {
-                            $redir = $true
+                    $artifactPaths = Download-Artifacts -artifactUrl $artifactUrl -includePlatform
+                    $appArtifactPath = $artifactPaths[0]
+                    $platformArtifactPath = $artifactPaths[1]
 
-                            Set-Content -Path (Join-Path $appArtifactPath 'lastused') -Value "$([datetime]::UtcNow.Ticks)"
-                            $artifactUrl = $appManifest.ApplicationUrl
-                            if ($artifactUrl -notlike 'https://*') {
-                                $artifactUrl = "https://$($appUri.Host)/$artifactUrl$($appUri.Query)"
-                            }
-                        }
-    
-                    } while ($redir)
-    
-                    Set-Content -Path (Join-Path $appArtifactPath 'lastused') -Value "$([datetime]::UtcNow.Ticks)"
+                    $appManifestPath = Join-Path $appArtifactPath "manifest.json"
+                    $appManifest = Get-Content $appManifestPath | ConvertFrom-Json
+
                     $database = $appManifest.database
                     $databasePath = Join-Path $appArtifactPath $database
+
                     $licenseFile = ""
                     if ($appManifest.PSObject.Properties.name -eq "licenseFile") {
                         $licenseFile = $appManifest.licenseFile
@@ -157,47 +134,6 @@ try {
                     if ($appManifest.PSObject.Properties.name -eq "isBcSandbox") {
                         if ($appManifest.isBcSandbox) {
                             $env:IsBcSandbox = "Y"
-                        }
-                    }
-    
-                    if ($appManifest.PSObject.Properties.name -eq "platformUrl") {
-                        $platformUrl = $appManifest.platformUrl
-                    }
-                    else {
-                        $platformUrl = "$($appUri.AbsolutePath.Substring(0,$appUri.AbsolutePath.LastIndexOf('/')))/platform$($appUri.Query)".Trim('/')
-                    }
-
-                    if ($platformUrl -notlike 'https://*') {
-                        $platformUrl = "https://$($appUri.Host)/$platformUrl$($appUri.Query)"
-                    }
-                    $platformUri = [Uri]::new($platformUrl)
-                     
-                    $platformArtifactPath = Join-Path $dlPath $platformUri.AbsolutePath
-                    Write-Host "Using Platform Artifacts from $platformArtifactPath"
-                    
-                    if (-not (Test-Path $platformArtifactPath)) {
-                        Write-Host "Downloading platform artifact $($platformUri.AbsolutePath)"
-                        (New-Object MyWebClient).DownloadFile($platformUrl, "c:\run\platform.zip")
-                        Write-Host "Unpacking platform artifact"
-                        Expand-Archive -Path "c:\run\platform.zip" -DestinationPath $platformArtifactPath -Force
-    
-                        $prerequisiteComponentsFile = Join-Path $platformArtifactPath "Prerequisite Components.json"
-                        if (Test-Path $prerequisiteComponentsFile) {
-                            $prerequisiteComponents = Get-Content $prerequisiteComponentsFile | ConvertFrom-Json
-                            Write-Host "Downloading Prerequisite Components"
-                            $prerequisiteComponents.PSObject.Properties | % {
-                                $path = Join-Path $platformArtifactPath $_.Name
-                                if (-not (Test-Path $path)) {
-                                    $dirName = [System.IO.Path]::GetDirectoryName($path)
-                                    $filename = [System.IO.Path]::GetFileName($path)
-                                    if (-not (Test-Path $dirName)) {
-                                        New-Item -Path $dirName -ItemType Directory | Out-Null
-                                    }
-                                    $url = $_.Value
-                                    Write-Host "Downloading $filename from $url"
-                                    (New-Object MyWebClient).DownloadFile($url, $path)
-                                }
-                            }
                         }
                     }
     
@@ -213,8 +149,6 @@ try {
                         }
                     }
 
-                    Set-Content -Path (Join-Path $platformArtifactPath 'lastused') -Value "$([datetime]::UtcNow.Ticks)"
-                    
                     $useBakFile = ("$env:bakfile" -ne "")
                     $useForeignDb = !(("$env:databaseServer" -eq "" -and "$env:databaseInstance" -eq "") -or ("$env:databaseServer" -eq "localhost" -and "$env:databaseInstance" -eq "SQLEXPRESS"))
                     $useOwnLicenseFile = ("$env:licenseFile" -ne "")
