@@ -86,7 +86,7 @@ else {
 
 $platformUrl = "$containerName/$version/platform"
 
-if ($artifactJson.country -eq "base" -or ($artifactJson.country -eq "w1" -and $artifactJson.sandbox)) {
+if ($artifactJson.country -eq "base" -or ($artifactJson.country -eq "w1" -and !($artifactJson.sandbox))) {
 
     # generate platform
     $blob = Get-AzureStorageBlob -Context $blobContext -Container $containerName -Blob "$version/platform" -ErrorAction SilentlyContinue
