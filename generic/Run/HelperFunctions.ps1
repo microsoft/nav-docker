@@ -627,6 +627,7 @@ function Download-Artifacts {
         [string] $artifactUrl,
         [switch] $includePlatform,
         [switch] $force,
+        [switch] $forceRedirection,
         [string] $basePath = 'c:\dl'
     )
 
@@ -644,11 +645,10 @@ function Download-Artifacts {
             Remove-Item $appArtifactPath -Recurse -Force
             $exists = $false
         }
-        if ($exists) {
+        if ($exists -and $forceRedirection) {
             $appManifestPath = Join-Path $appArtifactPath "manifest.json"
             $appManifest = Get-Content $appManifestPath | ConvertFrom-Json
             if ($appManifest.PSObject.Properties.name -eq "applicationUrl") {
-                # redirect artifacts are always downloaded
                 Remove-Item $appArtifactPath -Recurse -Force
                 $exists = $false
             }
