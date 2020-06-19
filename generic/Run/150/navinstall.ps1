@@ -132,7 +132,15 @@ if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
     New-Item -Path $databaseFolder -itemtype Directory -ErrorAction Ignore | Out-Null
     $databaseFile = $bak.FullName
 
-    $collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS "RESTORE HEADERONLY FROM DISK = '$databaseFile'").Collation
+    try {
+        $collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS "RESTORE HEADERONLY FROM DISK = '$databaseFile'").Collation
+    }
+    catch {
+        Write-Host "SQL Server is $((get-service 'MSSQL$SQLEXPRESS').status)"
+        Start-Sleep -Seconds 5
+        $collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS "RESTORE HEADERONLY FROM DISK = '$databaseFile'").Collation
+        
+    }
     SetDatabaseServerCollation -collation $collation
 
     New-NAVDatabase -DatabaseServer $databaseServer `
