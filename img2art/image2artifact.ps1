@@ -172,7 +172,7 @@ if ($artifactJson.country -eq "base" -or ($artifactJson.country -eq "w1" -and !(
             New-AzureStorageContainer -Name $redirFolderName -Context $blobContext -Permission $containerPermission -ErrorAction Ignore | Out-Null
             $imageNameTags | % {
                 Write-Host "Tag $_"
-                Set-AzureStorageBlobContent -File $redirmanifestZipFile -Context $blobContext -Container $redirFolderName -Blob "$redirPrefix$_" -Force | Out-Null
+                Set-AzureStorageBlobContent -File $redirmanifestZipFile -Context $blobContext -Container $redirFolderName -Blob "$redirPrefix$_" -Force -Properties @{ "CacheControl" = "max-age=3600" } | Out-Null
             }
     
             Remove-Item $folder -Recurse -Force
@@ -295,7 +295,7 @@ else {
         New-AzureStorageContainer -Name $redirFolderName -Context $blobContext -Permission $containerPermission -ErrorAction Ignore | Out-Null
         $imageNameTags | % {
             Write-Host "Tag $_"
-            Set-AzureStorageBlobContent -File $redirmanifestZipFile -Context $blobContext -Container $redirFolderName -Blob "$redirPrefix$_" -Force | Out-Null
+            Set-AzureStorageBlobContent -File $redirmanifestZipFile -Context $blobContext -Container $redirFolderName -Blob "$redirPrefix$_" -Force -Properties @{ "CacheControl" = "max-age=3600" } | Out-Null
         }
     }
     finally {
