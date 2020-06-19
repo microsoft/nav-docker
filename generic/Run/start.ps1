@@ -157,7 +157,7 @@ try {
                     if (!($useBakFile -or $useForeignDb)) {
                         $dbPath = Join-Path $navDvdPath "SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\ver\Database"
                         New-Item $dbPath -ItemType Directory | Out-Null
-                        Write-Host "Copy Database"
+                        Write-Host "Copying Database"
                         Copy-Item -path $databasePath -Destination $dbPath -Force
                         if ($licenseFile -and !$useOwnLicenseFile) {
                             Write-Host "Copy Licensefile"
@@ -172,7 +172,7 @@ try {
                             if (Test-Path $destFolder) {
                                 Remove-Item -path $destFolder -Recurse -Force
                             }
-                            Write-Host "Copy $_"
+                            Write-Host "Copying $_"
                             Copy-Item -Path "$appSubFolder" -Destination $navDvdPath -Recurse
                         }
                     }
