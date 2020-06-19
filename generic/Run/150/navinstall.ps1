@@ -124,7 +124,6 @@ $databaseName = "CRONUS"
 
 # Restore CRONUS Demo database to databases folder
 if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
-    Write-Host "Restoring CRONUS Demo Database"
     $bak = (Get-ChildItem -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\*.bak")[0]
     
     # Restore database
@@ -132,17 +131,12 @@ if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
     New-Item -Path $databaseFolder -itemtype Directory -ErrorAction Ignore | Out-Null
     $databaseFile = $bak.FullName
 
-    try {
-        $collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS "RESTORE HEADERONLY FROM DISK = '$databaseFile'").Collation
-    }
-    catch {
-        Write-Host "SQL Server is $((get-service 'MSSQL$SQLEXPRESS').status)"
-        Start-Sleep -Seconds 5
-        $collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS "RESTORE HEADERONLY FROM DISK = '$databaseFile'").Collation
-        
-    }
+    Write-Host "Determining Database Collation"
+    $collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -ConnectionTimeout 300 -QueryTimeOut 300 "RESTORE HEADERONLY FROM DISK = '$databaseFile'").Collation
+
     SetDatabaseServerCollation -collation $collation
 
+    Write-Host "Restoring CRONUS Demo Database"
     New-NAVDatabase -DatabaseServer $databaseServer `
                     -DatabaseInstance $databaseInstance `
                     -DatabaseName "$databaseName" `
