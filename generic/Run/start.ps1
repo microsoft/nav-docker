@@ -112,7 +112,15 @@ try {
 
                 if ($artifactUrl) {
 
-                    Write-Host "Using artifactUrl $($artifactUrl.split('?')[0])"
+                    $tmpFolder = 'c:\$tmp$'
+                    if (Test-Path $tmpFolder) {
+                        Remove-Item $tmpFolder -Recurse -Force
+                        Write-Host "Unexpected restart during artifact copy, retrying..."
+                    }
+                    else {
+                        Write-Host "Using artifactUrl $($artifactUrl.split('?')[0])"
+                    }
+                    New-Item $tmpFolder -ItemType Directory | Out-Null
 
                     $artifactPaths = Download-Artifacts -artifactUrl $artifactUrl -includePlatform
                     $appArtifactPath = $artifactPaths[0]
@@ -136,16 +144,14 @@ try {
                             $env:IsBcSandbox = "Y"
                         }
                     }
-    
-                    New-Item $navDvdPath -ItemType Directory | Out-Null
-                    $navDvdPathCreated = $true
+        
                     Write-Host "Copying Platform Artifacts"
                     Get-ChildItem -Path $platformArtifactPath | % {
                         if ($_.PSIsContainer) {
-                            Copy-Item -Path $_.FullName -Destination $navDvdPath -Recurse
+                            Copy-Item -Path $_.FullName -Destination $tmpFolder -Recurse
                         }
                         else {
-                            Copy-Item -Path $_.FullName -Destination $navDvdPath
+                            Copy-Item -Path $_.FullName -Destination $tmpFolder
                         }
                     }
 
@@ -155,7 +161,7 @@ try {
 
                     Write-Host "Copying Application Artifacts"
                     if (!($useBakFile -or $useForeignDb)) {
-                        $dbPath = Join-Path $navDvdPath "SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\ver\Database"
+                        $dbPath = Join-Path $tmpFolder "SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\ver\Database"
                         New-Item $dbPath -ItemType Directory | Out-Null
                         Write-Host "Copying Database"
                         Copy-Item -path $databasePath -Destination $dbPath -Force
@@ -168,14 +174,17 @@ try {
                     "Installers", "ConfigurationPackages", "TestToolKit", "UpgradeToolKit", "Extensions", "Applications","Applications.*" | % {
                         $appSubFolder = Join-Path $appArtifactPath $_
                         if (Test-Path "$appSubFolder" -PathType Container) {
-                            $destFolder = Join-Path $navDvdPath $_
+                            $destFolder = Join-Path $tmpFolder $_
                             if (Test-Path $destFolder) {
                                 Remove-Item -path $destFolder -Recurse -Force
                             }
                             Write-Host "Copying $_"
-                            Copy-Item -Path "$appSubFolder" -Destination $navDvdPath -Recurse
+                            Copy-Item -Path "$appSubFolder" -Destination $tmpFolder -Recurse
                         }
                     }
+
+                    Rename-Item -Path $tmpFolder -NewName 'NAVDVD'
+                    $navDvdPathCreated = $true
                 }
             }
             
