@@ -1,4 +1,6 @@
-﻿#(get-navcontainerimagetags -imageName "mcr.microsoft.com/dynamicsnav").tags | Where-Object { $_ -like '*-generic-*' } | Group-Object { $_.substring(0,$_.indexOf('-')+8) } | % { $_.Group | Select-Object -Last 1 }
+﻿$RootPath = $PSScriptRoot
+
+. (Join-Path $RootPath "settings.ps1")
 
 $push = $true
 
@@ -57,32 +59,55 @@ $tags = @(
 "10.0.19041.329-generic-0.1.0.2"
 )
 
+[Array]::Reverse($tags)
+
+$oldGenericTag = "0.1.0.6"
+$tags | % {
+    $tag = $_
+    
+    $osversion = $tag.Substring(0,$tag.IndexOf('-'))
+    $image = "my:$osversion-generic-$oldGenericTag"
+
+    docker images --format "{{.Repository}}:{{.Tag}}" | % { 
+        if ($_ -eq $image) 
+        {
+            docker rmi $image -f
+        }
+    }
+}
+
 $tags | % {
     $tag = $_
     
     $isolation = "hyperv"
-    $version = "0.1.0.3"
     $baseimage = "mcr.microsoft.com/dynamicsnav:$tag"
     $osversion = $tag.Substring(0,$tag.IndexOf('-'))
-    $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm") 
+
     docker pull $baseimage
+
+    $image = "my:$osversion-generic-$genericTag"
+
+    docker images --format "{{.Repository}}:{{.Tag}}" | % { 
+        if ($_ -eq $image) 
+        {
+            docker rmi $image -f
+        }
+    }
     
-    $dockerfile = Join-Path $PSScriptRoot "DOCKERFILE.UPDATE"
+    $dockerfile = Join-Path $RootPath "DOCKERFILE.UPDATE"
 @"
 FROM $baseimage
 
 COPY Run /Run/
 
-LABEL tag="$version" \
+LABEL tag="$genericTag" \
       created="$created"
 "@ | Set-Content $dockerfile
 
-
-    $image = "my:$osversion-generic-$version"
     docker build --isolation=$isolation `
                  --tag $image `
                  --file $dockerfile `
-                 $PSScriptRoot
+                 $RootPath
 
     if ($LASTEXITCODE -ne 0) {
         throw "Failed with exit code $LastExitCode"
@@ -91,7 +116,7 @@ LABEL tag="$version" \
     Remove-Item $dockerfile -Force
 
     if ($push) {
-        $newtags = @("mcrbusinesscentral.azurecr.io/public/dynamicsnav:$osversion-generic","mcrbusinesscentral.azurecr.io/public/dynamicsnav:$osversion-generic-$version")
+        $newtags = @("mcrbusinesscentral.azurecr.io/public/dynamicsnav:$osversion-generic","mcrbusinesscentral.azurecr.io/public/dynamicsnav:$osversion-generic-$genericTag")
         $newtags | ForEach-Object {
             Write-Host "Push $_"
             docker tag $image $_
@@ -102,6 +127,5 @@ LABEL tag="$version" \
             docker rmi $_
         }
         docker rmi $image
-        docker rmi $baseimage
     }
 }

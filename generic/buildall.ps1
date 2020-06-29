@@ -1,9 +1,12 @@
-﻿$push = $true
-$RootPath = $PSScriptRoot
-$version = "0.1.0.2"
+﻿$RootPath = $PSScriptRoot
+
+. (Join-Path $RootPath "settings.ps1")
+
+$push = $true
+
 $basetags = (get-navcontainerimagetags -imageName "mcr.microsoft.com/dotnet/framework/runtime").tags | Where-Object { $_.StartsWith('4.8-20') } | Sort-Object -Descending  | Where-Object { -not $_.endswith("-1803") }
 
-#throw "go?"
+throw "go?"
 
 0..($basetags.Count-1) | % {
     $tag = $basetags[$_]
@@ -17,7 +20,6 @@ $basetags = (get-navcontainerimagetags -imageName "mcr.microsoft.com/dotnet/fram
     
     docker pull $baseimage
     $osversion = docker inspect --format "{{.OsVersion}}" $baseImage
-    $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm") 
     
     docker images --format "{{.Repository}}:{{.Tag}}" | % { 
         if ($_ -eq $image) 
@@ -30,7 +32,7 @@ $basetags = (get-navcontainerimagetags -imageName "mcr.microsoft.com/dotnet/fram
     
     docker build --build-arg baseimage=$baseimage `
                  --build-arg created=$created `
-                 --build-arg tag="$version" `
+                 --build-arg tag="$genericTag" `
                  --build-arg osversion="$osversion" `
                  --isolation=$isolation `
                  --memory 8G `

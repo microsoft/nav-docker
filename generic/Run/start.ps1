@@ -183,7 +183,13 @@ try {
                         }
                     }
 
-                    Rename-Item -Path $tmpFolder -NewName 'NAVDVD'
+                    try {
+                        Rename-Item -Path $tmpFolder -NewName 'NAVDVD'
+                    }
+                    catch {
+                        Start-Sleep -Seconds 10
+                        Rename-Item -Path $tmpFolder -NewName 'NAVDVD'
+                    }
                     $navDvdPathCreated = $true
                 }
             }
