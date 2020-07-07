@@ -212,7 +212,7 @@ try {
                     Remove-Item (Join-Path "C:\Run" $_.Name) -Recurse -Force -ErrorAction Ignore
                 }
                 
-                . (Get-MyFilePath "navinstall.ps1")
+                . (Get-MyFilePath "navinstall.ps1") -installOnly:$installOnly
             } else {
                 throw "You must share a DVD folder to $navDvdPath or a file system to $navFSPath in order to run the generic image"
             }

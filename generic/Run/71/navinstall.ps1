@@ -1,3 +1,7 @@
+Param( 
+    [switch] $installOnly
+)
+
 Write-Host "Installing NAV"
 $startTime = [DateTime]::Now
 

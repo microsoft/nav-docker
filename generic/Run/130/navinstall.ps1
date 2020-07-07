@@ -1,3 +1,7 @@
+Param( 
+    [switch] $installOnly
+)
+
 Write-Host "Installing Business Central"
 $startTime = [DateTime]::Now
 
@@ -118,6 +122,7 @@ Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
 $databaseServer = "localhost"
 $databaseInstance = "SQLEXPRESS"
 $databaseName = "CRONUS"
+$skipDb = $false
 
 # Restore CRONUS Demo database to databases folder
 if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
@@ -162,6 +167,7 @@ GO
 "@
         Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -QueryTimeOut 0 -ea Stop -Query $attachcmd
     } else {
+        $skipDb = $true
         Write-Host "Skipping restore of Cronus database"
     }
 }
@@ -219,19 +225,21 @@ New-ItemProperty -Path $registryPath -Name 'Installed' -Value 1 -Force | Out-Nul
 
 Install-NAVSipCryptoProvider
 
-if (Test-Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf") {
+if (!$skipDb -and ($installOnly -or (Test-Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf"))) {
     Write-Host "Starting Business Central Service Tier"
     Start-Service -Name $NavServiceName -WarningAction Ignore
 
-    Write-Host "Importing CRONUS license file"
-    $licensefile = (Get-Item -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf").FullName
-    Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
-    
-    Write-Host "Generating Symbol Reference"
-    $pre = (get-process -Name "finsql" -ErrorAction Ignore) | % { $_.Id }
-    Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=generatesymbolreference, Database=CRONUS, ServerName=localhost\SQLEXPRESS, ntauthentication=1"
-    $procs = get-process -Name "finsql" -ErrorAction Ignore
-    $procs | Where-Object { $pre -notcontains $_.Id } | Wait-Process
+    if ((Test-Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf") {
+        Write-Host "Importing CRONUS license file"
+        $licensefile = (Get-Item -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf").FullName
+        Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
+        
+        Write-Host "Generating Symbol Reference"
+        $pre = (get-process -Name "finsql" -ErrorAction Ignore) | % { $_.Id }
+        Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=generatesymbolreference, Database=CRONUS, ServerName=localhost\SQLEXPRESS, ntauthentication=1"
+        $procs = get-process -Name "finsql" -ErrorAction Ignore
+        $procs | Where-Object { $pre -notcontains $_.Id } | Wait-Process
+    }
 
     Write-Host "Stopping Business Central Service Tier"
     Stop-Service -Name $NavServiceName -WarningAction Ignore
