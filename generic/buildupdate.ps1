@@ -2,7 +2,9 @@
 
 . (Join-Path $RootPath "settings.ps1")
 
-$push = $true
+$pushto = "dev"
+#$pushto = "prod"
+#$pushto = ""
 
 $tags = @(
 "10.0.14393.2906-generic-0.1.0.2"
@@ -115,8 +117,13 @@ LABEL tag="$genericTag" \
     Write-Host "SUCCESS"
     Remove-Item $dockerfile -Force
 
-    if ($push) {
-        $newtags = @("mcrbusinesscentral.azurecr.io/public/dynamicsnav:$osversion-generic","mcrbusinesscentral.azurecr.io/public/dynamicsnav:$osversion-generic-$genericTag")
+    if ($pushto) {
+        if ($pushto -eq "prod") {
+            $newtags = @("mcrbusinesscentral.azurecr.io/public/dynamicsnav:$osversion-generic","mcrbusinesscentral.azurecr.io/public/dynamicsnav:$osversion-generic-$genericTag")
+        }
+        else {
+            $newtags = @("mcrbusinesscentral.azurecr.io/public/dynamicsnav:$osversion-generic-$pushto","mcrbusinesscentral.azurecr.io/public/dynamicsnav:$osversion-generic-$pushto-$genericTag")
+        }
         $newtags | ForEach-Object {
             Write-Host "Push $_"
             docker tag $image $_

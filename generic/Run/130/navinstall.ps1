@@ -229,7 +229,7 @@ if (!$skipDb -and ($installOnly -or (Test-Path "$navDvdPath\SQLDemoDatabase\Comm
     Write-Host "Starting Business Central Service Tier"
     Start-Service -Name $NavServiceName -WarningAction Ignore
 
-    if ((Test-Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf") {
+    if (Test-Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf") {
         Write-Host "Importing CRONUS license file"
         $licensefile = (Get-Item -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf").FullName
         Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
