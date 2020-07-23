@@ -65,10 +65,10 @@ Start-Job -ScriptBlock { Param($NavDvdPath, $runPath, $appArtifactPath)
     function Get-ExistingDirectory([string]$pri1, [string]$pri2, [string]$folder)
     {
         if (Test-Path (Join-Path $pri1 $folder)) {
-            Join-Path $pri1 $folder
+            (Get-Item (Join-Path $pri1 $folder)).FullName
         }
         elseif (Test-Path (Join-Path $pri2 $folder)) {
-            Join-Path $pri2 $folder
+            (Get-Item (Join-Path $pri2 $folder)).FullName
         }
         else {
             ""
@@ -106,8 +106,9 @@ Start-Job -ScriptBlock { Param($NavDvdPath, $runPath, $appArtifactPath)
         $dir = Get-ExistingDirectory -pri1 $appArtifactPath -pri2 $navDvdPath -folder $_
         if ($dir)
         {
-            Write-Host "Copying $_"
-            RoboCopy "$dir" "C:\$_" /e /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+            $name = [System.IO.Path]::GetFileName($dir)
+            Write-Host "Copying $name"
+            RoboCopy "$dir" "C:\$name" /e /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
         }
     }
 
@@ -165,10 +166,10 @@ if ($databasePath) {
     $databaseFolder = "c:\databases"
     New-Item -Path $databaseFolder -itemtype Directory -ErrorAction Ignore | Out-Null
 
-    Write-Host "Determining Database Collation"
-    $collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -ConnectionTimeout 300 -QueryTimeOut 300 "RESTORE HEADERONLY FROM DISK = '$databasePath'").Collation
+    Write-Host "Determining Database Collation from $databasePath"
+    #$collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -ConnectionTimeout 300 -QueryTimeOut 300 "RESTORE HEADERONLY FROM DISK = '$databasePath'").Collation
 
-    SetDatabaseServerCollation -collation $collation
+    #SetDatabaseServerCollation -collation $collation
 
     Write-Host "Restoring CRONUS Demo Database"
     New-NAVDatabase -DatabaseServer $databaseServer `
