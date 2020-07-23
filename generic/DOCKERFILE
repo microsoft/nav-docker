@@ -16,7 +16,7 @@ RUN Add-WindowsFeature Web-Server,web-AppInit,web-Asp-Net45,web-Windows-Auth,web
     Set-Service 'W3SVC' -startuptype manual ; \
     Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\Dnscache\Parameters' -Name ServerPriorityTimeLimit -Value 0 -Type DWord; \
     Set-ItemProperty -Path "HKLM:\system\CurrentControlSet\control" -name ServicesPipeTimeout -Value 300000 -Type DWORD -Force; \
-     Invoke-WebRequest -Uri 'https://go.microsoft.com/fwlink/?linkid=829176' -OutFile sqlexpress.exe ; \
+    Invoke-WebRequest -Uri 'https://go.microsoft.com/fwlink/?linkid=829176' -OutFile sqlexpress.exe ; \
     Start-Process -Wait -FilePath .\sqlexpress.exe -ArgumentList /qs, /x:setup ; \
     .\setup\setup.exe /q /ACTION=Install /INSTANCENAME=SQLEXPRESS /FEATURES=SQLEngine /UPDATEENABLED=0 /SQLSVCACCOUNT='NT AUTHORITY\System' /SQLSYSADMINACCOUNTS='BUILTIN\ADMINISTRATORS' /TCPENABLED=1 /NPENABLED=0 /IACCEPTSQLSERVERLICENSETERMS ; \
     While (!(get-service 'MSSQL$SQLEXPRESS' -ErrorAction SilentlyContinue)) { Start-Sleep -Seconds 5 } ; \
@@ -37,7 +37,17 @@ RUN Invoke-WebRequest -Uri 'https://bcdocker.blob.core.windows.net/public/nav-do
     [System.IO.Compression.ZipFile]::ExtractToDirectory('.\nav-docker-install.zip', 'c:\run') ; \
     Remove-Item -Force 'nav-docker-install.zip' ; \
     . C:\Run\UpdatePowerShellExeConfig.ps1 ; \
-    Set-Content -Path "C:\Run\Collation.txt" -Value "SQL_Latin1_General_CP1_CI_AS"
+    Set-Content -Path "C:\Run\Collation.txt" -Value "SQL_Latin1_General_CP1_CI_AS" ; \
+    . c:\run\helperfunctions.ps1 ; \
+    Start-Service -Name `$SqlServiceName -ErrorAction Ignore -WarningAction Ignore ; \
+    SetDatabaseServerCollation -collation "Latin1_General_100_CS_AS" ; \
+    Invoke-WebRequest -Uri 'https://download.microsoft.com/download/C/9/E/C9E8180D-4E51-40A6-A9BF-776990D8BCA9/rewrite_amd64.msi' -OutFile rewrite_amd64.msi ; \
+    start-process -Wait -FilePath .\rewrite_amd64.msi -ArgumentList /quiet, /qn, /passive ; \
+    Invoke-WebRequest -Uri 'https://download.microsoft.com/download/5/5/3/553C731E-9333-40FB-ADE3-E02DC9643B31/OpenXMLSDKV25.msi' -OutFile OpenXMLSDKV25.msi ; \
+    start-process -Wait -FilePath .\OpenXMLSDKV25.msi -ArgumentList /quiet, /qn, /passive ; \
+    Invoke-WebRequest -Uri 'https://go.microsoft.com/fwlink/?LinkID=844461' -OutFile DotNetCore-WindowsHosting.exe ; \
+    start-process -Wait -FilePath .\DotNetCore-WindowsHosting.exe -ArgumentList /quiet ; \
+    Remove-Item -Recurse -Force rewrite_amd64.msi, OpenXMLSDKV25.msi, DotNetCore-WindowsHosting.exe
 
 HEALTHCHECK --interval=30s --timeout=10s CMD [ "powershell", ".\\Run\\HealthCheck.ps1" ]
 

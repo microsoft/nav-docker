@@ -112,89 +112,151 @@ try {
 
                 if ($artifactUrl) {
 
-                    $tmpFolder = 'c:\$tmp$'
-                    if (Test-Path $tmpFolder) {
-                        Remove-Item $tmpFolder -Recurse -Force
-                        Write-Host "Unexpected restart during artifact copy, retrying..."
-                    }
-                    else {
-                        Write-Host "Using artifactUrl $($artifactUrl.split('?')[0])"
-                    }
-                    New-Item $tmpFolder -ItemType Directory | Out-Null
+                    Write-Host "Using artifactUrl $($artifactUrl.split('?')[0])"
 
                     $artifactPaths = Download-Artifacts -artifactUrl $artifactUrl -includePlatform
                     $appArtifactPath = $artifactPaths[0]
                     $platformArtifactPath = $artifactPaths[1]
 
-                    $appManifestPath = Join-Path $appArtifactPath "manifest.json"
-                    $appManifest = Get-Content $appManifestPath | ConvertFrom-Json
+                    $useNewFolder = $false
 
-                    $database = $appManifest.database
-                    $databasePath = Join-Path $appArtifactPath $database
+                    $versionFolder = $env:installfolder
+                    if (!($versionFolder)) {
+                        $setupVersion = (Get-Item -Path (Join-Path $platformArtifactPath "ServiceTier\program files\Microsoft Dynamics NAV\*\Service\Microsoft.Dynamics.Nav.Server.exe")).VersionInfo.FileVersion
+                        $versionNo = [Int]::Parse($setupVersion.Split('.')[0]+$setupVersion.Split('.')[1])
+                        $versionFolder = ""
 
-                    $licenseFile = ""
-                    if ($appManifest.PSObject.Properties.name -eq "licenseFile") {
-                        $licenseFile = $appManifest.licenseFile
-                        if ($licenseFile) {
-                            $licenseFilePath = Join-Path $appArtifactPath $licenseFile
+                        Get-ChildItem -Path "C:\Run" -Directory | where-object { [Int]::TryParse($_.Name, [ref]$null) } | % { [Int]::Parse($_.Name) } | Sort-Object | % {
+                            if ($_ -le $versionNo) {
+                                $versionFolder = Join-Path "C:\Run" $_
+                            }
+                        }
+
+                        if ($env:doNotUseNewFolder -ne "Y") {
+                            if (($versionFolder) -and (Test-Path "$versionFolder-new")) {
+                                $versionFolder = "$versionFolder-new"
+                                $useNewFolder = $true
+                            }
                         }
                     }
-                    if ($appManifest.PSObject.Properties.name -eq "isBcSandbox") {
-                        if ($appManifest.isBcSandbox) {
-                            $env:IsBcSandbox = "Y"
-                        }
+                    
+                    Write-Host "Using installer from $versionFolder"
+                    if ($versionFolder -ne "") {
+                        Copy-Item -Path "$versionFolder\*" -Destination "C:\Run" -Recurse -Force
                     }
         
-                    Write-Host "Copying Platform Artifacts"
-                    Get-ChildItem -Path $platformArtifactPath | % {
-                        if ($_.PSIsContainer) {
-                            Copy-Item -Path $_.FullName -Destination $tmpFolder -Recurse
-                        }
-                        else {
-                            Copy-Item -Path $_.FullName -Destination $tmpFolder
-                        }
+                    # Remove version specific folders
+                    Get-ChildItem -Path "C:\Run" -Directory | where-object { [Int]::TryParse($_.Name, [ref]$null) } | % {
+                        Remove-Item (Join-Path "C:\Run" $_.Name) -Recurse -Force -ErrorAction Ignore
                     }
 
-                    $useBakFile = ("$env:bakfile" -ne "")
-                    $useForeignDb = !(("$env:databaseServer" -eq "" -and "$env:databaseInstance" -eq "") -or ("$env:databaseServer" -eq "localhost" -and "$env:databaseInstance" -eq "SQLEXPRESS"))
-                    $useOwnLicenseFile = ("$env:licenseFile" -ne "")
+                    if ($useNewFolder) {
 
-                    Write-Host "Copying Application Artifacts"
-                    if (!($useBakFile -or $useForeignDb)) {
-                        $dbPath = Join-Path $tmpFolder "SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\ver\Database"
-                        New-Item $dbPath -ItemType Directory | Out-Null
-                        Write-Host "Copying Database"
-                        Copy-Item -path $databasePath -Destination $dbPath -Force
-                        if ($licenseFile -and !$useOwnLicenseFile) {
-                            Write-Host "Copy Licensefile"
-                            Copy-Item -path $licenseFilePath -Destination $dbPath -Force
-                        }
-                    }
-
-                    "Installers", "ConfigurationPackages", "TestToolKit", "UpgradeToolKit", "Extensions", "Applications","Applications.*" | % {
-                        $appSubFolder = Join-Path $appArtifactPath $_
-                        if (Test-Path "$appSubFolder" -PathType Container) {
-                            $destFolder = Join-Path $tmpFolder $_
-                            if (Test-Path $destFolder) {
-                                Remove-Item -path $destFolder -Recurse -Force
+                        $appManifestPath = Join-Path $appArtifactPath "manifest.json"
+                        $appManifest = Get-Content $appManifestPath | ConvertFrom-Json
+    
+                        $database = $appManifest.database
+                        $databasePath = Join-Path $appArtifactPath $database
+    
+                        $licenseFile = ""
+                        if ($appManifest.PSObject.Properties.name -eq "licenseFile") {
+                            $licenseFile = $appManifest.licenseFile
+                            if ($licenseFile) {
+                                $licenseFilePath = Join-Path $appArtifactPath $licenseFile
                             }
-                            Write-Host "Copying $_"
-                            Copy-Item -Path "$appSubFolder" -Destination $tmpFolder -Recurse
                         }
-                    }
+                        if ($appManifest.PSObject.Properties.name -eq "isBcSandbox") {
+                            if ($appManifest.isBcSandbox) {
+                                $env:IsBcSandbox = "Y"
+                            }
+                        }
+    
+                        $useBakFile = ("$env:bakfile" -ne "")
+                        $useForeignDb = !(("$env:databaseServer" -eq "" -and "$env:databaseInstance" -eq "") -or ("$env:databaseServer" -eq "localhost" -and "$env:databaseInstance" -eq "SQLEXPRESS"))
+                        $useOwnLicenseFile = ("$env:licenseFile" -ne "")
+    
+                        if ($useBakFile -or $useForeignDb) {
+                            $databasePath = ""
+                            $licenseFile = ""
+                        }
+                        elseif ($useOwnLicenseFile) {
+                            $licenseFile = ""
+                        }
 
-                    try {
-                        Rename-Item -Path $tmpFolder -NewName 'NAVDVD'
+                        . (Get-MyFilePath "navinstall.ps1") -appArtifactPath $appArtifactPath -platformArtifactPath $platformArtifactPath -databasePath $databasePath -licenseFilePath $licenseFilePath -installOnly:$installOnly
                     }
-                    catch {
-                        Start-Sleep -Seconds 10
-                        Rename-Item -Path $tmpFolder -NewName 'NAVDVD'
+                    else {
+                        $tmpFolder = 'c:\$tmp$'
+                        if (Test-Path $tmpFolder) {
+                            Remove-Item $tmpFolder -Recurse -Force
+                            Write-Host "Unexpected restart during artifact copy, retrying..."
+                        }
+                        New-Item $tmpFolder -ItemType Directory | Out-Null
+
+                        $appManifestPath = Join-Path $appArtifactPath "manifest.json"
+                        $appManifest = Get-Content $appManifestPath | ConvertFrom-Json
+    
+                        $database = $appManifest.database
+                        $databasePath = Join-Path $appArtifactPath $database
+    
+                        $licenseFile = ""
+                        if ($appManifest.PSObject.Properties.name -eq "licenseFile") {
+                            $licenseFile = $appManifest.licenseFile
+                            if ($licenseFile) {
+                                $licenseFilePath = Join-Path $appArtifactPath $licenseFile
+                            }
+                        }
+                        if ($appManifest.PSObject.Properties.name -eq "isBcSandbox") {
+                            if ($appManifest.isBcSandbox) {
+                                $env:IsBcSandbox = "Y"
+                            }
+                        }
+            
+                        Write-Host "Copying Platform Artifacts"
+                        RoboCopy "$platformArtifactPath" "$tmpFolder" /e /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+    
+                        $useBakFile = ("$env:bakfile" -ne "")
+                        $useForeignDb = !(("$env:databaseServer" -eq "" -and "$env:databaseInstance" -eq "") -or ("$env:databaseServer" -eq "localhost" -and "$env:databaseInstance" -eq "SQLEXPRESS"))
+                        $useOwnLicenseFile = ("$env:licenseFile" -ne "")
+    
+                        Write-Host "Copying Application Artifacts"
+                        if (!($useBakFile -or $useForeignDb)) {
+                            $dbPath = Join-Path $tmpFolder "SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\ver\Database"
+                            New-Item $dbPath -ItemType Directory | Out-Null
+                            Write-Host "Copying Database"
+                            Copy-Item -path $databasePath -Destination $dbPath -Force
+                            if ($licenseFile -and !$useOwnLicenseFile) {
+                                Write-Host "Copy Licensefile"
+                                Copy-Item -path $licenseFilePath -Destination $dbPath -Force
+                            }
+                        }
+    
+                        "Installers", "ConfigurationPackages", "TestToolKit", "UpgradeToolKit", "Extensions", "Applications","Applications.*" | % {
+                            $appSubFolder = Join-Path $appArtifactPath $_
+                            if (Test-Path "$appSubFolder" -PathType Container) {
+                                $destFolder = Join-Path $tmpFolder $_
+                                if (Test-Path $destFolder) {
+                                    Remove-Item -path $destFolder -Recurse -Force
+                                }
+                                Write-Host "Copying $_"
+                                RoboCopy "$appSubFolder" "$tmpFolder\$_"  /e /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+                            }
+                        }
+    
+                        try {
+                            Rename-Item -Path $tmpFolder -NewName 'NAVDVD'
+                        }
+                        catch {
+                            Start-Sleep -Seconds 10
+                            Rename-Item -Path $tmpFolder -NewName 'NAVDVD'
+                        }
+                        $navDvdPathCreated = $true
+
+                        . (Get-MyFilePath "navinstall.ps1") -installOnly:$installOnly
                     }
-                    $navDvdPathCreated = $true
                 }
             }
-            
-            if (Test-Path $navDvdPath -PathType Container) {
+            elseif (Test-Path $navDvdPath -PathType Container) {
                 $setupVersion = (Get-Item -Path "$navDvdPath\ServiceTier\program files\Microsoft Dynamics NAV\*\Service\Microsoft.Dynamics.Nav.Server.exe").VersionInfo.FileVersion
                 $versionNo = [Int]::Parse($setupVersion.Split('.')[0]+$setupVersion.Split('.')[1])
                 $versionFolder = ""

@@ -45,7 +45,7 @@ throw "go?"
     Write-Host "SUCCESS"
 
     if ($push) {
-        $tags = @("mcrbusinesscentral.azurecr.io/public/dynamicsnav:$osversion-generic","mcrbusinesscentral.azurecr.io/public/dynamicsnav:$osversion-generic-$version")
+        $tags = @("mcrbusinesscentral.azurecr.io/public/dynamicsnav:$osversion-generic","mcrbusinesscentral.azurecr.io/public/dynamicsnav:$osversion-generic-$genericTag")
         $tags | ForEach-Object {
             Write-Host "Push $_"
             docker tag $image $_
