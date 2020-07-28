@@ -1,5 +1,6 @@
 Param( 
     [switch] $installOnly,
+    [switch] $multitenant,
     [string] $artifactUrl = ""
 )
 
@@ -119,7 +120,7 @@ try {
                     $platformArtifactPath = $artifactPaths[1]
 
                     $useNewFolder = $false
-
+                    $mtParam = @{}
                     $versionFolder = $env:installfolder
                     if (!($versionFolder)) {
                         $setupVersion = (Get-Item -Path (Join-Path $platformArtifactPath "ServiceTier\program files\Microsoft Dynamics NAV\*\Service\Microsoft.Dynamics.Nav.Server.exe")).VersionInfo.FileVersion
@@ -136,12 +137,27 @@ try {
                             if (($versionFolder) -and (Test-Path "$versionFolder-new")) {
                                 $versionFolder = "$versionFolder-new"
                                 $useNewFolder = $true
+                                if ($multitenant) {
+                                    $mtParam = @{ "multitenant" = $true }
+                                }
                             }
                         }
                     }
                     
                     Write-Host "Using installer from $versionFolder"
                     if ($versionFolder -ne "") {
+                        if (Test-Path "c:\run\navinstall.ps1") {
+                            Write-Host "navinstall was overridden"
+                            Remove-Item "$versionFolder\navinstall.ps1"
+                        }
+                        if (Test-Path "c:\run\servicesettings.ps1") {
+                            Write-Host "servicesettings was overridden"
+                            Remove-Item "$versionFolder\servicesettings.ps1"
+                        }
+                        if (Test-Path "c:\run\SetupWebClient.ps1") {
+                            Write-Host "SetupWebClient was overridden"
+                            Remove-Item "$versionFolder\SetupWebClient.ps1"
+                        }
                         Copy-Item -Path "$versionFolder\*" -Destination "C:\Run" -Recurse -Force
                     }
         
@@ -183,7 +199,7 @@ try {
                             $licenseFile = ""
                         }
 
-                        . (Get-MyFilePath "navinstall.ps1") -appArtifactPath $appArtifactPath -platformArtifactPath $platformArtifactPath -databasePath $databasePath -licenseFilePath $licenseFilePath -installOnly:$installOnly
+                        . (Get-MyFilePath "navinstall.ps1") -appArtifactPath $appArtifactPath -platformArtifactPath $platformArtifactPath -databasePath $databasePath -licenseFilePath $licenseFilePath -installOnly:$installOnly @mtParam
                     }
                     else {
                         $tmpFolder = 'c:\$tmp$'
@@ -265,16 +281,42 @@ try {
                         $versionFolder = Join-Path "C:\Run" $_
                     }
                 }
+
+                $useNewFolder = $false
+                $mtParam = @{}
+                if ($env:doNotUseNewFolder -ne "Y") {
+                    if (($versionFolder) -and (Test-Path "$versionFolder-new")) {
+                        $versionFolder = "$versionFolder-new"
+                        $useNewFolder = $true
+                        if ($multitenant) {
+                            $mtParam = @{ "multitenant" = $true }
+                        }
+                    }
+                }
+
+                Write-Host "Using installer from $versionFolder"
                 if ($versionFolder -ne "") {
+                    if (Test-Path "c:\run\navinstall.ps1") {
+                        Write-Host "navinstall was overridden"
+                        Remove-Item "$versionFolder\navinstall.ps1"
+                    }
+                    if (Test-Path "c:\run\servicesettings.ps1") {
+                        Write-Host "servicesettings was overridden"
+                        Remove-Item "$versionFolder\servicesettings.ps1"
+                    }
+                    if (Test-Path "c:\run\SetupWebClient.ps1") {
+                        Write-Host "SetupWebClient was overridden"
+                        Remove-Item "$versionFolder\SetupWebClient.ps1"
+                    }
                     Copy-Item -Path "$versionFolder\*" -Destination "C:\Run" -Recurse -Force
                 }
-    
+
                 # Remove version specific folders
                 Get-ChildItem -Path "C:\Run" -Directory | where-object { [Int]::TryParse($_.Name, [ref]$null) } | % {
                     Remove-Item (Join-Path "C:\Run" $_.Name) -Recurse -Force -ErrorAction Ignore
                 }
                 
-                . (Get-MyFilePath "navinstall.ps1") -installOnly:$installOnly
+                . (Get-MyFilePath "navinstall.ps1") -installOnly:$installOnly @mtParam
             } else {
                 throw "You must share a DVD folder to $navDvdPath or a file system to $navFSPath in order to run the generic image"
             }

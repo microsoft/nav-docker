@@ -144,14 +144,15 @@ if ($restartingInstance) {
     Set-NavServerConfiguration -serverinstance $ServerInstance -databaseCredentials $DatabaseCredentials -WarningAction SilentlyContinue
 
 } elseif ($databaseServer -eq "localhost" -and $databaseInstance -eq "SQLEXPRESS" -and $multitenant) {
-    
-    Copy-NavDatabase -SourceDatabaseName $databaseName -DestinationDatabaseName "tenant"
-    Remove-NavDatabase -DatabaseName $databaseName
-    Write-Host "Exporting Application to $DatabaseName"
-    Invoke-sqlcmd -serverinstance "$DatabaseServer\$DatabaseInstance" -Database tenant -query 'CREATE USER "NT AUTHORITY\SYSTEM" FOR LOGIN "NT AUTHORITY\SYSTEM";'
-    Export-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -DestinationDatabaseName $databaseName -Force -ServiceAccount 'NT AUTHORITY\SYSTEM' | Out-Null
-    Write-Host "Removing Application from tenant"
-    Remove-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -Force | Out-Null
 
+    if (!(Test-NavDatabase -DatabaseName $databaseName)) {
+        Copy-NavDatabase -SourceDatabaseName $databaseName -DestinationDatabaseName "tenant"
+        Remove-NavDatabase -DatabaseName $databaseName
+        Write-Host "Exporting Application to $DatabaseName"
+        Invoke-sqlcmd -serverinstance "$DatabaseServer\$DatabaseInstance" -Database tenant -query 'CREATE USER "NT AUTHORITY\SYSTEM" FOR LOGIN "NT AUTHORITY\SYSTEM";'
+        Export-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -DestinationDatabaseName $databaseName -Force -ServiceAccount 'NT AUTHORITY\SYSTEM' | Out-Null
+        Write-Host "Removing Application from tenant"
+        Remove-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -Force | Out-Null
+    }
 }
 

@@ -3,7 +3,8 @@ Param(
     [string] $appArtifactPath = "",
     [string] $platformArtifactPath = "",
     [string] $databasePath = "",
-    [string] $licenseFilePath = ""
+    [string] $licenseFilePath = "",
+    [switch] $multitenant
 )
 
 Write-Host "Installing Business Central"
@@ -64,10 +65,10 @@ Start-Job -ScriptBlock { Param($NavDvdPath, $runPath, $appArtifactPath)
 
     function Get-ExistingDirectory([string]$pri1, [string]$pri2, [string]$folder)
     {
-        if (Test-Path (Join-Path $pri1 $folder)) {
+        if ($pri1 -and (Test-Path (Join-Path $pri1 $folder))) {
             (Get-Item (Join-Path $pri1 $folder)).FullName
         }
-        elseif (Test-Path (Join-Path $pri2 $folder)) {
+        elseif ($pri2 -and (Test-Path (Join-Path $pri2 $folder))) {
             (Get-Item (Join-Path $pri2 $folder)).FullName
         }
         else {
@@ -97,11 +98,11 @@ Start-Job -ScriptBlock { Param($NavDvdPath, $runPath, $appArtifactPath)
     if (Test-Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV") {
         RoboCopy "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV" "C:\Program Files\Microsoft Dynamics NAV" /e /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
     }
-    if (!(Test-Path (Join-Path $runPath "*.vsix"))) {
+    if ((Test-Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV\*\*\*.vsix") -and !(Test-Path (Join-Path $runPath "*.vsix"))) {
         Copy-Item -Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV\*\*\*.vsix" -Destination $runPath -Force
     }
     
-    
+    Write-Host "Copying additional files"
     "ConfigurationPackages","Test Assemblies","TestToolKit","UpgradeToolKit","Extensions","Applications","Applications.*" | % {
         $dir = Get-ExistingDirectory -pri1 $appArtifactPath -pri2 $navDvdPath -folder $_
         if ($dir)
@@ -132,6 +133,7 @@ Start-Job -ScriptBlock { Param($NavDvdPath, $runPath, $appArtifactPath)
 
 } -ArgumentList $navDvdPath, $runPath, $appArtifactPath | Out-Null
 
+Write-Host "Copying dependencies"
 $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName
 # Due to dependencies from finsql.exe, we have to copy hlink.dll and ReportBuilder in place inside the container
 Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path $serviceTierFolder 'hlink.dll')
@@ -156,7 +158,12 @@ Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
 
 $databaseServer = "localhost"
 $databaseInstance = "SQLEXPRESS"
-$databaseName = "CRONUS"
+if ($multitenant) {
+    $databaseName = "tenant"
+}
+else {
+    $databaseName = "CRONUS"
+}
 $skipDb = $false
 
 # Restore CRONUS Demo database to databases folder
@@ -167,9 +174,9 @@ if ($databasePath) {
     New-Item -Path $databaseFolder -itemtype Directory -ErrorAction Ignore | Out-Null
 
     Write-Host "Determining Database Collation from $databasePath"
-    #$collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -ConnectionTimeout 300 -QueryTimeOut 300 "RESTORE HEADERONLY FROM DISK = '$databasePath'").Collation
+    $collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -ConnectionTimeout 300 -QueryTimeOut 300 "RESTORE HEADERONLY FROM DISK = '$databasePath'").Collation
 
-    #SetDatabaseServerCollation -collation $collation
+    SetDatabaseServerCollation -collation $collation
 
     Write-Host "Restoring CRONUS Demo Database"
     New-NAVDatabase -DatabaseServer $databaseServer `
@@ -202,6 +209,9 @@ elseif (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
 }
 elseif (Test-Path "$navDvdPath\databases") {
 
+    $multitenant = $false
+    $databaseName = "CRONUS"
+
     $collation = Get-Content -Path "$navDvdPath\databases\Collation.txt" -ErrorAction SilentlyContinue
     if ($collation) {
         SetDatabaseServerCollation -collation $collation
@@ -224,6 +234,16 @@ else {
     Write-Host "Skipping restore of Cronus database"
 }
 
+$databaseName = "CRONUS"
+
+if ($multitenant -and !$SkipDb) {
+    Write-Host "Exporting Application to $DatabaseName"
+    Invoke-sqlcmd -serverinstance "$DatabaseServer\$DatabaseInstance" -Database tenant -query 'CREATE USER "NT AUTHORITY\SYSTEM" FOR LOGIN "NT AUTHORITY\SYSTEM";'
+    Export-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -DestinationDatabaseName $databaseName -Force -ServiceAccount 'NT AUTHORITY\SYSTEM' | Out-Null
+    Write-Host "Removing Application from tenant"
+    Remove-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -Force | Out-Null
+}
+
 Write-Host "Modifying Business Central Service Tier Config File for Docker"
 $CustomConfigFile =  Join-Path $serviceTierFolder "CustomSettings.config"
 $CustomConfig = [xml](Get-Content $CustomConfigFile)
@@ -237,6 +257,7 @@ $customConfig.SelectSingleNode("//appSettings/add[@key='SOAPServicesPort']").Val
 $customConfig.SelectSingleNode("//appSettings/add[@key='ODataServicesPort']").Value = "7048"
 $customConfig.SelectSingleNode("//appSettings/add[@key='DeveloperServicesPort']").Value = "7049"
 $customConfig.SelectSingleNode("//appSettings/add[@key='DefaultClient']").Value = "Web"
+$customConfig.SelectSingleNode("//appSettings/add[@key='Multitenant']").Value = "$multitenant"
 $taskSchedulerKeyExists = ($customConfig.SelectSingleNode("//appSettings/add[@key='EnableTaskScheduler']") -ne $null)
 if ($taskSchedulerKeyExists) {
     $customConfig.SelectSingleNode("//appSettings/add[@key='EnableTaskScheduler']").Value = "false"
@@ -259,7 +280,7 @@ New-ItemProperty -Path $registryPath -Name 'Installed' -Value 1 -Force | Out-Nul
 
 Install-NAVSipCryptoProvider
 
-if (!$skipDb -and ($installOnly -or $licenseFilePath -ne "" -or (Test-Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf"))) {
+if (!$skipDb -and ($multitenant -or $installOnly -or $licenseFilePath -ne "" -or (Test-Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf"))) {
     Write-Host "Starting Business Central Service Tier"
     Start-Service -Name $NavServiceName -WarningAction Ignore
 
@@ -271,6 +292,19 @@ if (!$skipDb -and ($installOnly -or $licenseFilePath -ne "" -or (Test-Path "$nav
         Write-Host "Importing CRONUS license file"
         $licensefile = (Get-Item -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf").FullName
         Import-NAVServerLicense -LicenseFile $licensefile -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
+    }
+
+    if ($multitenant) {
+        Copy-NavDatabase -SourceDatabaseName "tenant" -DestinationDatabaseName "default"
+        Write-Host "Mounting tenant database"
+        Mount-NavDatabase -ServerInstance $ServerInstance -TenantId "default" -DatabaseName "default"
+        $startTime = [DateTime]::Now
+        while ([DateTime]::Now.Subtract($startTime).TotalSeconds -le 60) {
+            $tenantInfo = Get-NAVTenant -ServerInstance $ServerInstance -Tenant "default"
+            if ($tenantInfo.State -eq "Operational") { break }
+            Start-Sleep -Seconds 1
+        }
+        Write-Host "Tenant is $($TenantInfo.State)"
     }
     
     Write-Host "Stopping Business Central Service Tier"
