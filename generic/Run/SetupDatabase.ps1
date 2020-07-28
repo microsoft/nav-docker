@@ -145,7 +145,7 @@ if ($restartingInstance) {
 
 } elseif ($databaseServer -eq "localhost" -and $databaseInstance -eq "SQLEXPRESS" -and $multitenant) {
 
-    if (!(Test-NavDatabase -DatabaseName $databaseName)) {
+    if (!(Test-NavDatabase -DatabaseName "tenant")) {
         Copy-NavDatabase -SourceDatabaseName $databaseName -DestinationDatabaseName "tenant"
         Remove-NavDatabase -DatabaseName $databaseName
         Write-Host "Exporting Application to $DatabaseName"

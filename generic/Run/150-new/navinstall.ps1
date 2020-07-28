@@ -28,11 +28,11 @@ function Get-MyFilePath([string]$FileName)
 
 $installFromArtifacts = ($appArtifactPath -ne "" -and $platformArtifactPath -ne "")
 if ($installFromArtifacts) {
-    Write-Host "Install from artifacts"
+    Write-Host "Installing from artifacts"
     $navDvdPath = $platformArtifactPath
 }
 else {
-    Write-Host "Install from DVD"
+    Write-Host "Installing from DVD"
 }
 
 if (!(Test-Path $navDvdPath -PathType Container)) {
