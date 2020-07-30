@@ -311,7 +311,7 @@ if (!$skipDb -and ($multitenant -or $installOnly -or $licenseFilePath -ne "" -or
     Stop-Service -Name $NavServiceName -WarningAction Ignore
 }
 
-Get-Job | Receive-Job
+Get-Job | Wait-Job | Receive-Job | Out-Host
 
 $timespend = [Math]::Round([DateTime]::Now.Subtract($startTime).Totalseconds)
 Write-Host "Installation took $timespend seconds"
