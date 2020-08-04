@@ -60,6 +60,10 @@ Add-Type -TypeDefinition $Source -Language CSharp -WarningAction SilentlyContinu
 
 . (Get-MyFilePath "HelperFunctions.ps1")
 
+if (!$multitenant) {
+    $multitenant = ($env:multitenant -eq "Y")
+}
+
 try {
 
     if (!$restartingInstance) {
