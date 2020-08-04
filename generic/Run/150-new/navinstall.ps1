@@ -298,8 +298,8 @@ if (!$skipDb -and ($multitenant -or $installOnly -or $licenseFilePath -ne "" -or
         Copy-NavDatabase -SourceDatabaseName "tenant" -DestinationDatabaseName "default"
         Write-Host "Mounting tenant database"
         Mount-NavDatabase -ServerInstance $ServerInstance -TenantId "default" -DatabaseName "default"
-        $startTime = [DateTime]::Now
-        while ([DateTime]::Now.Subtract($startTime).TotalSeconds -le 60) {
+        $mtstartTime = [DateTime]::Now
+        while ([DateTime]::Now.Subtract($mtstartTime).TotalSeconds -le 60) {
             $tenantInfo = Get-NAVTenant -ServerInstance $ServerInstance -Tenant "default"
             if ($tenantInfo.State -eq "Operational") { break }
             Start-Sleep -Seconds 1
