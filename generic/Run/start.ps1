@@ -67,6 +67,13 @@ if (!$multitenant) {
 try {
 
     if (!$restartingInstance) {
+
+        if ("$(hostname)" -ne "$env:computername") {
+            Write-Host "Adding $env:computername to hosts file"
+            New-Item -Path 'c:\windows\system32\drivers\etc\hosts' -ItemType File -ErrorAction Ignore | Out-Null
+            Add-Content -Path 'c:\windows\system32\drivers\etc\hosts' -Value "127.0.0.1 $env:computername"
+        }
+
         $folders = "$env:folders"
 
         if ($folders -ne "") {
