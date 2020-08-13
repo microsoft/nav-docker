@@ -590,9 +590,8 @@ function SetDatabaseServerCollation {
     $oldcollation = Get-Content -Path "C:\Run\Collation.txt" -ErrorAction SilentlyContinue
     if ("$oldcollation" -ne "$collation") {
         Write-Host "Changing Database Server Collation to $collation"
-        $tempsapwd = ([Guid]::NewGuid()).ToString()
         $sqlSetupExe = (Get-item "C:\Program Files\Microsoft SQL Server\*\Setup Bootstrap\*\Setup.exe").FullName
-        & $sqlSetupExe /q /ACTION=REBUILDDATABASE /INSTANCENAME=SQLEXPRESS /SQLSYSADMINACCOUNTS='BUILTIN\ADMINISTRATORS' /SAPWD=$tempsapwd /SQLCOLLATION=$collation > $null
+        & $sqlSetupExe /q /ACTION=REBUILDDATABASE /INSTANCENAME=SQLEXPRESS /SQLSYSADMINACCOUNTS='BUILTIN\ADMINISTRATORS' /SQLCOLLATION=$collation > $null
         Set-Content -Path  "C:\Run\Collation.txt" -Value $collation
     }
 }
