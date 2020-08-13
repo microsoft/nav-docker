@@ -198,7 +198,7 @@ try {
                             }
                         }
     
-                        $useBakFile = ("$env:bakfile" -ne "")
+                        $useBakFile = ("$env:bakfile" -ne "" -or "$env:appBacpac" -ne "")
                         $useForeignDb = !(("$env:databaseServer" -eq "" -and "$env:databaseInstance" -eq "") -or ("$env:databaseServer" -eq "localhost" -and "$env:databaseInstance" -eq "SQLEXPRESS"))
                         $useOwnLicenseFile = ("$env:licenseFile" -ne "")
     

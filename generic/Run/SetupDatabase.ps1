@@ -83,6 +83,13 @@ if ($restartingInstance) {
 } elseif ("$appBacpac" -ne "") {
 
     # appBacpac and tenantBacpac specified - restore and use
+
+    if (Test-NavDatabase -DatabaseName "tenant") {
+        Remove-NavDatabase -DatabaseName "tenant"
+    }
+    if (Test-NavDatabase -DatabaseName "default") {
+        Remove-NavDatabase -DatabaseName "default"
+    }
     
     $dbName = "app"
     $appBacpac, $tenantBacpac | % {
