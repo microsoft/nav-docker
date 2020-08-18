@@ -6,9 +6,11 @@ $push = $true
 
 $basetags = (get-navcontainerimagetags -imageName "mcr.microsoft.com/dotnet/framework/runtime").tags | Where-Object { $_.StartsWith('4.8-20') } | Sort-Object -Descending  | Where-Object { -not $_.endswith("-1803") }
 
+$basetags
+
 throw "go?"
 
-0..($basetags.Count-1) | % {
+0..4 | % {
     $tag = $basetags[$_]
     $dt = $tag.SubString(4,8)
     $os = $tag.SubString($tag.LastIndexOf('-')+1)
@@ -35,7 +37,7 @@ throw "go?"
                  --build-arg tag="$genericTag" `
                  --build-arg osversion="$osversion" `
                  --isolation=$isolation `
-                 --memory 8G `
+                 --memory 10G `
                  --tag $image `
                  $RootPath
     
@@ -45,7 +47,7 @@ throw "go?"
     Write-Host "SUCCESS"
 
     if ($push) {
-        $tags = @("mcrbusinesscentral.azurecr.io/public/dynamicsnav:$osversion-generic","mcrbusinesscentral.azurecr.io/public/dynamicsnav:$osversion-generic-$genericTag")
+        $tags = @("mcrbusinesscentral.azurecr.io/public/dynamicsnav:$osversion-generic","mcrbusinesscentral.azurecr.io/public/dynamicsnav:$osversion-generic-$genericTag","mcrbusinesscentral.azurecr.io/public/dynamicsnav:$osversion-generic-dev","mcrbusinesscentral.azurecr.io/public/dynamicsnav:$osversion-generic-dev-$genericTag")
         $tags | ForEach-Object {
             Write-Host "Push $_"
             docker tag $image $_

@@ -39,13 +39,15 @@ RUN Invoke-WebRequest -Uri 'https://bcdocker.blob.core.windows.net/public/nav-do
     . C:\Run\UpdatePowerShellExeConfig.ps1 ; \
     Set-Content -Path "C:\Run\Collation.txt" -Value "SQL_Latin1_General_CP1_CI_AS" ; \
     . c:\run\helperfunctions.ps1 ; \
+    Start-Service -Name `$SqlBrowserServiceName -ErrorAction Ignore -WarningAction Ignore ; \
+    Start-Service -Name `$SqlWriterServiceName -ErrorAction Ignore -WarningAction Ignore ; \
     Start-Service -Name `$SqlServiceName -ErrorAction Ignore -WarningAction Ignore ; \
     SetDatabaseServerCollation -collation "Latin1_General_100_CS_AS" ; \
-    Invoke-WebRequest -Uri 'https://download.microsoft.com/download/C/9/E/C9E8180D-4E51-40A6-A9BF-776990D8BCA9/rewrite_amd64.msi' -OutFile rewrite_amd64.msi ; \
+    Invoke-WebRequest -Uri 'https://bcartifacts.azureedge.net/prerequisites/rewrite_2.0_rtw_x64.msi' -OutFile rewrite_amd64.msi ; \
     start-process -Wait -FilePath .\rewrite_amd64.msi -ArgumentList /quiet, /qn, /passive ; \
-    Invoke-WebRequest -Uri 'https://download.microsoft.com/download/5/5/3/553C731E-9333-40FB-ADE3-E02DC9643B31/OpenXMLSDKV25.msi' -OutFile OpenXMLSDKV25.msi ; \
+    Invoke-WebRequest -Uri 'https://bcartifacts.azureedge.net/prerequisites/OpenXMLSDKv25.msi' -OutFile OpenXMLSDKV25.msi ; \
     start-process -Wait -FilePath .\OpenXMLSDKV25.msi -ArgumentList /quiet, /qn, /passive ; \
-    Invoke-WebRequest -Uri 'https://go.microsoft.com/fwlink/?LinkID=844461' -OutFile DotNetCore-WindowsHosting.exe ; \
+    Invoke-WebRequest -Uri 'https://bcartifacts.azureedge.net/prerequisites/DotNetCore.1.0.4_1.1.1-WindowsHosting.exe' -OutFile DotNetCore-WindowsHosting.exe ; \
     start-process -Wait -FilePath .\DotNetCore-WindowsHosting.exe -ArgumentList /quiet ; \
     Remove-Item -Recurse -Force rewrite_amd64.msi, OpenXMLSDKV25.msi, DotNetCore-WindowsHosting.exe
 

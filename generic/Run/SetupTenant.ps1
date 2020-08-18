@@ -9,8 +9,8 @@
         Copy-NavDatabase -SourceDatabaseName "tenant" -DestinationDatabaseName $TenantId
         Mount-NavDatabase -ServerInstance $ServerInstance -TenantId $TenantId -DatabaseName $TenantId
     }
-    $startTime = [DateTime]::Now
-    while ([DateTime]::Now.Subtract($startTime).TotalSeconds -le 60) {
+    $tenantStartTime = [DateTime]::Now
+    while ([DateTime]::Now.Subtract($tenantStartTime).TotalSeconds -le 60) {
         $tenantInfo = Get-NAVTenant -ServerInstance $ServerInstance -Tenant $TenantId
         if ($tenantInfo.State -eq "Operational") { break }
         Start-Sleep -Seconds 1
