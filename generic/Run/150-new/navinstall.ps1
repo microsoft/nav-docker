@@ -113,6 +113,14 @@ Start-Job -ScriptBlock { Param($NavDvdPath, $runPath, $appArtifactPath)
         }
     }
 
+    $mockAssembliesPath = "C:\Test Assemblies\Mock Assemblies"
+    if (Test-Path $mockAssembliesPath) {
+        $serviceTierAddInsFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service\Add-ins").FullName
+        if (!(Test-Path (Join-Path $serviceTierAddInsFolder "Mock Assemblies"))) {
+            new-item -itemtype symboliclink -path $serviceTierAddInsFolder -name "Mock Assemblies" -value $mockAssembliesPath | Out-Null
+        }
+    }
+
     $installersFolder = Get-ExistingDirectory -pri1 $appArtifactPath -pri2 $navDvdPath -folder "Intallers"
     if ($installersFolder) {
         Get-ChildItem $installersFolder -Recurse | Where-Object { $_.PSIsContainer } | % {
