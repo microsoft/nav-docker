@@ -150,6 +150,10 @@ if (!($service)) {
     Restart-Service -Name $NavServiceName -WarningAction Ignore
 }
 
+if (!$restartingInstance -and $bakfile -ne "" -and !$multitenant) {
+    Sync-NavTenant -ServerInstance $serverInstance -Force
+}
+
 $wwwRootPath = Get-WWWRootPath
 $httpPath = Join-Path $wwwRootPath "http"
 

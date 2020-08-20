@@ -61,6 +61,9 @@ if ($restartingInstance) {
         if ($roleTailoredClientFolder -and (Test-Path "$roleTailoredClientFolder\finsql.exe")) {
             Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=upgradedatabase, Database=$databaseName, ServerName=$databaseServerInstance, ntauthentication=1, logFile=c:\run\errorlog.txt" -Wait
         }
+        else {
+            Invoke-NAVApplicationDatabaseConversion -databaseServer $databaseServerInstance -databaseName $databaseName -Force | Out-Null
+        }
     } else {
         New-NAVDatabase -DatabaseServer $databaseServer `
                         -DatabaseInstance $databaseInstance `
@@ -71,6 +74,9 @@ if ($restartingInstance) {
 
         if ($roleTailoredClientFolder -and (Test-Path "$roleTailoredClientFolder\finsql.exe")) {
             Start-Process -FilePath "$roleTailoredClientFolder\finsql.exe" -ArgumentList "Command=upgradedatabase, Database=$databaseName, ServerName=$databaseServerInstance, ntauthentication=1, logFile=c:\run\errorlog.txt" -Wait
+        }
+        else {
+            Invoke-NAVApplicationDatabaseConversion -databaseServer $databaseServerInstance -databaseName "tenant" -force | Out-Null
         }
 
         Write-Host "Exporting Application to $DatabaseName"
