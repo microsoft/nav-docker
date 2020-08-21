@@ -4,7 +4,10 @@ Param(
     [string] $platformArtifactPath = "",
     [string] $databasePath = "",
     [string] $licenseFilePath = "",
-    [switch] $multitenant
+    [switch] $multitenant,
+    [switch] $includeTestToolkit,
+    [switch] $includeTestLibrariesOnly,
+    [switch] $includeTestFrameworkOnly
 )
 
 Write-Host "Installing Business Central"
@@ -288,12 +291,17 @@ New-ItemProperty -Path $registryPath -Name 'Installed' -Value 1 -Force | Out-Nul
 
 Install-NAVSipCryptoProvider
 
-if (!$skipDb -and ($multitenant -or $installOnly -or $licenseFilePath -ne "" -or (Test-Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf"))) {
+$installApps = @()
+if ($includeTestToolkit) {
+    $installApps += GetTestToolkitApps -includeTestLibrariesOnly:$includeTestLibrariesOnly -includeTestFrameworkOnly:$includeTestFrameworkOnly
+}
+
+if (!$skipDb -and ($multitenant -or $installOnly -or $licenseFilePath -ne "" -or ($installApps) -or (Test-Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf"))) {
     Write-Host "Starting Business Central Service Tier"
     Start-Service -Name $NavServiceName -WarningAction Ignore
 
     if ($licenseFilePath -ne "") {
-        Write-Host "Importing CRONUS license file"
+        Write-Host "Importing license file"
         Import-NAVServerLicense -LicenseFile $licenseFilePath -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
     }
     elseif (Test-Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf") {
@@ -313,6 +321,30 @@ if (!$skipDb -and ($multitenant -or $installOnly -or $licenseFilePath -ne "" -or
             Start-Sleep -Seconds 1
         }
         Write-Host "Tenant is $($TenantInfo.State)"
+    }
+
+    if ($installApps) {
+        $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName
+        if (Test-Path "$serviceTierFolder\Microsoft.Dynamics.Nav.Apps.Management.psd1") {
+            Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Apps.Management.psd1"
+            $installApps | % {
+                $appFile = $_
+                Write-Host "Publishing $appFile"
+                Publish-NavApp -ServerInstance $ServerInstance -Path $appFile -SkipVerification
+    
+                $navAppInfo = Get-NAVAppInfo -Path $appFile
+                $appPublisher = $navAppInfo.Publisher
+                $appName = $navAppInfo.Name
+                $appVersion = $navAppInfo.Version
+    
+                Write-Host "Synchronizing $appName"
+                Sync-NavTenant -ServerInstance $ServerInstance -Tenant default -Force
+                Sync-NavApp -ServerInstance $ServerInstance -Publisher $appPublisher -Name $appName -Version $appVersion -Tenant default -Mode ForceSync -force -WarningAction Ignore
+
+                Write-Host "Installing $appName"
+                Install-NavApp -ServerInstance $ServerInstance -Publisher $appPublisher -Name $appName -Version $appVersion -Tenant default
+            }
+        }
     }
     
     Write-Host "Stopping Business Central Service Tier"

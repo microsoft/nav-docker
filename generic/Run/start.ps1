@@ -1,7 +1,10 @@
 Param( 
     [switch] $installOnly,
     [switch] $multitenant,
-    [string] $artifactUrl = ""
+    [string] $artifactUrl = "",
+    [switch] $includeTestToolkit,
+    [switch] $includeTestLibrariesOnly,
+    [switch] $includeTestFrameworkOnly
 )
 
 Set-ExecutionPolicy Unrestricted
@@ -20,7 +23,7 @@ $restartingInstance = Test-Path -Path $publicDnsNameFile -PathType Leaf
 $myStart = Join-Path $myPath "start.ps1"
 if ($PSCommandPath -ne $mystart) {
     if (Test-Path -Path $myStart) {
-        . $myStart
+        . $myStart -installOnly:$installOnly -multitenant:$multitenant -artifactUrl $artifactUrl -includeTestToolkit:$includeTestToolkit -includeTestLibrariesOnly:$includeTestLibrariesOnly -includeTestFrameworkOnly:$includeTestFrameworkOnly
         exit
     }
 }
@@ -210,7 +213,7 @@ try {
                             $licenseFile = ""
                         }
 
-                        . (Get-MyFilePath "navinstall.ps1") -appArtifactPath $appArtifactPath -platformArtifactPath $platformArtifactPath -databasePath $databasePath -licenseFilePath $licenseFilePath -installOnly:$installOnly @mtParam
+                        . (Get-MyFilePath "navinstall.ps1") -appArtifactPath $appArtifactPath -platformArtifactPath $platformArtifactPath -databasePath $databasePath -licenseFilePath $licenseFilePath -installOnly:$installOnly -includeTestToolkit:$includeTestToolkit -includeTestLibrariesOnly:$includeTestLibrariesOnly -includeTestFrameworkOnly:$includeTestFrameworkOnly @mtParam
                     }
                     else {
                         $tmpFolder = 'c:\$tmp$'
@@ -327,7 +330,12 @@ try {
                     Remove-Item (Join-Path "C:\Run" $_.Name) -Recurse -Force -ErrorAction Ignore
                 }
                 
-                . (Get-MyFilePath "navinstall.ps1") -installOnly:$installOnly @mtParam
+                if ($useNewFolder) {
+                    . (Get-MyFilePath "navinstall.ps1") -installOnly:$installOnly -includeTestToolkit:$includeTestToolkit -includeTestLibrariesOnly:$includeTestLibrariesOnly -includeTestFrameworkOnly:$includeTestFrameworkOnly @mtParam
+                }
+                else {
+                    . (Get-MyFilePath "navinstall.ps1") -installOnly:$installOnly @mtParam
+                }
             } else {
                 throw "You must share a DVD folder to $navDvdPath or a file system to $navFSPath in order to run the generic image"
             }
