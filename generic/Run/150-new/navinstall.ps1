@@ -291,6 +291,8 @@ New-ItemProperty -Path $registryPath -Name 'Installed' -Value 1 -Force | Out-Nul
 
 Install-NAVSipCryptoProvider
 
+Get-Job | Wait-Job | Receive-Job | Out-Host
+
 $installApps = @()
 if ($includeTestToolkit) {
     $installApps += GetTestToolkitApps -includeTestLibrariesOnly:$includeTestLibrariesOnly -includeTestFrameworkOnly:$includeTestFrameworkOnly
@@ -350,8 +352,6 @@ if (!$skipDb -and ($multitenant -or $installOnly -or $licenseFilePath -ne "" -or
     Write-Host "Stopping Business Central Service Tier"
     Stop-Service -Name $NavServiceName -WarningAction Ignore
 }
-
-Get-Job | Wait-Job | Receive-Job | Out-Host
 
 $timespend = [Math]::Round([DateTime]::Now.Subtract($startTime).Totalseconds)
 Write-Host "Installation took $timespend seconds"
