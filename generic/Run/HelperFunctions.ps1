@@ -761,7 +761,8 @@ function Download-Artifacts {
 function GetTestToolkitApps {
     Param(
         [switch] $includeTestLibrariesOnly,
-        [switch] $includeTestFrameworkOnly
+        [switch] $includeTestFrameworkOnly,
+        [switch] $includePerformanceToolkit
     )
 
     # Add Test Framework
@@ -781,6 +782,10 @@ function GetTestToolkitApps {
             # Add Tests
             $apps += @(get-childitem -Path "C:\Applications\*.*" -recurse -filter "Microsoft_Tests-*.app") | Where-Object { $_ -notlike "*\Microsoft_Tests-TestLibraries.app" -and $_ -notlike "*\Microsoft_Tests-Marketing.app" -and $_ -notlike "*\Microsoft_Tests-SINGLESERVER.app" }
         }
+    }
+
+    if ($includePerformanceToolkit) {
+        $apps += @(get-childitem -Path "C:\Applications\TestFramework\PerformanceToolkit\*.*" -recurse -filter "*.app")
     }
 
     $apps | % {

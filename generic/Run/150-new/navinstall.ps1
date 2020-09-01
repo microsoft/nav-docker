@@ -7,7 +7,8 @@ Param(
     [switch] $multitenant,
     [switch] $includeTestToolkit,
     [switch] $includeTestLibrariesOnly,
-    [switch] $includeTestFrameworkOnly
+    [switch] $includeTestFrameworkOnly,
+    [switch] $includePerformanceToolkit
 )
 
 Write-Host "Installing Business Central"
@@ -295,7 +296,7 @@ Get-Job | Wait-Job | Receive-Job | Out-Host
 
 $installApps = @()
 if ($includeTestToolkit) {
-    $installApps += GetTestToolkitApps -includeTestLibrariesOnly:$includeTestLibrariesOnly -includeTestFrameworkOnly:$includeTestFrameworkOnly
+    $installApps += GetTestToolkitApps -includeTestLibrariesOnly:$includeTestLibrariesOnly -includeTestFrameworkOnly:$includeTestFrameworkOnly -includePerformanceToolkit:$includePerformanceToolkit
 }
 
 if (!$skipDb -and ($multitenant -or $installOnly -or $licenseFilePath -ne "" -or ($installApps) -or (Test-Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf"))) {
