@@ -9,7 +9,7 @@
         Dismount-NavTenant -ServerInstance $ServerInstance -Tenant $TenantId -Force | Out-Null
     }
     $alternateId = @($hostname)
-    if ($publicDnsName -ne $hostname) {
+    if ($publicDnsName -ne $hostname -and (!($publicDnsName.Contains('.')))) {
         $alternateId += @($publicDnsName)
     }
 
