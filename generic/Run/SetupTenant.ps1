@@ -8,16 +8,12 @@
         Write-Host "Dismounting Tenant"
         Dismount-NavTenant -ServerInstance $ServerInstance -Tenant $TenantId -Force | Out-Null
     }
-    $alternateId = @($hostname)
-    if ($publicDnsName -ne $hostname -and (!($publicDnsName.Contains('.')))) {
-        $alternateId += @($publicDnsName)
-    }
 
     $hostname = hostname
     $dotidx = $hostname.indexOf('.')
     if ($dotidx -eq -1) { $dotidx = $hostname.Length }
     $tenantHostname = $hostname.insert($dotidx,"-$tenantId")
-    $alternateId += @($tenantHostname)
+    $alternateId = @($tenantHostname)
 
     Write-Host "Mounting Tenant"
     Mount-NavDatabase -ServerInstance $ServerInstance -TenantId $TenantId -DatabaseName $TenantId -AlternateId $alternateId
