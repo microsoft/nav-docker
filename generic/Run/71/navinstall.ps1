@@ -53,15 +53,15 @@ Write-Host "Starting Internet Information Server"
 Start-Service -name $IisServiceName
 
 # Prerequisites
-Write-Host "Installing Url Rewrite"
-start-process "$NavDvdPath\Prerequisite Components\IIS URL Rewrite Module\rewrite_2.0_rtw_x64.msi" -ArgumentList "/quiet /qn /passive" -Wait
+#Write-Host "Installing Url Rewrite"
+#start-process "$NavDvdPath\Prerequisite Components\IIS URL Rewrite Module\rewrite_2.0_rtw_x64.msi" -ArgumentList "/quiet /qn /passive" -Wait
 
 Write-Host "Installing Report Viewer"
 start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2012\SQLSysClrTypes.msi" -ArgumentList "/quiet /qn /passive" -Wait
 start-process "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2012\ReportViewer.msi" -ArgumentList "/quiet /qn /passive" -Wait
 
-Write-Host "Installing OpenXML"
-start-process "$NavDvdPath\Prerequisite Components\Open XML SDK 2.5 for Microsoft Office\OpenXMLSDKv25.msi" -ArgumentList "/quiet /qn /passive" -Wait
+#Write-Host "Installing OpenXML"
+#start-process "$NavDvdPath\Prerequisite Components\Open XML SDK 2.5 for Microsoft Office\OpenXMLSDKv25.msi" -ArgumentList "/quiet /qn /passive" -Wait
 
 Write-Host "Copying Service Tier Files"
 Copy-Item -Path "$NavDvdPath\ServiceTier\Program Files" -Destination "C:\" -Recurse -Force
