@@ -39,7 +39,6 @@ if ($developerServicesKeyExists) {
 
 $SnapshotDebuggerKeyExists = ($customConfig.SelectSingleNode("//appSettings/add[@key='SnapshotDebuggerServicesPort']") -ne $null)
 if ($SnapshotDebuggerKeyExists) {
-Write-Host "ENABLE SNAPSHOTDEBUGGER"
     $customConfig.SelectSingleNode("//appSettings/add[@key='SnapshotDebuggerServicesPort']").Value = "$snapshotDebuggerServicesPort"
     $customConfig.SelectSingleNode("//appSettings/add[@key='SnapshotDebuggerEnabled']").Value = "true"
     $CustomConfig.SelectSingleNode("//appSettings/add[@key='SnapshotDebuggerServicesSSLEnabled']").Value = $servicesUseSSL.ToString().ToLower()
