@@ -143,12 +143,13 @@ if ($SqlTimeout -eq "") {
 }
 
 # Set Port overrides
-$fileSharePort          = "$env:fileSharePort"
-$managementServicesPort = "$env:managementServicesPort"
-$clientServicesPort     = "$env:clientServicesPort"
-$soapServicesPort       = "$env:soapServicesPort"
-$oDataServicesPort      = "$env:oDataServicesPort"
-$developerServicesPort  = "$env:developerServicesPort"
+$fileSharePort                 = "$env:fileSharePort"
+$managementServicesPort        = "$env:managementServicesPort"
+$clientServicesPort            = "$env:clientServicesPort"
+$soapServicesPort              = "$env:soapServicesPort"
+$oDataServicesPort             = "$env:oDataServicesPort"
+$developerServicesPort         = "$env:developerServicesPort"
+$snapshotDebuggerServicesPort  = "$env:snapshotDebuggerServicesPort"
 if ("$env:webClientPort" -ne "") {
     $webClientPort = "$env:webClientPort"
 }
@@ -161,11 +162,12 @@ if ("$fileSharePort" -eq "")          {
         $fileSharePort = "8080"
     }
 }
-if ("$managementServicesPort" -eq "") { $managementServicesPort = "7045" }
-if ("$clientServicesPort" -eq "")     { $clientServicesPort = "7046" }
-if ("$soapServicesPort" -eq "")       { $soapServicesPort   = "7047" }
-if ("$oDataServicesPort" -eq "")      { $oDataServicesPort  = "7048" }
-if ("$developerServicesPort" -eq "")  { $developerServicesPort  = "7049" }
+if ("$managementServicesPort" -eq "")       { $managementServicesPort       = "7045" }
+if ("$clientServicesPort" -eq "")           { $clientServicesPort           = "7046" }
+if ("$soapServicesPort" -eq "")             { $soapServicesPort             = "7047" }
+if ("$oDataServicesPort" -eq "")            { $oDataServicesPort            = "7048" }
+if ("$developerServicesPort" -eq "")        { $developerServicesPort        = "7049" }
+if ("$snapshotDebuggerServicesPort" -eq "") { $snapshotDebuggerServicesPort = "7083" }
 
 # Set public ports
 $publicWebClientPort = "$env:publicWebClientPort"

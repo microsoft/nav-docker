@@ -37,6 +37,14 @@ if ($developerServicesKeyExists) {
     $CustomConfig.SelectSingleNode("//appSettings/add[@key='DeveloperServicesSSLEnabled']").Value = $servicesUseSSL.ToString().ToLower()
 }
 
+$SnapshotDebuggerKeyExists = ($customConfig.SelectSingleNode("//appSettings/add[@key='SnapshotDebuggerServicesPort']") -ne $null)
+if ($SnapshotDebuggerKeyExists) {
+Write-Host "ENABLE SNAPSHOTDEBUGGER"
+    $customConfig.SelectSingleNode("//appSettings/add[@key='SnapshotDebuggerServicesPort']").Value = "$snapshotDebuggerServicesPort"
+    $customConfig.SelectSingleNode("//appSettings/add[@key='SnapshotDebuggerEnabled']").Value = "true"
+    $CustomConfig.SelectSingleNode("//appSettings/add[@key='SnapshotDebuggerServicesSSLEnabled']").Value = $servicesUseSSL.ToString().ToLower()
+}
+
 $customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesCredentialType']").Value = $auth
 if ($developerServicesKeyExists) {
     $publicWebBaseUrl = "$protocol$publicDnsName$publicwebClientPort/$WebServerInstance/"
@@ -98,7 +106,7 @@ if ($auth -eq "AccessControlService") {
 
 $CustomConfig.Save($CustomConfigFile)
 
-$managementServicesPort,$soapServicesPort,$oDataServicesPort,$developerServicesPort | % {
+$managementServicesPort,$soapServicesPort,$oDataServicesPort,$developerServicesPort,$SnapshotDebuggerServicesPort | % {
     netsh http add urlacl url=$protocol+:$_/$ServerInstance user="NT AUTHORITY\SYSTEM" | Out-Null
     if ($servicesUseSSL) {
         netsh http add sslcert ipport=0.0.0.0:$_ certhash=$certificateThumbprint appid="{00112233-4455-6677-8899-AABBCCDDEEFF}" | Out-Null
