@@ -17,6 +17,7 @@ $testImages = $false
 
 $pushto = @()
 $pushto = @("dev")
+$pushto = @("prod")
 $pushto = @("dev","prod")
 
 $tags = @(
@@ -93,11 +94,17 @@ $tags = @(
 "10.0.18362.1016-generic-0.1.0.14"
 "10.0.18363.1016-generic-0.1.0.14"
 "10.0.19041.450-generic-0.1.0.14"
+
+"10.0.14393.3930-generic-0.1.0.21"
+"10.0.17763.1457-generic-0.1.0.21"
+"10.0.18362.1082-generic-0.1.0.21"
+"10.0.18363.1082-generic-0.1.0.21"
+"10.0.19041.508-generic-0.1.0.21"
 )
 
 [Array]::Reverse($tags)
 
-$oldGenericTag = "0.1.0.12"
+$oldGenericTag = "0.1.0.21"
 $tags | % {
     $tag = $_
     
@@ -111,6 +118,15 @@ $tags | % {
         }
     }
 }
+
+$tags | % {
+    $tag = $_
+    head $tag
+    $image = "mcr.microsoft.com/dynamicsnav:$tag"
+    docker pull $image
+}
+
+throw "go!"
 
 $tags | % {
     $tag = $_
