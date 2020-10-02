@@ -158,7 +158,13 @@ $wwwRootPath = Get-WWWRootPath
 $httpPath = Join-Path $wwwRootPath "http"
 
 if ($newPublicDnsName -and $webClient -ne "N") {
-    . (Get-MyFilePath "SetupWebClient.ps1")
+    try {
+        . (Get-MyFilePath "SetupWebClient.ps1")
+    }
+    catch {
+        Write-Host "WARNING: SetupWebClient failed, retrying..."
+        . (Get-MyFilePath "SetupWebClient.ps1")
+    }
     . (Get-MyFilePath "SetupWebConfiguration.ps1")
 }
 
