@@ -37,7 +37,8 @@ function Get-MyFilePath([string]$FileName)
     }
 }
 
-if ((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory -lt 3221225472) {
+$cimInstance = Get-CIMInstance Win32_OperatingSystem
+if ($cimInstance.TotalVisibleMemorySize -lt 3145728) {
     throw "At least 3Gb memory needs to be available to the Container."
 }
 
@@ -261,7 +262,7 @@ try {
                             }
                         }
     
-                        "Installers", "ConfigurationPackages", "TestToolKit", "UpgradeToolKit", "Extensions", "Applications","Applications.*" | % {
+                        "Installers", "ConfigurationPackages", "TestToolKit", "UpgradeToolKit", "Extensions", "Applications","Applications.*","My" | % {
                             $appSubFolder = Join-Path $appArtifactPath $_
                             if (Test-Path "$appSubFolder" -PathType Container) {
                                 $destFolder = Join-Path $tmpFolder $_
@@ -273,12 +274,14 @@ try {
                             }
                         }
     
-                        try {
-                            Rename-Item -Path $tmpFolder -NewName 'NAVDVD'
-                        }
-                        catch {
-                            Start-Sleep -Seconds 10
-                            Rename-Item -Path $tmpFolder -NewName 'NAVDVD'
+                        while (Test-Path $tmpFolder) {
+                            try {
+                                Rename-Item -Path $tmpFolder -NewName 'NAVDVD'
+                            }
+                            catch {
+                                Write-Host "Unable to rename temp folder, waiting 10 seconds for access..."
+                                Start-Sleep -Seconds 10
+                            }
                         }
                         $navDvdPathCreated = $true
 

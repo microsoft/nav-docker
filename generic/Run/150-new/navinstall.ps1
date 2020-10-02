@@ -107,7 +107,7 @@ Start-Job -ScriptBlock { Param($NavDvdPath, $runPath, $appArtifactPath)
     }
     
     Write-Host "Copying additional files"
-    "ConfigurationPackages","Test Assemblies","TestToolKit","UpgradeToolKit","Extensions","Applications","Applications.*" | % {
+    "ConfigurationPackages","Test Assemblies","TestToolKit","UpgradeToolKit","Extensions","Applications","Applications.*","My" | % {
         $dir = Get-ExistingDirectory -pri1 $appArtifactPath -pri2 $navDvdPath -folder $_
         if ($dir)
         {

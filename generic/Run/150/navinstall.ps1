@@ -92,7 +92,7 @@ if (Test-Path "$navDvdPath\WindowsPowerShellScripts\WebSearch") {
     Copy-Item -Path "$navDvdPath\WindowsPowerShellScripts\WebSearch\" -Destination $runPath -Recurse -Force
 }
 
-"ConfigurationPackages","Test Assemblies","TestToolKit","UpgradeToolKit","Extensions","Applications","Applications.*" | % {
+"ConfigurationPackages","Test Assemblies","TestToolKit","UpgradeToolKit","Extensions","Applications","Applications.*","My" | % {
     $dir = "$navDvdPath\$_" 
     if (Test-Path $dir -PathType Container)
     {
