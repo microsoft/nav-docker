@@ -273,8 +273,7 @@ if ("$securepassword") {
 $cimInstance = Get-CIMInstance Win32_OperatingSystem
 Write-Host "Container Total Physical Memory is $(($cimInstance.TotalVisibleMemorySize/1024/1024).ToString('F1',[CultureInfo]::InvariantCulture))Gb"
 Write-Host "Container Free Physical Memory is $(($cimInstance.FreePhysicalMemory/1024/1024).ToString('F1',[CultureInfo]::InvariantCulture))Gb"
-Write-Host "Container Total Virtual Memory is $(($cimInstance.TotalVirtualMemorySize/1024/1024).ToString('F1',[CultureInfo]::InvariantCulture))Gb"
-Write-Host "Container Free Virtual Memory is $(($cimInstance.FreeVirtualMemory/1024/1024).ToString('F1',[CultureInfo]::InvariantCulture))Gb"
+Write-Host
 
 $timespend = [Math]::Round([DateTime]::Now.Subtract($startTime).Totalseconds)
 Write-Host "Initialization took $timespend seconds"
