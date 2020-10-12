@@ -326,19 +326,20 @@ function Mount-NavDatabase
     Param
     (
         [Parameter(Mandatory=$false)]
-        [string]$ServerInstance = "NAV",
+        [string] $ServerInstance = "NAV",
         [Parameter(Mandatory=$true)]
-        [string]$TenantId,
+        [string] $TenantId,
         [Parameter(Mandatory=$false)]
-        [string]$DatabaseServer = "localhost",
+        [string] $DatabaseServer = "localhost",
         [Parameter(Mandatory=$false)]
-        [string]$DatabaseInstance = "SQLEXPRESS",
+        [string] $DatabaseInstance = "SQLEXPRESS",
         [Parameter(Mandatory=$true)]
-        [string]$DatabaseName,
+        [string] $DatabaseName,
         [Parameter(Mandatory=$false)]
-        [System.Management.Automation.PSCredential]$databaseCredentials,
+        [System.Management.Automation.PSCredential] $databaseCredentials,
         [Parameter(Mandatory=$false)]
-        [string[]]$AlternateId = @()
+        [string[]] $AlternateId = @(),
+        [switch] $allowAppDatabaseWrite
     )
 
     $DatabaseServerInstance = "$DatabaseServer"
@@ -346,12 +347,12 @@ function Mount-NavDatabase
         $DatabaseServerInstance += "\$DatabaseInstance"
     }
 
-    Write-Host "Mounting Database for $TenantID on server $DatabaseServerInstance"
-    
     $Params = @{ "Force"=$true }
     if ($TenantId -eq "default") {
-        $Params += @{"AllowAppDatabaseWrite"=$true }
+        $allowAppDatabaseWrite = $defaultTenantHasAllowAppDatabaseWrite -or $allowAppDatabaseWrite
     }
+    $Params += @{"AllowAppDatabaseWrite" = $allowAppDatabaseWrite }
+    Write-Host "Mounting Database for $TenantID on server $DatabaseServerInstance with AllowAppDatabaseWrite = $allowAppDatabaseWrite"
     if ($DatabaseCredentials) {
         $Params += @{ "DatabaseCredentials"=$DatabaseCredentials }
     }

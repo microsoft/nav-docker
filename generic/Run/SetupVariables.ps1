@@ -211,6 +211,13 @@ $isBcSandbox = ($env:isBcSandbox -eq "Y")
 $enableSymbolLoadingAtServerStartup = ($env:enableSymbolLoading -eq "Y")
 $enableApiServices = ($env:enableApiServices -eq "Y")
 
+if ("$env:defaultTenantHasAllowAppDatabaseWrite" -ne "") {
+    $defaultTenantHasAllowAppDatabaseWrite = $env:defaultTenantHasAllowAppDatabaseWrite -eq "Y"
+}
+else {
+    $defaultTenantHasAllowAppDatabaseWrite = !$isBcSandbox
+}
+
 $customNavSettings = "$env:customNavSettings"
 $customWebSettings = "$env:customWebSettings"
 $customWinSettings = "$env:customWinSettings"
