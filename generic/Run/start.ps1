@@ -279,7 +279,7 @@ try {
                                 Rename-Item -Path $tmpFolder -NewName 'NAVDVD'
                             }
                             catch {
-                                Write-Host "Unable to rename temp folder, waiting 10 seconds for access..."
+                                Write-Host "WARNING: Unable to rename temp folder, waiting 10 seconds for access..."
                                 Start-Sleep -Seconds 10
                             }
                         }
