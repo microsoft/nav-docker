@@ -80,7 +80,21 @@ $licensefile = "$env:licensefile"
 
 $appBacpac = "$env:appBacpac"
 $tenantBacpac = "$env:tenantBacpac"
-$multitenant = ("$env:multitenant" -eq "Y")
+
+if ("$env:multitenant" -ne "") {
+    $multitenant = ("$env:multitenant" -eq "Y")
+}
+else {
+    try {
+        $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName
+        $CustomConfigFile =  Join-Path $ServiceTierFolder "CustomSettings.config"
+        $CustomConfig = [xml](Get-Content $CustomConfigFile)
+        $multitenant = ($customConfig.SelectSingleNode("//appSettings/add[@key='Multitenant']").Value -eq "true")
+    }
+    catch {
+        $multitenant = $false
+    }
+}
 
 if ("$appBacpac" -ne "" -and "$tenantBacpac" -ne "") {
     $multitenant = $true
