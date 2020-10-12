@@ -13,7 +13,7 @@
     $wwwRoot = Get-WWWRootPath
     $appContainerName = "NavWebApplicationContainer"
 
-    Get-ChildItem -Path $inetpubFolder -Include $appContainerName -Directory -Recurse | Copy-Item -Destination $wwwRoot -Container -Recurse
+    Get-ChildItem -Path $inetpubFolder -Include $appContainerName -Directory -Recurse | Copy-Item -Destination $wwwRoot -Container -Recurse -Force
 
     $appContainerFullPath = Join-Path $wwwRoot $appContainerName
     Test-Path $appContainerFullPath -ErrorAction Stop | Out-Null
