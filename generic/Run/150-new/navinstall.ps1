@@ -197,6 +197,8 @@ if ($databasePath) {
                     -FilePath "$databasePath" `
                     -DestinationPath "$databaseFolder" `
                     -Timeout 300 | Out-Null
+
+    Set-DatabaseCompatibilityLevel -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseName $databaseName
 }
 elseif (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
     $bak = (Get-ChildItem -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\*.bak")[0]
@@ -218,6 +220,8 @@ elseif (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
                     -FilePath "$databaseFile" `
                     -DestinationPath "$databaseFolder" `
                     -Timeout 300 | Out-Null
+
+    Set-DatabaseCompatibilityLevel -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseName $databaseName
 }
 elseif (Test-Path "$navDvdPath\databases") {
 
@@ -240,6 +244,9 @@ CREATE DATABASE [$databaseName] ON (FILENAME = '$mdf'),(FILENAME = '$ldf') FOR A
 GO
 "@
     Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -QueryTimeOut 0 -ea Stop -Query $attachcmd
+
+    Set-DatabaseCompatibilityLevel -DatabaseServer localhost -DatabaseInstance SQLEXPRESS -DatabaseName "$databaseName"
+
 }
 else {
     $skipDb = $true
