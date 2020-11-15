@@ -462,6 +462,30 @@ function Copy-ItemMultiDest()
     $Destination | ForEach-Object { Microsoft.PowerShell.Management\Copy-Item $Source -Destination $_ -Confirm:$Confirm -Force:$Force -Recurse:$Recurse -ErrorAction Ignore }
 }
 
+function set-DatabaseCompatibilityLevel
+{
+    Param(
+        [Parameter(Mandatory=$false)]
+        [string]$DatabaseServer = "localhost",
+        [Parameter(Mandatory=$false)]
+        [string]$DatabaseInstance = "SQLEXPRESS",
+        [Parameter(Mandatory=$false)]
+        [string]$DatabaseName
+    )
+
+    Write-Host "Setting CompatibilityLevel for $databaseName on $databaseServer\$databaseInstance"
+    Import-Module 'sqlps'
+
+    $databaseServerInstance = $DatabaseServer
+    if ($DatabaseInstance) {
+        $databaseServerInstance += "\$DatabaseInstance"
+    }
+
+    $smoServer = New-Object Microsoft.SqlServer.Management.Smo.Server $databaseServerInstance
+    $smoServer.Databases[$databaseName].CompatibilityLevel = $smoServer.Databases['model'].CompatibilityLevel
+    $smoServer.Databases[$databaseName].Alter()
+}
+
 function Install-NAVSipCryptoProvider
 {
     $sipPath = "C:\Windows\System32\NavSip.dll"
@@ -786,7 +810,10 @@ function GetTestToolkitApps {
     }
 
     if ($includePerformanceToolkit) {
-        $apps += @(get-childitem -Path "C:\Applications\TestFramework\PerformanceToolkit\*.*" -recurse -filter "*.app")
+        $apps += @(get-childitem -Path "C:\Applications\TestFramework\PerformanceToolkit\*.*" -recurse -filter "*Toolkit.app")
+        if (!$includeTestFrameworkOnly) {
+            $apps += @(get-childitem -Path "C:\Applications\TestFramework\PerformanceToolkit\*.*" -recurse -filter "*.app" -exclude "*Toolkit.app")
+        }
     }
 
     $apps | % {
