@@ -63,7 +63,11 @@ $basetags
     Write-Host "SUCCESS"
 
     if ($push) {
-        $tags = @("mcrbusinesscentral.azurecr.io/public/businesscentral:$osversion","mcrbusinesscentral.azurecr.io/public/businesscentral:$osversion-$genericTag","mcrbusinesscentral.azurecr.io/public/businesscentral:$osversion-dev","mcrbusinesscentral.azurecr.io/public/businesscentral:$osversion-$genericTag-dev")
+        $tags = @(
+            "mcrbusinesscentral.azurecr.io/public/businesscentral:$osversion"
+            "mcrbusinesscentral.azurecr.io/public/businesscentral:$osversion-$genericTag"
+            "mcrbusinesscentral.azurecr.io/public/businesscentral:$osversion-dev"
+        )
         $tags | ForEach-Object {
             Write-Host "Push $_"
             docker tag $image $_
