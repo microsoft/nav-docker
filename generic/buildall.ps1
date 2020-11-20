@@ -20,7 +20,10 @@ $servercoretags = (get-navcontainerimagetags -imageName "mcr.microsoft.com/windo
 
 $servercoretags
 
-$basetags = (get-navcontainerimagetags -imageName "mcr.microsoft.com/dotnet/framework/runtime").tags | Where-Object { $_.StartsWith('4.8-20') } | Sort-Object -Descending | Where-Object { $_ -notlike "*-1803" -and $_ -notlike "*-1903" -and $_ -like "4.8-2020*" }
+$basetags = (get-navcontainerimagetags -imageName "mcr.microsoft.com/dotnet/framework/runtime").tags | 
+    Where-Object { $_.StartsWith('4.8-20') } | 
+    Sort-Object -Descending | 
+    Where-Object { $_ -notlike "*-1803" -and $_ -notlike "*-1903" -and $_ -like "4.8-2020*" }
 
 $basetags
 
