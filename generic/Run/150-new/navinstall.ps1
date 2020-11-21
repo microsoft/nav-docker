@@ -151,13 +151,6 @@ $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Servic
 Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path $serviceTierFolder 'hlink.dll')
 Copy-Item -Path (Join-Path $runPath 'Install\t2embed.dll') -Destination "c:\windows\system32\t2embed.dll"
 Copy-Item -Path (Join-Path $runPath 'Install\Microsoft.IdentityModel.dll') -Destination (Join-Path $serviceTierFolder 'Microsoft.IdentityModel.dll')
-if (Test-Path (Join-Path $serviceTierFolder "SqlServerNativeBinaries\x64")) {
-    Get-ChildItem -Path (Join-Path $serviceTierFolder "SqlServerNativeBinaries\x64") | % {
-        if (!(Test-Path (Join-Path $serviceTierFolder $_.Name))) {
-            Copy-Item -Path $_.FullName -Destination (Join-Path $serviceTierFolder $_.Name)
-        }
-    }
-}
 
 Write-Host "Copying ReportBuilder"
 Start-Job -ScriptBlock { Param($runPath)
