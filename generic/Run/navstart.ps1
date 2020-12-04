@@ -36,6 +36,15 @@ if ($restartingInstance) {
 }
 Set-Content -Path $publicDnsNameFile -Value $publicDnsName
 
+$applicationInsightsInstrumentationKeyFile = Get-MyFilePath "applicationInsightsInstrumentationKey.txt"
+if (Test-Path $applicationInsightsInstrumentationKeyFile) {
+    $applicationInsightsInstrumentationKey = Get-Content $applicationInsightsInstrumentationKeyFile
+}
+elseif ($applicationInsightsInstrumentationKey) {
+    Set-Content -Path $applicationInsightsInstrumentationKeyFile -Value $publicDnsName
+}
+
+
 Write-Host "Hostname is $hostname"
 Write-Host "PublicDnsName is $publicDnsName"
 

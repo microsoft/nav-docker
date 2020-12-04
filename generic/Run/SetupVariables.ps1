@@ -223,6 +223,7 @@ if ($locale)  {
 
 $isBcSandbox = ($env:isBcSandbox -eq "Y")
 $enableSymbolLoadingAtServerStartup = ($env:enableSymbolLoading -eq "Y")
+$applicationInsightsInstrumentationKey = "$env:applicationInsightsInstrumentationKey"
 $enableApiServices = ($env:enableApiServices -eq "Y")
 
 if ("$env:defaultTenantHasAllowAppDatabaseWrite" -ne "") {

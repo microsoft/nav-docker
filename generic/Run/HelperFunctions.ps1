@@ -339,7 +339,8 @@ function Mount-NavDatabase
         [System.Management.Automation.PSCredential] $databaseCredentials,
         [Parameter(Mandatory=$false)]
         [string[]] $AlternateId = @(),
-        [switch] $allowAppDatabaseWrite
+        [switch] $allowAppDatabaseWrite,
+        [string] $applicationInsightsInstrumentationKey = ""
     )
 
     $DatabaseServerInstance = "$DatabaseServer"
@@ -362,6 +363,9 @@ function Mount-NavDatabase
     $tenantEnvironmentType = $customConfig.SelectSingleNode("//appSettings/add[@key='TenantEnvironmentType']")
     if ($tenantEnvironmentType -ne $null) {
         $Params += @{"EnvironmentType" = $tenantEnvironmentType.value }
+    }
+    if ($applicationInsightsInstrumentationKey) {
+        $Params += @{"ApplicationInsightsKey" = $applicationInsightsInstrumentationKey }
     }
 
     Mount-NAVTenant -ServerInstance $ServerInstance `
