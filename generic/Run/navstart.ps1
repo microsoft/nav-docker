@@ -44,7 +44,6 @@ elseif ($applicationInsightsInstrumentationKey) {
     Set-Content -Path $applicationInsightsInstrumentationKeyFile -Value $applicationInsightsInstrumentationKey
 }
 
-
 Write-Host "Hostname is $hostname"
 Write-Host "PublicDnsName is $publicDnsName"
 

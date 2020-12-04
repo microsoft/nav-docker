@@ -15,7 +15,12 @@
     $tenantHostname = $hostname.insert($dotidx,"-$tenantId")
     $alternateId = @($tenantHostname)
 
-    Write-Host "Mounting Tenant"
+    if ($applicationInsightsInstrumentationKey) {
+        Write-Host "Mounting Tenant with ApplicationInsightsInstrumentationKey"
+    }
+    else {
+        Write-Host "Mounting Tenant"
+    }
     Mount-NavDatabase -ServerInstance $ServerInstance -TenantId $TenantId -DatabaseName $TenantId -AlternateId $alternateId -applicationInsightsInstrumentationKey $applicationInsightsInstrumentationKey
     $tenantStartTime = [DateTime]::Now
     while ([DateTime]::Now.Subtract($tenantStartTime).TotalSeconds -le 60) {
