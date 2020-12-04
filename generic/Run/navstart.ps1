@@ -41,7 +41,7 @@ if (Test-Path $applicationInsightsInstrumentationKeyFile) {
     $applicationInsightsInstrumentationKey = Get-Content $applicationInsightsInstrumentationKeyFile
 }
 elseif ($applicationInsightsInstrumentationKey) {
-    Set-Content -Path $applicationInsightsInstrumentationKeyFile -Value $publicDnsName
+    Set-Content -Path $applicationInsightsInstrumentationKeyFile -Value $applicationInsightsInstrumentationKey
 }
 
 
