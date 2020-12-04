@@ -53,7 +53,7 @@ RUN Invoke-WebRequest -Uri 'https://bcdocker.blob.core.windows.net/public/nav-do
     start-process -Wait -FilePath .\sqlncli.msi -ArgumentList /quiet, /qn, /passive ; \
     Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/vcredist_x86.exe' -OutFile vcredist_x86.exe ; \
     start-process -Wait -FilePath .\vcredist_x86.exe -ArgumentList /q, /norestart ; \
-    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/vcredist_x86.exe' -OutFile vcredist_x64.exe ; \
+    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/vcredist_x64.exe' -OutFile vcredist_x64.exe ; \
     start-process -Wait -FilePath .\vcredist_x64.exe -ArgumentList /q, /norestart ; \
     Remove-Item -Recurse -Force rewrite_amd64.msi, OpenXMLSDKV25.msi, DotNetCore-WindowsHosting.exe, sqlncli.msi, vcredist_x86.exe, vcredist_x64.exe
 
