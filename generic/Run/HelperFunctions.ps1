@@ -710,7 +710,7 @@ function Download-Artifacts {
             Expand-Archive -Path $appZip -DestinationPath $appArtifactPath -Force
             Remove-Item -path $appZip -force
         }
-        Set-Content -Path (Join-Path $appArtifactPath 'lastused') -Value "$([datetime]::UtcNow.Ticks)"
+        try { [System.IO.File]::WriteAllText((Join-Path $appArtifactPath 'lastused'), "$([datetime]::UtcNow.Ticks)") } catch {}
 
         $appManifestPath = Join-Path $appArtifactPath "manifest.json"
         $appManifest = Get-Content $appManifestPath | ConvertFrom-Json
@@ -781,7 +781,7 @@ function Download-Artifacts {
                 }
             }
         }
-        Set-Content -Path (Join-Path $platformArtifactPath 'lastused') -Value "$([datetime]::UtcNow.Ticks)"
+        try { [System.IO.File]::WriteAllText((Join-Path $platformArtifactPath 'lastused'), "$([datetime]::UtcNow.Ticks)") } catch {}
 
         $platformArtifactPath
     }
@@ -826,5 +826,28 @@ function GetTestToolkitApps {
             $appFile = $_
         }
         $appFile
+    }
+}
+
+function ImportNAVServerLicense {
+    Param(
+        [string] $LicenseFile, `
+        [string] $ServerInstance, `
+        [string] $Database
+    )
+
+    $CustomConfigFile =  Join-Path $ServiceTierFolder "CustomSettings.config"
+    $CustomConfig = [xml](Get-Content $CustomConfigFile)
+    $databaseServer = $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseServer']").Value
+    $databaseInstance = $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseInstance']").Value
+    $databaseName = $customConfig.SelectSingleNode("//appSettings/add[@key='DatabaseName']").Value
+
+    if ($databaseServer -eq "localhost" -and $databaseInstance -eq "SQLEXPRESS") {
+        [Byte[]] $licenseData = get-content -Encoding Byte $LicenseFile
+        $licenseAsHex = "0x$(($licenseData | ForEach-Object ToString X2) -join '')"
+        Invoke-SqlCmdWithRetry -DatabaseName $databaseName -Query "UPDATE [dbo].[`$ndo`$dbproperty] SET license = $licenseAsHex"
+    }
+    else {
+        Import-NAVServerLicense -LicenseFile $licenseFilePath -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
     }
 }
