@@ -29,6 +29,7 @@ $servercoretags = (get-navcontainerimagetags -imageName "mcr.microsoft.com/windo
 Write-Host -ForegroundColor Yellow "Latest Servercore tags:"
 $servercoretags
 
+$ver = [Version]"10.0.0.0"
 $allbctags = (get-navcontainerimagetags -imageName "mcr.microsoft.com/businesscentral").tags | 
     Where-Object { [Version]::TryParse($_, [ref] $ver) }
 
