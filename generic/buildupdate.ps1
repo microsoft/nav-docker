@@ -16,7 +16,7 @@ $testImages = $false
 
 $pushto = @()
 $pushto = @("dev")
-#$pushto += @("prod")
+$pushto += @("prod")
 
 $ver = [Version]"10.0.0.0"
 $tags = (get-navcontainerimagetags -imageName "mcr.microsoft.com/businesscentral").tags | 
@@ -24,40 +24,25 @@ $tags = (get-navcontainerimagetags -imageName "mcr.microsoft.com/businesscentral
 
 [Array]::Reverse($tags)
 
-$oldGenericTag = "1.0.1.0"
-$tags | % {
-    $tag = $_
-    
-    $image = "my:$tag-$oldGenericTag"
-
-    docker images --format "{{.Repository}}:{{.Tag}}" | % { 
-        if ($_ -eq $image) 
-        {
-            docker rmi $image -f
-        }
-    }
-}
-
 # Pull all
 $tags | % {
-    $tag = $_
-    head $tag
-    $image = "mcr.microsoft.com/businesscentral:$tag"
+    $osversion = $_
+    head $osversion
+    $image = "mcr.microsoft.com/businesscentral:$osversion"
     docker pull $image
 }
 
 docker system prune --force
 
-throw "go!"
+#throw "go!"
 
 $tags | % {
-    $tag = $_
+    $osversion = $_
     
-    head $tag
+    head $osversion
     
     $isolation = "hyperv"
-    $baseimage = "mcr.microsoft.com/businesscentral:$tag"
-    $osversion = $tag.Substring(0,$tag.IndexOf('-'))
+    $baseimage = "mcr.microsoft.com/businesscentral:$osversion"
 
     docker pull $baseimage
 
@@ -138,4 +123,5 @@ LABEL tag="$genericTag" \
         Write-Host "Remove $_"
         docker rmi $_
     }
+    docker rmi $image
 }
