@@ -350,11 +350,11 @@ if (!$skipDb -and ($multitenant -or $installOnly -or $licenseFilePath -ne "" -or
                 $tenantAppInfo = Get-NAVAppInfo -ServerInstance $serverInstance -Name $appName -Publisher $appPublisher -Version $appVersion -tenant default -tenantSpecificProperties
                 if ($tenantAppInfo) {
                     if ($tenantAppInfo.IsInstalled) {
-                        Write-Host "Skipping app '$appFile' as it is already installed"
+                        Write-Host "Skipping $appName as it is already installed"
                         $syncAndInstall = $false
                     }
                     else {
-                        Write-Host "App '$appFile' is already published"
+                        Write-Host "$appName is already published"
                     }
                 }
                 else {
