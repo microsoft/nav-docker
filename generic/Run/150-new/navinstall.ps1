@@ -337,23 +337,41 @@ if (!$skipDb -and ($multitenant -or $installOnly -or $licenseFilePath -ne "" -or
         $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName
         if (Test-Path "$serviceTierFolder\Microsoft.Dynamics.Nav.Apps.Management.psd1") {
             Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Apps.Management.psd1"
+
             $installApps | % {
                 $appFile = $_
-                Write-Host "Publishing $appFile"
-                Publish-NavApp -ServerInstance $ServerInstance -Path $appFile -SkipVerification
     
                 $navAppInfo = Get-NAVAppInfo -Path $appFile
                 $appPublisher = $navAppInfo.Publisher
                 $appName = $navAppInfo.Name
                 $appVersion = $navAppInfo.Version
-    
-                Write-Host "Synchronizing $appName"
-                Sync-NavTenant -ServerInstance $ServerInstance -Tenant default -Force
-                Sync-NavApp -ServerInstance $ServerInstance -Publisher $appPublisher -Name $appName -Version $appVersion -Tenant default -Mode ForceSync -force -WarningAction Ignore
 
-                Write-Host "Installing $appName"
-                Install-NavApp -ServerInstance $ServerInstance -Publisher $appPublisher -Name $appName -Version $appVersion -Tenant default
+                $syncAndInstall = $true
+                $tenantAppInfo = Get-NAVAppInfo -ServerInstance $serverInstance -Name $appName -Publisher $appPublisher -Version $appVersion -tenant default -tenantSpecificProperties
+                if ($tenantAppInfo) {
+                    if ($tenantAppInfo.IsInstalled) {
+                        Write-Host "Skipping app '$appFile' as it is already installed"
+                        $syncAndInstall = $false
+                    }
+                    else {
+                        Write-Host "App '$appFile' is already published"
+                    }
+                }
+                else {
+                    Write-Host "Publishing $appFile"
+                    Publish-NavApp -ServerInstance $ServerInstance -Path $appFile -SkipVerification
+                }
+
+                if ($syncAndInstall) {    
+                    Write-Host "Synchronizing $appName"
+                    Sync-NavTenant -ServerInstance $ServerInstance -Tenant default -Force
+                    Sync-NavApp -ServerInstance $ServerInstance -Publisher $appPublisher -Name $appName -Version $appVersion -Tenant default -Mode ForceSync -force -WarningAction Ignore
+
+                    Write-Host "Installing $appName"
+                    Install-NavApp -ServerInstance $ServerInstance -Publisher $appPublisher -Name $appName -Version $appVersion -Tenant default
+                }
             }
+
         }
     }
     
