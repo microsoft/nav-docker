@@ -51,7 +51,9 @@ $basetags = @(
 "4.8-windowsservercore-ltsc2016"
 )
 
-#throw "start?"
+if ((Read-Host -prompt "Continue (yes/no)?") -ne "Yes") {
+    throw "Mission aborted"
+}
 
 $start = 0
 $start..($basetags.count-1) | % {

@@ -1,4 +1,4 @@
-﻿$RootPath = $PSScriptRoot
+$RootPath = $PSScriptRoot
 $ErrorActionPreference = "Stop"
 
 . (Join-Path $RootPath "settings.ps1")
@@ -34,7 +34,9 @@ $tags | % {
 
 docker system prune --force
 
-#throw "go!"
+if ((Read-Host -prompt "Continue (yes/no)?") -ne "Yes") {
+    throw "Mission aborted"
+}
 
 $tags | % {
     $osversion = $_
