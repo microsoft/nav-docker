@@ -1,5 +1,6 @@
 Param( 
     [switch] $installOnly,
+    [switch] $filesOnly,
     [string] $appArtifactPath = "",
     [string] $platformArtifactPath = "",
     [string] $databasePath = "",
@@ -45,15 +46,17 @@ You must map a folder on the host with the DVD content to $navDvdPath"
     exit 1
 }
 
-# start the SQL Server
-Write-Host "Starting Local SQL Server"
-Start-Service -Name $SqlBrowserServiceName -ErrorAction Ignore
-Start-Service -Name $SqlWriterServiceName -ErrorAction Ignore
-Start-Service -Name $SqlServiceName -ErrorAction Ignore
+if (!$filesOnly) {
+    # start the SQL Server
+    Write-Host "Starting Local SQL Server"
+    Start-Service -Name $SqlBrowserServiceName -ErrorAction Ignore
+    Start-Service -Name $SqlWriterServiceName -ErrorAction Ignore
+    Start-Service -Name $SqlServiceName -ErrorAction Ignore
 
-# start IIS services
-Write-Host "Starting Internet Information Server"
-Start-Service -name $IisServiceName
+    # start IIS services
+    Write-Host "Starting Internet Information Server"
+    Start-Service -name $IisServiceName
+}
 
 Write-Host "Copying Service Tier Files"
 RoboCopy "$NavDvdPath\ServiceTier\Program Files" "C:\Program Files" /e /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
@@ -176,10 +179,10 @@ if ($multitenant) {
 else {
     $databaseName = "CRONUS"
 }
-$skipDb = $false
+$skipDb = $filesOnly
 
 # Restore CRONUS Demo database to databases folder
-if ($databasePath) {
+if (!$skipDb -and $databasePath) {
 
     # Restore database
     $databaseFolder = "c:\databases"
@@ -200,7 +203,7 @@ if ($databasePath) {
 
     Set-DatabaseCompatibilityLevel -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseName $databaseName
 }
-elseif (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
+elseif (!$skipDb -and (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container)) {
     $bak = (Get-ChildItem -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\*.bak")[0]
     
     # Restore database
@@ -223,7 +226,7 @@ elseif (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
 
     Set-DatabaseCompatibilityLevel -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseName $databaseName
 }
-elseif (Test-Path "$navDvdPath\databases") {
+elseif (!$skipDb -and (Test-Path "$navDvdPath\databases")) {
 
     $multitenant = $false
     $databaseName = "CRONUS"
@@ -246,7 +249,6 @@ GO
     Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -QueryTimeOut 0 -ea Stop -Query $attachcmd
 
     Set-DatabaseCompatibilityLevel -DatabaseServer localhost -DatabaseInstance SQLEXPRESS -DatabaseName "$databaseName"
-
 }
 else {
     $skipDb = $true
@@ -255,12 +257,17 @@ else {
 
 $databaseName = "CRONUS"
 
-if ($multitenant -and !$SkipDb) {
-    Write-Host "Exporting Application to $DatabaseName"
-    Invoke-sqlcmd -serverinstance "$DatabaseServer\$DatabaseInstance" -Database tenant -query 'CREATE USER "NT AUTHORITY\SYSTEM" FOR LOGIN "NT AUTHORITY\SYSTEM";'
-    Export-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -DestinationDatabaseName $databaseName -Force -ServiceAccount 'NT AUTHORITY\SYSTEM' | Out-Null
-    Write-Host "Removing Application from tenant"
-    Remove-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -Force | Out-Null
+if (!$skipDb) {
+    if ($multitenant) {
+        Write-Host "Exporting Application to $DatabaseName"
+        Invoke-sqlcmd -serverinstance "$DatabaseServer\$DatabaseInstance" -Database tenant -query 'CREATE USER "NT AUTHORITY\SYSTEM" FOR LOGIN "NT AUTHORITY\SYSTEM";'
+        Export-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -DestinationDatabaseName $databaseName -Force -ServiceAccount 'NT AUTHORITY\SYSTEM' | Out-Null
+        Write-Host "Removing Application from tenant"
+        Remove-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -Force | Out-Null
+    }
+    else {
+        Invoke-Sqlcmd -ServerInstance "$DatabaseServer\$DatabaseInstance" -Database $databaseName -Query "UPDATE [dbo].[`$ndo`$tenantproperty] SET [tenantid] = 'default' WHERE [tenantid] = ''" -ErrorAction Ignore
+    }
 }
 
 Write-Host "Modifying Business Central Service Tier Config File for Docker"
@@ -283,19 +290,21 @@ if ($taskSchedulerKeyExists) {
 }
 $CustomConfig.Save($CustomConfigFile)
 
-# Creating Business Central Service
-Write-Host "Creating Business Central Service Tier"
-$serviceCredentials = New-Object System.Management.Automation.PSCredential ("NT AUTHORITY\SYSTEM", (new-object System.Security.SecureString))
-$serverFile = "$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe"
-$configFile = "$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe.config"
-New-Service -Name $NavServiceName -BinaryPathName """$serverFile"" `$$ServerInstance /config ""$configFile""" -DisplayName "Dynamics 365 Business Central Server [$ServerInstance]" -Description "$serverInstance" -StartupType manual -Credential $serviceCredentials -DependsOn @("HTTP") | Out-Null
+if (!$filesOnly) {
+    # Creating Business Central Service
+    Write-Host "Creating Business Central Service Tier"
+    $serviceCredentials = New-Object System.Management.Automation.PSCredential ("NT AUTHORITY\SYSTEM", (new-object System.Security.SecureString))
+    $serverFile = "$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe"
+    $configFile = "$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe.config"
+    New-Service -Name $NavServiceName -BinaryPathName """$serverFile"" `$$ServerInstance /config ""$configFile""" -DisplayName "Dynamics 365 Business Central Server [$ServerInstance]" -Description "$serverInstance" -StartupType manual -Credential $serviceCredentials -DependsOn @("HTTP") | Out-Null
 
-$serverVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($serverFile)
-$versionFolder = ("{0}{1}" -f $serverVersion.FileMajorPart,$serverVersion.FileMinorPart)
-$registryPath = "HKLM:\SOFTWARE\Microsoft\Microsoft Dynamics NAV\$versionFolder\Service"
-New-Item -Path $registryPath -Force | Out-Null
-New-ItemProperty -Path $registryPath -Name 'Path' -Value "$serviceTierFolder\" -Force | Out-Null
-New-ItemProperty -Path $registryPath -Name 'Installed' -Value 1 -Force | Out-Null
+    $serverVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($serverFile)
+    $versionFolder = ("{0}{1}" -f $serverVersion.FileMajorPart,$serverVersion.FileMinorPart)
+    $registryPath = "HKLM:\SOFTWARE\Microsoft\Microsoft Dynamics NAV\$versionFolder\Service"
+    New-Item -Path $registryPath -Force | Out-Null
+    New-ItemProperty -Path $registryPath -Name 'Path' -Value "$serviceTierFolder\" -Force | Out-Null
+    New-ItemProperty -Path $registryPath -Name 'Installed' -Value 1 -Force | Out-Null
+}
 
 Install-NAVSipCryptoProvider
 
