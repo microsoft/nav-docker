@@ -39,10 +39,6 @@ $bctags = $allbctags | Sort-Object -Descending { [Version]$_ } |
 Write-Host -ForegroundColor Yellow "Latest BusinessCentral tags:"
 $bctags
 
-$basetags = (get-navcontainerimagetags -imageName "mcr.microsoft.com/dotnet/framework/runtime").tags | 
-    Where-Object { $_ -like '4.8-20*' -and $_ -notlike '*-2009'  -and $_ -notlike '*-1903'} | 
-    Sort-Object -Descending
-
 $basetags = @(
 "4.8-windowsservercore-20H2"
 "4.8-windowsservercore-2004"
