@@ -169,7 +169,14 @@ Start-Job -ScriptBlock { Param($runPath)
 } -ArgumentList $runPath | Out-Null
 
 Write-Host "Importing PowerShell Modules"
-Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
+try {
+    Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
+}
+catch {
+    Write-Host "Error: '$($_.Exception.Message)', Retrying in 10 seconds..."
+    Start-Sleep -Seconds 10
+    Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
+}
 
 $databaseServer = "localhost"
 $databaseInstance = "SQLEXPRESS"

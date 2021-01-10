@@ -364,7 +364,10 @@ try {
 
     Write-Host -ForegroundColor Red $_.Exception.Message
 
-    if ("$env:ExitOnError" -ne "N") {
+    if ($installOnly) {
+        throw "Installation failed"
+    }
+    elseif ("$env:ExitOnError" -ne "N") {
         return
     }
 
