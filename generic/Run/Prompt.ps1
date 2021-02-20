@@ -52,3 +52,4 @@ if (!$silent) {
     Write-Host -ForegroundColor Green "Welcome to the NAV Container PowerShell prompt"
     Write-Host
 }
+function prompt {"[$env:COMPUTERNAME]: PS $($executionContext.SessionState.Path.CurrentLocation)$('>' * ($nestedPromptLevel + 1)) "}
