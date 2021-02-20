@@ -51,7 +51,7 @@ else {
         }
     }
 
-    cd $PSScriptRoot
+    cd "c:\run"
     if (!$silent) {
         Write-Host -ForegroundColor Green "Welcome to the NAV Container PowerShell prompt"
         Write-Host
