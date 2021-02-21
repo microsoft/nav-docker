@@ -53,7 +53,12 @@ else {
 
     cd "c:\run"
     if (!$silent) {
-        Write-Host -ForegroundColor Green "Welcome to the Business Central Container PowerShell prompt"
+        if ($NavIde) {
+            Write-Host -ForegroundColor Green "Welcome to the NAV Container PowerShell prompt"
+        }
+        else {
+            Write-Host -ForegroundColor Green "Welcome to the Business Central Container PowerShell prompt"
+        }
         Write-Host
     }
     function global:prompt {
