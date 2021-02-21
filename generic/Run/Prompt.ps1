@@ -61,7 +61,4 @@ else {
         }
         Write-Host
     }
-    function global:prompt {
-        "[$env:COMPUTERNAME]: PS $($executionContext.SessionState.Path.CurrentLocation)$('>' * ($nestedPromptLevel + 1)) "
-    }
 }
