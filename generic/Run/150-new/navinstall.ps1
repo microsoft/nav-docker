@@ -46,7 +46,17 @@ You must map a folder on the host with the DVD content to $navDvdPath"
     exit 1
 }
 
-if (!$filesOnly) {
+$skipDb = $filesOnly
+
+
+if (!$skipDb) {
+
+    $databaseFolder = "c:\databases"
+    New-Item -Path $databaseFolder -itemtype Directory -ErrorAction Ignore | Out-Null
+
+    Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql15.SQLEXPRESS\mssqlserver' -name DefaultData -value $databaseFolder
+    Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql15.SQLEXPRESS\mssqlserver' -name DefaultLog -value $databaseFolder
+
     # start the SQL Server
     Write-Host "Starting Local SQL Server"
     Start-Service -Name $SqlBrowserServiceName -ErrorAction Ignore
@@ -186,14 +196,9 @@ if ($multitenant) {
 else {
     $databaseName = "CRONUS"
 }
-$skipDb = $filesOnly
 
 # Restore CRONUS Demo database to databases folder
 if (!$skipDb -and $databasePath) {
-
-    # Restore database
-    $databaseFolder = "c:\databases"
-    New-Item -Path $databaseFolder -itemtype Directory -ErrorAction Ignore | Out-Null
 
     Write-Host "Determining Database Collation from $databasePath"
     $collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -ConnectionTimeout 300 -QueryTimeOut 300 "RESTORE HEADERONLY FROM DISK = '$databasePath'").Collation
@@ -213,9 +218,6 @@ if (!$skipDb -and $databasePath) {
 elseif (!$skipDb -and (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container)) {
     $bak = (Get-ChildItem -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\*.bak")[0]
     
-    # Restore database
-    $databaseFolder = "c:\databases"
-    New-Item -Path $databaseFolder -itemtype Directory -ErrorAction Ignore | Out-Null
     $databaseFile = $bak.FullName
 
     Write-Host "Determining Database Collation"
@@ -297,21 +299,20 @@ if ($taskSchedulerKeyExists) {
 }
 $CustomConfig.Save($CustomConfigFile)
 
+$serverFile = "$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe"
 if (!$filesOnly) {
     # Creating Business Central Service
     Write-Host "Creating Business Central Service Tier"
     $serviceCredentials = New-Object System.Management.Automation.PSCredential ("NT AUTHORITY\SYSTEM", (new-object System.Security.SecureString))
-    $serverFile = "$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe"
     $configFile = "$serviceTierFolder\Microsoft.Dynamics.Nav.Server.exe.config"
     New-Service -Name $NavServiceName -BinaryPathName """$serverFile"" `$$ServerInstance /config ""$configFile""" -DisplayName "Dynamics 365 Business Central Server [$ServerInstance]" -Description "$serverInstance" -StartupType manual -Credential $serviceCredentials -DependsOn @("HTTP") | Out-Null
-
-    $serverVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($serverFile)
-    $versionFolder = ("{0}{1}" -f $serverVersion.FileMajorPart,$serverVersion.FileMinorPart)
-    $registryPath = "HKLM:\SOFTWARE\Microsoft\Microsoft Dynamics NAV\$versionFolder\Service"
-    New-Item -Path $registryPath -Force | Out-Null
-    New-ItemProperty -Path $registryPath -Name 'Path' -Value "$serviceTierFolder\" -Force | Out-Null
-    New-ItemProperty -Path $registryPath -Name 'Installed' -Value 1 -Force | Out-Null
 }
+$serverVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($serverFile)
+$versionFolder = ("{0}{1}" -f $serverVersion.FileMajorPart,$serverVersion.FileMinorPart)
+$registryPath = "HKLM:\SOFTWARE\Microsoft\Microsoft Dynamics NAV\$versionFolder\Service"
+New-Item -Path $registryPath -Force | Out-Null
+New-ItemProperty -Path $registryPath -Name 'Path' -Value "$serviceTierFolder\" -Force | Out-Null
+New-ItemProperty -Path $registryPath -Name 'Installed' -Value 1 -Force | Out-Null
 
 Install-NAVSipCryptoProvider
 

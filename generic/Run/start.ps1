@@ -202,9 +202,11 @@ try {
                                 $licenseFilePath = Join-Path $appArtifactPath $licenseFile
                             }
                         }
-                        if ($appManifest.PSObject.Properties.name -eq "isBcSandbox") {
-                            if ($appManifest.isBcSandbox) {
-                                $env:IsBcSandbox = "Y"
+                        if ("$($env:IsBcSandbox)" -eq "") {
+                            if ($appManifest.PSObject.Properties.name -eq "isBcSandbox") {
+                                if ($appManifest.isBcSandbox) {
+                                    $env:IsBcSandbox = "Y"
+                                }
                             }
                         }
     
@@ -243,9 +245,11 @@ try {
                                 $licenseFilePath = Join-Path $appArtifactPath $licenseFile
                             }
                         }
-                        if ($appManifest.PSObject.Properties.name -eq "isBcSandbox") {
-                            if ($appManifest.isBcSandbox) {
-                                $env:IsBcSandbox = "Y"
+                        if ("$($env:IsBcSandbox)" -eq "") {
+                            if ($appManifest.PSObject.Properties.name -eq "isBcSandbox") {
+                                if ($appManifest.isBcSandbox) {
+                                    $env:IsBcSandbox = "Y"
+                                }
                             }
                         }
             
