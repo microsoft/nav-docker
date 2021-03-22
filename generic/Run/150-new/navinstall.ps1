@@ -69,13 +69,13 @@ if (!$skipDb) {
 }
 
 Write-Host "Copying Service Tier Files"
-RoboCopy "$NavDvdPath\ServiceTier\Program Files" "C:\Program Files" /e /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
-RoboCopy "$NavDvdPath\ServiceTier\System64Folder" "C:\Windows\System32" "NavSip.dll" /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+RoboCopy "$NavDvdPath\ServiceTier\Program Files" "C:\Program Files" /e /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
+RoboCopy "$NavDvdPath\ServiceTier\System64Folder" "C:\Windows\System32" "NavSip.dll" /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
 
 Write-Host "Copying PowerShell Scripts"
-RoboCopy "$navDvdPath\WindowsPowerShellScripts\Cloud\NAVAdministration" "$runPath\NAVAdministration" /e /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+RoboCopy "$navDvdPath\WindowsPowerShellScripts\Cloud\NAVAdministration" "$runPath\NAVAdministration" /e /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
 if (Test-Path "$navDvdPath\WindowsPowerShellScripts\WebSearch") {
-    RoboCopy "$navDvdPath\WindowsPowerShellScripts\WebSearch" "$runPath\WebSearch" /e /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+    RoboCopy "$navDvdPath\WindowsPowerShellScripts\WebSearch" "$runPath\WebSearch" /e /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
 }
 
 Start-Job -ScriptBlock { Param($NavDvdPath, $runPath, $appArtifactPath)
@@ -94,26 +94,26 @@ Start-Job -ScriptBlock { Param($NavDvdPath, $runPath, $appArtifactPath)
     }
 
     Write-Host "Copying Web Client Files"
-    RoboCopy "$NavDvdPath\WebClient\Microsoft Dynamics NAV" "C:\Program Files\Microsoft Dynamics NAV" /e /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+    RoboCopy "$NavDvdPath\WebClient\Microsoft Dynamics NAV" "C:\Program Files\Microsoft Dynamics NAV" /e /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
     
     if (Test-Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV\*\RoleTailored Client" -PathType Container) {
         Write-Host "Copying Client Files"
-        RoboCopy "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV" "C:\Program Files (x86)\Microsoft Dynamics NAV" "*.dll" /e /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
-        RoboCopy "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV" "C:\Program Files (x86)\Microsoft Dynamics NAV" "*.exe" /e /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
-        RoboCopy "$navDvdPath\RoleTailoredClient\systemFolder" "C:\Windows\SysWow64" "NavSip.dll" /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+        RoboCopy "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV" "C:\Program Files (x86)\Microsoft Dynamics NAV" "*.dll" /e /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
+        RoboCopy "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV" "C:\Program Files (x86)\Microsoft Dynamics NAV" "*.exe" /e /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
+        RoboCopy "$navDvdPath\RoleTailoredClient\systemFolder" "C:\Windows\SysWow64" "NavSip.dll" /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
     }
 
     if (Test-Path "$navDvdPath\LegacyDlls\program files\Microsoft Dynamics NAV\*\RoleTailored Client" -PathType Container) {
         Write-Host "Copying Client Files"
-        RoboCopy "$navDvdPath\LegacyDlls\program files\Microsoft Dynamics NAV" "C:\Program Files (x86)\Microsoft Dynamics NAV" "*.dll" /e /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
-        RoboCopy "$navDvdPath\LegacyDlls\program files\Microsoft Dynamics NAV" "C:\Program Files (x86)\Microsoft Dynamics NAV" "*.exe" /e /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
-        RoboCopy "$navDvdPath\LegacyDlls\systemFolder" "C:\Windows\SysWow64" "NavSip.dll" /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+        RoboCopy "$navDvdPath\LegacyDlls\program files\Microsoft Dynamics NAV" "C:\Program Files (x86)\Microsoft Dynamics NAV" "*.dll" /e /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
+        RoboCopy "$navDvdPath\LegacyDlls\program files\Microsoft Dynamics NAV" "C:\Program Files (x86)\Microsoft Dynamics NAV" "*.exe" /e /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
+        RoboCopy "$navDvdPath\LegacyDlls\systemFolder" "C:\Windows\SysWow64" "NavSip.dll" /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
     }
     
     Write-Host "Copying ModernDev Files"
-    RoboCopy "$navDvdPath" "$runPath" "*.vsix" /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+    RoboCopy "$navDvdPath" "$runPath" "*.vsix" /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
     if (Test-Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV") {
-        RoboCopy "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV" "C:\Program Files\Microsoft Dynamics NAV" /e /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+        RoboCopy "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV" "C:\Program Files\Microsoft Dynamics NAV" /e /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
     }
     if ((Test-Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV\*\*\*.vsix") -and !(Test-Path (Join-Path $runPath "*.vsix"))) {
         Copy-Item -Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV\*\*\*.vsix" -Destination $runPath -Force
@@ -126,7 +126,7 @@ Start-Job -ScriptBlock { Param($NavDvdPath, $runPath, $appArtifactPath)
         {
             $name = [System.IO.Path]::GetFileName($dir)
             Write-Host "Copying $name"
-            RoboCopy "$dir" "C:\$name" /e /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+            RoboCopy "$dir" "C:\$name" /e /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
         }
     }
 
@@ -246,7 +246,7 @@ elseif (!$skipDb -and (Test-Path "$navDvdPath\databases")) {
     }
 
     Write-Host "Copying Cronus database"
-    RoboCopy "$navDvdPath\databases" "c:\databases" /e /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+    RoboCopy "$navDvdPath\databases" "c:\databases" /e /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
     $mdf = (Get-Item "C:\databases\*.mdf").FullName
     $ldf = (Get-Item "C:\databases\*.ldf").FullName
     $attachcmd = @"
