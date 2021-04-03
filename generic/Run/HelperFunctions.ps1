@@ -851,3 +851,33 @@ function ImportNAVServerLicense {
         Import-NAVServerLicense -LicenseFile $licenseFilePath -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
     }
 }
+
+function RoboCopyFiles {
+    Param(
+        [string] $source,
+        [string] $destination,
+        [string] $files = "*",
+        [switch] $e
+    )
+
+    if ($e) {
+        RoboCopy "$source" "$destination" "$files" /e /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
+        Get-ChildItem -Path $source -Filter $files -Recurse | ForEach-Object {
+            $relPath = $_.FullName.Substring($source.Length)
+            while (!(Test-Path (Join-Path $destination $relPath))) {
+                Write-Host "Waiting for $source to be copied"
+                Start-Sleep -Seconds 1
+            }
+        }
+    }
+    else {
+        RoboCopy "$source" "$destination" "$files" /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
+        Get-ChildItem -Path $source -Filter $files | ForEach-Object {
+            $relPath = $_.FullName.Substring($source.Length)
+            while (!(Test-Path (Join-Path $destination $relPath))) {
+                Write-Host "Waiting for $source to be copied"
+                Start-Sleep -Seconds 1
+            }
+        }
+    }
+}

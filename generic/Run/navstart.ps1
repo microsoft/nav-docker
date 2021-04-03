@@ -82,10 +82,13 @@ $usingLocalSQLServer = ($databaseServer -eq "localhost")
 if ($usingLocalSQLServer) {
     if ((Get-Service -name $SqlServiceName).Status -ne "Running") {
         # start the SQL Server
-        Write-Host "Starting Local SQL Server"
+        Write-Host -NoNewline "Starting Local SQL Server"
         Start-Service -Name $SqlBrowserServiceName -ErrorAction Ignore -WarningAction Ignore
         Start-Service -Name $SqlWriterServiceName -ErrorAction Ignore -WarningAction Ignore
         Start-Service -Name $SqlServiceName -ErrorAction Ignore -WarningAction Ignore
+        
+        while (!(Invoke-Sqlcmd "select 1 from sys.sysdatabases where name = 'master'" -ErrorAction SilentlyContinue)) { Write-Host -noNewLine "."; Start-Sleep -Seconds 1 }
+        Write-Host
     }
 }
 
