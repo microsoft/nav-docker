@@ -81,14 +81,12 @@ Write-Host "Using $auth Authentication"
 $usingLocalSQLServer = ($databaseServer -eq "localhost")
 if ($usingLocalSQLServer) {
     if ((Get-Service -name $SqlServiceName).Status -ne "Running") {
+
         # start the SQL Server
-        Write-Host -NoNewline "Starting Local SQL Server"
-        Start-Service -Name $SqlBrowserServiceName -ErrorAction Ignore -WarningAction Ignore
-        Start-Service -Name $SqlWriterServiceName -ErrorAction Ignore -WarningAction Ignore
-        Start-Service -Name $SqlServiceName -ErrorAction Ignore -WarningAction Ignore
-        
-        while (!(Invoke-Sqlcmd "select 1 from sys.sysdatabases where name = 'master'" -ErrorAction SilentlyContinue)) { Write-Host -noNewLine "."; Start-Sleep -Seconds 1 }
-        Write-Host
+        Write-Host "Starting Local SQL Server"
+        Start-Service -Name $SqlBrowserServiceName
+        Start-Service -Name $SqlWriterServiceName
+        Start-Service -Name $SqlServiceName
     }
 }
 
@@ -96,7 +94,7 @@ if (($webClient -ne "N") -or ($httpSite -ne "N")) {
     if ((Get-Service -name $IisServiceName).Status -ne "Running") {
         # start IIS services
         Write-Host "Starting Internet Information Server"
-        Start-Service -name $IisServiceName -ErrorAction Ignore
+        Start-Service -name $IisServiceName
     }
 }
 

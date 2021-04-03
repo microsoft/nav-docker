@@ -58,13 +58,10 @@ if (!$skipDb) {
     Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql15.SQLEXPRESS\mssqlserver' -name DefaultLog -value $databaseFolder
 
     # start the SQL Server
-    Write-Host -NoNewline "Starting Local SQL Server"
-    Start-Service -Name $SqlBrowserServiceName -ErrorAction Ignore
-    Start-Service -Name $SqlWriterServiceName -ErrorAction Ignore
-    Start-Service -Name $SqlServiceName -ErrorAction Ignore
-
-    while (!(Invoke-Sqlcmd "select 1 from sys.sysdatabases where name = 'master'" -ErrorAction SilentlyContinue)) { Write-Host -noNewLine "."; Start-Sleep -Seconds 1 }
-    Write-Host
+    Write-Host "Starting Local SQL Server"
+    Start-Service -Name $SqlBrowserServiceName
+    Start-Service -Name $SqlWriterServiceName
+    Start-Service -Name $SqlServiceName
 
     # start IIS services
     Write-Host "Starting Internet Information Server"
