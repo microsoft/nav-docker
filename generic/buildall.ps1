@@ -57,7 +57,7 @@ $basetags = @(
 "4.8-windowsservercore-ltsc2016"
 )
 
-Write-Host -ForegroundColor Yellow "Latest DotNetCore OSVersions:"
+Write-Host -ForegroundColor Yellow "Latest DotNetFramework OSVersions:"
 $basetags | % {
     $image = "mcr.microsoft.com/dotnet/framework/runtime:$_"
     docker pull $image > $Null

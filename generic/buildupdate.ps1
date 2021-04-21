@@ -16,7 +16,7 @@ $testImages = $false
 
 $pushto = @()
 $pushto = @("dev")
-$pushto = @("prod")
+$pushto += @("prod")
 
 $ver = [Version]"10.0.0.0"
 $tags = (get-navcontainerimagetags -imageName "mcr.microsoft.com/businesscentral").tags | 
