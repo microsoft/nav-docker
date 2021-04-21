@@ -25,7 +25,7 @@ $customConfig.SelectSingleNode("//appSettings/add[@key='ODataServicesPort']").Va
 $customConfig.SelectSingleNode("//appSettings/add[@key='DefaultClient']").Value = "Web"
 $customConfig.SelectSingleNode("//appSettings/add[@key='Multitenant']").Value = "$multitenant"
 if (!$multitenant -and "$applicationInsightsInstrumentationKey" -ne "") {
-    $customConfig.SelectSingleNode("//appSettings/add[@key='applicationInsightsInstrumentationKey']").Value = "$applicationInsightsInstrumentationKey"
+    $customConfig.SelectSingleNode("//appSettings/add[@key='ApplicationInsightsInstrumentationKey']").Value = "$applicationInsightsInstrumentationKey"
 }
 
 $taskSchedulerKeyExists = ($customConfig.SelectSingleNode("//appSettings/add[@key='EnableTaskScheduler']") -ne $null)
