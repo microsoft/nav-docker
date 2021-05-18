@@ -1,5 +1,5 @@
 ﻿$RootPath = $PSScriptRoot
-$filesOnly = $false
+$filesOnly = $true
 
 . (Join-Path $RootPath "settings.ps1")
 
@@ -14,6 +14,7 @@ function Head($text) {
 
 $push = $true
 $supported = @(
+    "10.0.19043.0"
     "10.0.19042.0"
     "10.0.19041.0"
     "10.0.18363.0"
@@ -50,6 +51,7 @@ $servercoretags = (get-navcontainerimagetags -imageName "mcr.microsoft.com/windo
 $servercoretags | Out-Host
 
 $basetags = @(
+#"4.8-windowsservercore-21H1"
 "4.8-windowsservercore-20H2"
 "4.8-windowsservercore-2004"
 "4.8-windowsservercore-1909"
@@ -110,19 +112,29 @@ $start..($basetags.count-1) | % {
             head $osversion
 
             $isolation = "hyperv"
-            
-            docker build --build-arg baseimage=$baseimage `
-                         --build-arg created=$created `
-                         --build-arg tag="$genericTag" `
-                         --build-arg osversion="$osversion" `
-                         --isolation=$isolation `
-                         --memory 10G `
-                         --tag $image `
-                         --file $dockerfile `
-                         $RootPath
-            
-            if ($LASTEXITCODE -ne 0) {
-                throw "Failed with exit code $LastExitCode"
+            $success = $false
+            try {
+                docker build --build-arg baseimage=$baseimage `
+                             --build-arg created=$created `
+                             --build-arg tag="$genericTag" `
+                             --build-arg osversion="$osversion" `
+                             --isolation=$isolation `
+                             --memory 10G `
+                             --tag $image `
+                             --file $dockerfile `
+                             $RootPath | % {
+                    $_ | Out-Host
+                    if ($_ -like "Successfully built*") {
+                        $success = $true
+                    }
+                }
+            } catch {}
+            if (!$success) {
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Docker Build failed with exit code $LastExitCode"
+                } else {
+                    throw "Docker Build didn't indicate successfully built"
+                }
             }
             Write-Host "SUCCESS"
         
