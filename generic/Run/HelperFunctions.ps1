@@ -801,6 +801,8 @@ function GetTestToolkitApps {
 
     if (!$includeTestFrameworkOnly) {
         
+        $version = [Version](Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service\Microsoft.Dynamics.Nav.Server.exe").VersionInfo.FileVersion
+
         # Add Test Libraries
         $apps += "Microsoft_System Application Test Library.app", "Microsoft_Tests-TestLibraries.app" | % {
             @(get-childitem -Path "C:\Applications\*.*" -recurse -filter $_)
@@ -809,7 +811,7 @@ function GetTestToolkitApps {
         if (!$includeTestLibrariesOnly) {
 
             # Add Tests
-            $apps += @(get-childitem -Path "C:\Applications\*.*" -recurse -filter "Microsoft_Tests-*.app") | Where-Object { $_ -notlike "*\Microsoft_Tests-TestLibraries.app" -and $_ -notlike "*\Microsoft_Tests-Marketing.app" -and $_ -notlike "*\Microsoft_Tests-SINGLESERVER.app" }
+            $apps += @(get-childitem -Path "C:\Applications\*.*" -recurse -filter "Microsoft_Tests-*.app") | Where-Object { $_ -notlike "*\Microsoft_Tests-TestLibraries.app" -and ($version.Major -ge 17 -or ($_ -notlike "*\Microsoft_Tests-Marketing.app")) -and $_ -notlike "*\Microsoft_Tests-SINGLESERVER.app" }
         }
     }
 
@@ -849,5 +851,36 @@ function ImportNAVServerLicense {
     }
     else {
         Import-NAVServerLicense -LicenseFile $licenseFilePath -ServerInstance $ServerInstance -Database NavDatabase -WarningAction SilentlyContinue
+    }
+}
+
+function RoboCopyFiles {
+    Param(
+        [string] $source,
+        [string] $destination,
+        [string] $files = "*",
+        [switch] $e
+    )
+
+    Write-Host $source
+    if ($e) {
+        RoboCopy "$source" "$destination" "$files" /e /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
+        Get-ChildItem -Path $source -Filter $files -Recurse | ForEach-Object {
+            $destPath = Join-Path $destination $_.FullName.Substring($source.Length)
+            while (!(Test-Path $destPath)) {
+                Write-Host "Waiting for $destPath to be available"
+                Start-Sleep -Seconds 1
+            }
+        }
+    }
+    else {
+        RoboCopy "$source" "$destination" "$files" /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
+        Get-ChildItem -Path $source -Filter $files | ForEach-Object {
+            $destPath = Join-Path $destination $_.FullName.Substring($source.Length)
+            while (!(Test-Path $destPath)) {
+                Write-Host "Waiting for $destPath to be available"
+                Start-Sleep -Seconds 1
+            }
+        }
     }
 }

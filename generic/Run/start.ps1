@@ -1,5 +1,6 @@
 Param( 
     [switch] $installOnly,
+    [switch] $filesOnly,
     [switch] $multitenant,
     [string] $artifactUrl = "",
     [switch] $includeTestToolkit,
@@ -21,10 +22,14 @@ $dlPathCreated = $false
 $publicDnsNameFile = "$RunPath\PublicDnsName.txt"
 $restartingInstance = Test-Path -Path $publicDnsNameFile -PathType Leaf
 
+if (!$filesOnly) {
+    $filesOnly = ($env:filesOnly -eq "True")
+}
+
 $myStart = Join-Path $myPath "start.ps1"
 if ($PSCommandPath -ne $mystart) {
     if (Test-Path -Path $myStart) {
-        . $myStart -installOnly:$installOnly -multitenant:$multitenant -artifactUrl $artifactUrl -includeTestToolkit:$includeTestToolkit -includeTestLibrariesOnly:$includeTestLibrariesOnly -includeTestFrameworkOnly:$includeTestFrameworkOnly -includePerformanceToolkit:$includePerformanceToolkit
+        . $myStart -installOnly:$installOnly -filesOnly:$filesOnly -multitenant:$multitenant -artifactUrl $artifactUrl -includeTestToolkit:$includeTestToolkit -includeTestLibrariesOnly:$includeTestLibrariesOnly -includeTestFrameworkOnly:$includeTestFrameworkOnly -includePerformanceToolkit:$includePerformanceToolkit
         exit
     }
 }
@@ -197,9 +202,11 @@ try {
                                 $licenseFilePath = Join-Path $appArtifactPath $licenseFile
                             }
                         }
-                        if ($appManifest.PSObject.Properties.name -eq "isBcSandbox") {
-                            if ($appManifest.isBcSandbox) {
-                                $env:IsBcSandbox = "Y"
+                        if ("$($env:IsBcSandbox)" -eq "") {
+                            if ($appManifest.PSObject.Properties.name -eq "isBcSandbox") {
+                                if ($appManifest.isBcSandbox) {
+                                    $env:IsBcSandbox = "Y"
+                                }
                             }
                         }
     
@@ -215,7 +222,7 @@ try {
                             $licenseFile = ""
                         }
 
-                        . (Get-MyFilePath "navinstall.ps1") -appArtifactPath $appArtifactPath -platformArtifactPath $platformArtifactPath -databasePath $databasePath -licenseFilePath $licenseFilePath -installOnly:$installOnly -includeTestToolkit:$includeTestToolkit -includeTestLibrariesOnly:$includeTestLibrariesOnly -includeTestFrameworkOnly:$includeTestFrameworkOnly @mtParam
+                        . (Get-MyFilePath "navinstall.ps1") -appArtifactPath $appArtifactPath -platformArtifactPath $platformArtifactPath -databasePath $databasePath -licenseFilePath $licenseFilePath -installOnly:$installOnly -filesOnly:$filesOnly -includeTestToolkit:$includeTestToolkit -includeTestLibrariesOnly:$includeTestLibrariesOnly -includeTestFrameworkOnly:$includeTestFrameworkOnly @mtParam
                     }
                     else {
                         $tmpFolder = 'c:\$tmp$'
@@ -238,9 +245,11 @@ try {
                                 $licenseFilePath = Join-Path $appArtifactPath $licenseFile
                             }
                         }
-                        if ($appManifest.PSObject.Properties.name -eq "isBcSandbox") {
-                            if ($appManifest.isBcSandbox) {
-                                $env:IsBcSandbox = "Y"
+                        if ("$($env:IsBcSandbox)" -eq "") {
+                            if ($appManifest.PSObject.Properties.name -eq "isBcSandbox") {
+                                if ($appManifest.isBcSandbox) {
+                                    $env:IsBcSandbox = "Y"
+                                }
                             }
                         }
             
@@ -335,7 +344,7 @@ try {
                 }
                 
                 if ($useNewFolder) {
-                    . (Get-MyFilePath "navinstall.ps1") -installOnly:$installOnly -includeTestToolkit:$includeTestToolkit -includeTestLibrariesOnly:$includeTestLibrariesOnly -includeTestFrameworkOnly:$includeTestFrameworkOnly -includePerformanceToolkit:$includePerformanceToolkit @mtParam
+                    . (Get-MyFilePath "navinstall.ps1") -installOnly:$installOnly -filesOnly:$filesOnly -includeTestToolkit:$includeTestToolkit -includeTestLibrariesOnly:$includeTestLibrariesOnly -includeTestFrameworkOnly:$includeTestFrameworkOnly -includePerformanceToolkit:$includePerformanceToolkit @mtParam
                 }
                 else {
                     . (Get-MyFilePath "navinstall.ps1") -installOnly:$installOnly @mtParam
@@ -347,14 +356,22 @@ try {
     }
 
     if (!$installOnly) {
-        . (Get-MyFilePath "navstart.ps1")
+        if ($filesOnly) {
+            Write-Host "Ready for connections!"
+        }
+        else {
+            . (Get-MyFilePath "navstart.ps1")
+        }
     }
 
 } catch {
 
     Write-Host -ForegroundColor Red $_.Exception.Message
 
-    if ("$env:ExitOnError" -ne "N") {
+    if ($installOnly) {
+        throw "Installation failed"
+    }
+    elseif ("$env:ExitOnError" -ne "N") {
         return
     }
 

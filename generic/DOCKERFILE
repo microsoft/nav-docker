@@ -49,6 +49,8 @@ RUN Invoke-WebRequest -Uri 'https://bcdocker.blob.core.windows.net/public/nav-do
     start-process -Wait -FilePath .\OpenXMLSDKV25.msi -ArgumentList /quiet, /qn, /passive ; \
     Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/DotNetCore.1.0.4_1.1.1-WindowsHosting.exe' -OutFile DotNetCore-WindowsHosting.exe ; \
     start-process -Wait -FilePath .\DotNetCore-WindowsHosting.exe -ArgumentList /quiet ; \
+    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/dotnet-hosting-5.0.4-win.exe' -OutFile DotNet-Win.exe ; \
+    start-process -Wait -FilePath .\DotNet-Win.exe -ArgumentList /quiet ; \
     Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/sqlncli.msi' -OutFile sqlncli.msi ; \
     start-process -Wait -FilePath .\sqlncli.msi -ArgumentList /quiet, /qn, /passive ; \
     Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/vcredist_x86.exe' -OutFile vcredist_x86.exe ; \
