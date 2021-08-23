@@ -14,6 +14,7 @@ function Head($text) {
 
 $push = $true
 $supported = @(
+    "10.0.20348.0"
     "10.0.19043.0"
     "10.0.19042.0"
     "10.0.19041.0"
@@ -55,6 +56,7 @@ $basetags = @(
 "4.8-windowsservercore-20H2"
 "4.8-windowsservercore-2004"
 "4.8-windowsservercore-1909"
+"4.8-windowsservercore-ltsc2022"
 "4.8-windowsservercore-ltsc2019"
 "4.8-windowsservercore-ltsc2016"
 )
