@@ -1,5 +1,7 @@
 ﻿$RootPath = $PSScriptRoot
 $filesOnly = $false
+$ENV:DOCKER_SCAN_SUGGEST = "false"
+$hostOs = (Get-CimInstance Win32_OperatingSystem)
 
 . (Join-Path $RootPath "settings.ps1")
 
@@ -13,13 +15,19 @@ function Head($text) {
 }
 
 $push = $true
-$supported = @(
-    "10.0.19042.0"
-    "10.0.19041.0"
-    "10.0.18363.0"
-    "10.0.17763.0"
-    "10.0.14393.0"
-)
+if ($hostOs.BuildNumber -eq 20348) {
+    $supported = @(
+        "10.0.20348.0"
+    )
+}
+else {
+    $supported = @(
+        "10.0.19042.0"
+        "10.0.19041.0"
+        "10.0.17763.0"
+        "10.0.14393.0"
+    )
+}
 
 Write-Host -ForegroundColor Yellow "Latest BusinessCentral tags:"
 $ver = [Version]"10.0.0.0"
@@ -49,15 +57,21 @@ $servercoretags = (get-navcontainerimagetags -imageName "mcr.microsoft.com/windo
 
 $servercoretags | Out-Host
 
-$basetags = @(
-"4.8-windowsservercore-20H2"
-"4.8-windowsservercore-2004"
-"4.8-windowsservercore-1909"
-"4.8-windowsservercore-ltsc2019"
-"4.8-windowsservercore-ltsc2016"
-)
+if ($hostOs.BuildNumber -eq 20348) {
+    $basetags = @(
+        "4.8-windowsservercore-ltsc2022"
+    )
+}
+else {
+    $basetags = @(
+        "4.8-windowsservercore-20H2"
+        "4.8-windowsservercore-2004"
+        "4.8-windowsservercore-ltsc2019"
+        "4.8-windowsservercore-ltsc2016"
+    )
+}
 
-Write-Host -ForegroundColor Yellow "Latest DotNetCore OSVersions:"
+Write-Host -ForegroundColor Yellow "Latest DotNetFramework OSVersions:"
 $basetags | % {
     $image = "mcr.microsoft.com/dotnet/framework/runtime:$_"
     docker pull $image > $Null
@@ -109,20 +123,35 @@ $start..($basetags.count-1) | % {
 
             head $osversion
 
-            $isolation = "hyperv"
-            
-            docker build --build-arg baseimage=$baseimage `
-                         --build-arg created=$created `
-                         --build-arg tag="$genericTag" `
-                         --build-arg osversion="$osversion" `
-                         --isolation=$isolation `
-                         --memory 10G `
-                         --tag $image `
-                         --file $dockerfile `
-                         $RootPath
-            
-            if ($LASTEXITCODE -ne 0) {
-                throw "Failed with exit code $LastExitCode"
+            if ($hostOs.BuildNumber -eq 20348) {
+                $isolation = "process"
+            }
+            else {
+                $isolation = "hyperv"
+            }
+            $success = $false
+            try {
+                docker build --build-arg baseimage=$baseimage `
+                             --build-arg created=$created `
+                             --build-arg tag="$genericTag" `
+                             --build-arg osversion="$osversion" `
+                             --isolation=$isolation `
+                             --memory 10G `
+                             --tag $image `
+                             --file $dockerfile `
+                             $RootPath | % {
+                    $_ | Out-Host
+                    if ($_ -like "Successfully built*") {
+                        $success = $true
+                    }
+                }
+            } catch {}
+            if (!$success) {
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Docker Build failed with exit code $LastExitCode"
+                } else {
+                    throw "Docker Build didn't indicate successfully built"
+                }
             }
             Write-Host "SUCCESS"
         
