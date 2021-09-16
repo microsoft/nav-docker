@@ -1,4 +1,7 @@
-﻿$RootPath = $PSScriptRoot
+﻿# az login --tenant 72f988bf-86f1-41af-91ab-2d7cd011db47
+# az acr login -n mcrbusinesscentral.azurecr.io
+
+$RootPath = $PSScriptRoot
 $filesOnly = $false
 $ENV:DOCKER_SCAN_SUGGEST = "false"
 $hostOs = (Get-CimInstance Win32_OperatingSystem)
