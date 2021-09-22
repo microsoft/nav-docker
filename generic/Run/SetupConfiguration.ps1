@@ -84,7 +84,7 @@ if ($isBcSandbox) {
 }
 
 if ($customNavSettings -ne "") {
-    Write-Host "Modifying Service Tier Config File with settings from environment variable"    
+    Write-Host "Modifying Service Tier Config File with settings from environment variable"
     Set-ConfigSetting -customSettings $customNavSettings -parentPath "//appSettings" -leafName "add" -customConfig $CustomConfig
 }
 
