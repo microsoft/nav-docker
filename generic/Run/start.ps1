@@ -254,8 +254,8 @@ try {
                         }
             
                         Write-Host "Copying Platform Artifacts"
-                        RoboCopy "$platformArtifactPath" "$tmpFolder" /e /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
-    
+                        RoboCopyFiles -source $platformArtifactPath -Destination $tmpFolder -e 
+
                         $useBakFile = ("$env:bakfile" -ne "")
                         $useForeignDb = !(("$env:databaseServer" -eq "" -and "$env:databaseInstance" -eq "") -or ("$env:databaseServer" -eq "localhost" -and "$env:databaseInstance" -eq "SQLEXPRESS"))
                         $useOwnLicenseFile = ("$env:licenseFile" -ne "")
@@ -280,7 +280,7 @@ try {
                                     Remove-Item -path $destFolder -Recurse -Force
                                 }
                                 Write-Host "Copying $_"
-                                RoboCopy "$appSubFolder" "$tmpFolder\$_"  /e /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+                                RoboCopyFiles -source $appSubFolder -Destination "$tmpFolder\$_" -e 
                             }
                         }
     
@@ -380,9 +380,11 @@ try {
 }
 
 if ($dlPathCreated) {
+    Write-host "Remove $dlPath"
     Remove-Item $dlPath -Recurse -Force
 }
 if ($navDvdPathCreated) {
+    Write-Host "remove $navDvdPath"
     Remove-Item $navDvdPath -Recurse -Force
 }
 
