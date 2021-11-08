@@ -18,6 +18,15 @@ Write-Host "Registering event sources"
 Write-Host "Creating DotNetCore Web Server Instance"
 $publishFolder = "$webClientFolder\WebPublish"
 
+$runtimeConfigJsonFile = Join-Path $publishFolder "Prod.Client.WebCoreApp.runtimeconfig.json"
+if (Test-Path $runtimeConfigJsonFile) {
+    $runtimeConfigJson = Get-Content $runtimeConfigJsonFile | ConvertFrom-Json
+    if (!($runtimeConfigJson.runtimeOptions.configProperties.PSObject.Properties.Name -eq "System.Globalization.UseNls")) {
+        Add-Member -InputObject $runtimeConfigJson.runtimeOptions.configProperties -NotePropertyName "System.Globalization.UseNls" -NotePropertyValue "true"
+        $runtimeConfigJson | ConvertTo-Json -Depth 99 | Set-Content $runtimeConfigJsonFile
+    }
+}
+
 $NAVWebClientManagementModule = "$webClientFolder\Modules\NAVWebClientManagement\NAVWebClientManagement.psm1"
 if (!(Test-Path $NAVWebClientManagementModule)) {
     $NAVWebClientManagementModule = "$webClientFolder\Scripts\NAVWebClientManagement.psm1"
