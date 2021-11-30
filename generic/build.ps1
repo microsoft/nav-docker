@@ -1,7 +1,7 @@
 ﻿$RootPath = $PSScriptRoot
 
 . (Join-Path $RootPath "settings.ps1")
-
+$filesOnly = $false
 $os = (Get-CimInstance Win32_OperatingSystem)
 if ($os.OSType -ne 18 -or !$os.Version.StartsWith("10.0.")) {
     throw "Unknown Host Operating System"
@@ -27,13 +27,23 @@ if (!($baseImage)) {
     Write-Error "Unable to find a matching mcr.microsoft.com/dotnet/framework/runtime docker image"
 }
 else {
+
+    if ($filesOnly) {
+        $dockerfile = Join-Path $RootPath "DOCKERFILE.filesonly"
+    }
+    else {
+        $dockerfile = Join-Path $RootPath "DOCKERFILE"
+    }
+
     $image = "mygeneric"
  
     docker pull $baseimage
     $osversion = docker inspect --format "{{.OsVersion}}" $baseImage
 
-    $isolation = "process"
-    if ($osversion -ne $hostOsVersion) {
+    if ($hostOsVersion.Build -ge 20348 -or $osversion.Build -eq $hostOsVersion.Build) {
+        $isolation = "process"
+    }
+    else {
         $isolation = "hyperv"
     }
     
@@ -50,6 +60,7 @@ else {
                  --build-arg osversion="$osversion" `
                  --isolation=$isolation `
                  --tag $image `
+                 --file $dockerfile `
                  $RootPath
     
     if ($LASTEXITCODE -ne 0) {
