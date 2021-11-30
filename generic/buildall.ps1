@@ -25,9 +25,9 @@ if ($hostOs.BuildNumber -eq 20348) {
 }
 else {
     $supported = @(
-        "10.0.19042.0"
-        "10.0.19041.0"
         "10.0.17763.0"
+        "10.0.19041.0"
+        "10.0.19042.0"
         "10.0.14393.0"
     )
 }
@@ -67,9 +67,9 @@ if ($hostOs.BuildNumber -eq 20348) {
 }
 else {
     $basetags = @(
-        "4.8-windowsservercore-20H2"
-        "4.8-windowsservercore-2004"
         "4.8-windowsservercore-ltsc2019"
+        "4.8-windowsservercore-2004"
+        "4.8-windowsservercore-20H2"
         "4.8-windowsservercore-ltsc2016"
     )
 }
