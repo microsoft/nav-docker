@@ -21,7 +21,19 @@
     else {
         Write-Host "Mounting Tenant"
     }
-    Mount-NavDatabase -ServerInstance $ServerInstance -TenantId $TenantId -DatabaseName $TenantId -AlternateId $alternateId -applicationInsightsInstrumentationKey $applicationInsightsInstrumentationKey
+    $parameters = @{
+        "ServerInstance" = $ServerInstance
+        "TenantId" = $TenantId
+        "DatabaseName" = $TenantId
+        "AlternateId" = $alternateId
+        "applicationInsightsInstrumentationKey" = $applicationInsightsInstrumentationKey
+    }
+    if ("$aadTenant" -ne "" -and "$aadTenant" -ne "Common") {
+        $parameters += @{
+            "AadTenantId" = $aadTenant
+        }
+    }
+    Mount-NavDatabase @parameters
     $tenantStartTime = [DateTime]::Now
     while ([DateTime]::Now.Subtract($tenantStartTime).TotalSeconds -le 60) {
         $tenantInfo = Get-NAVTenant -ServerInstance $ServerInstance -Tenant $TenantId

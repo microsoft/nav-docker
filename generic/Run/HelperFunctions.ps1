@@ -339,6 +339,8 @@ function Mount-NavDatabase
         [System.Management.Automation.PSCredential] $databaseCredentials,
         [Parameter(Mandatory=$false)]
         [string[]] $AlternateId = @(),
+        [Parameter(Mandatory=$false)]
+        [string] $AadTenantId,
         [switch] $allowAppDatabaseWrite,
         [string] $applicationInsightsInstrumentationKey = ""
     )
@@ -366,6 +368,9 @@ function Mount-NavDatabase
     }
     if ($applicationInsightsInstrumentationKey) {
         $Params += @{"ApplicationInsightsKey" = $applicationInsightsInstrumentationKey }
+    }
+    if ($AadTenantId) {
+        $Params += @{"AadTenantId" = $AadTenantId }
     }
 
     Mount-NAVTenant -ServerInstance $ServerInstance `

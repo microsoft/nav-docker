@@ -208,6 +208,7 @@ if ("$env:WebServerInstance" -ne "") {
 
 # AccessControlService
 $appIdUri = "$env:appIdUri"
+$aadTenant = "$env:aadTenant"
 $federationLoginEndpoint = "$env:federationLoginEndpoint"
 $federationMetadata = "$env:federationMetadata"
 $authenticationEMail = "$env:authenticationEMail"

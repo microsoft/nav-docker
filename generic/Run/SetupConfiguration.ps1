@@ -92,11 +92,14 @@ if ($auth -eq "AccessControlService") {
     if ($appIdUri -eq "") {
         $appIdUri = "$publicWebBaseUrl"
     }
+    if ("$aadTenant" -eq "") {
+        $aadTenant = "Common"
+    }
     if ($federationMetadata -eq "") {
-        $federationMetadata = "https://login.windows.net/Common/federationmetadata/2007-06/federationmetadata.xml"
+        $federationMetadata = "https://login.microsoftonline.com/$aadTenant/FederationMetadata/2007-06/FederationMetadata.xml"
     }
     if ($federationLoginEndpoint -eq "") {
-        $federationLoginEndpoint = "https://login.windows.net/Common/wsfed?wa=wsignin1.0%26wtrealm=$appIdUri"
+        $federationLoginEndpoint = "https://login.microsoftonline.com/$aadTenant/wsfed?wa=wsignin1.0%26wtrealm=$appIdUri"
     }
 
     $customConfig.SelectSingleNode("//appSettings/add[@key='AppIdUri']").Value = $appIdUri
