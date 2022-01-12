@@ -6,18 +6,22 @@
 #     $certificateThumbprint
 #     $dnsIdentity
 #
-. (Get-MyFilePath "New-SelfSignedCertificateEx.ps1")
 
 Write-Host "Creating Self Signed Certificate"
-$certificatePfxFile = Join-Path $runPath "certificate.pfx"
-$certificateCerFile = Join-Path $runPath "certificate.cer"
+$cert = New-SelfSignedCertificate -DnsName @($publicDnsName, $hostName) -CertStoreLocation Cert:\LocalMachine\My
+
 $certificatePfxPassword = Get-RandomPassword
 $SecurePfxPassword = ConvertTo-SecureString -String $certificatePfxPassword -AsPlainText -Force
-New-SelfSignedCertificateEx -Subject "CN=$publicDnsName" -SubjectAlternativeName @($publicDnsName) -IsCA $true -Exportable -Path $certificatePfxFile -Password $SecurePfxPassword -SignatureAlgorithm sha256 | Out-Null
-$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($certificatePfxFile, $certificatePfxPassword)
+
+$certificatePfxFile = Join-Path $runPath "certificate.pfx"
+$certificateCerFile = Join-Path $runPath "certificate.cer"
+
+Export-PfxCertificate -Cert $cert -FilePath $certificatePfxFile -Password $SecurePfxPassword | Out-Null
 Export-Certificate -Cert $cert -FilePath $CertificateCerFile | Out-Null
+
 $certificateThumbprint = $cert.Thumbprint
 Write-Host "Self Signed Certificate Thumbprint $certificateThumbprint"
-Import-PfxCertificate -Password $SecurePfxPassword -FilePath $certificatePfxFile -CertStoreLocation "cert:\localMachine\my" | Out-Null
-Import-PfxCertificate -Password $SecurePfxPassword -FilePath $certificatePfxFile -CertStoreLocation "cert:\localMachine\Root" | Out-Null
+Import-PfxCertificate -Password $SecurePfxPassword -FilePath $certificatePfxFile -CertStoreLocation "cert:\localMachine\TrustedPeople" | Out-Null
+
 $dnsidentity = $cert.GetNameInfo('SimpleName',$false)
+Write-Host "DNS identity $dnsidentity"

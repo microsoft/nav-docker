@@ -16,7 +16,6 @@ $SecurePfxPassword = ConvertTo-SecureString -String $certificatePfxPassword -AsP
 $certificatePfxFile = Join-Path $runPath "certificate.pfx"
 $certificateCerFile = Join-Path $runPath "certificate.cer"
 
-$path = "cert:\localMachine\my\$($cert.thumbprint)"
 Export-PfxCertificate -Cert $cert -FilePath $certificatePfxFile -Password $SecurePfxPassword | Out-Null
 Export-Certificate -Cert $cert -FilePath $CertificateCerFile | Out-Null
 
