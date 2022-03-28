@@ -22,7 +22,6 @@ Export-Certificate -Cert $cert -FilePath $CertificateCerFile | Out-Null
 $certificateThumbprint = $cert.Thumbprint
 Write-Host "Self Signed Certificate Thumbprint $certificateThumbprint"
 Import-PfxCertificate -Password $SecurePfxPassword -FilePath $certificatePfxFile -CertStoreLocation "cert:\localMachine\TrustedPeople" | Out-Null
-Import-PfxCertificate -Password $SecurePfxPassword -FilePath $certificatePfxFile -CertStoreLocation "cert:\localMachine\Root" | Out-Null
 
 $dnsidentity = $cert.GetNameInfo('SimpleName',$false)
 Write-Host "DNS identity $dnsidentity"
