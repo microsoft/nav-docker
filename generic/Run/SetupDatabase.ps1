@@ -37,6 +37,10 @@ if ($restartingInstance) {
         $databaseFile = $bakFile
     }
 
+    Write-Host "Determining Database Collation"
+    $collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -ConnectionTimeout 300 -QueryTimeOut 300 "RESTORE HEADERONLY FROM DISK = '$bakfile'").Collation
+    SetDatabaseServerCollation -collation $collation
+
     # Restore database
     $databaseFolder = "c:\databases\my"
     
