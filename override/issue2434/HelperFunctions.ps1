@@ -626,7 +626,7 @@ function SetDatabaseServerCollation {
         Write-Host "Changing Database Server Collation to $collation"
         $sqlSetupExe = (Get-item "C:\Program Files\Microsoft SQL Server\*\Setup Bootstrap\*\Setup.exe").FullName
         & $sqlSetupExe /q /ACTION=REBUILDDATABASE /INSTANCENAME=SQLEXPRESS /SQLSYSADMINACCOUNTS='BUILTIN\Administrators' /SQLCOLLATION=$collation > $null
-        Set-Content -Path  "C:\Run\Collation.txt" -Value $collation
+#        Set-Content -Path  "C:\Run\Collation.txt" -Value $collation
     }
 }
 
