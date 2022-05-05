@@ -181,7 +181,7 @@ function Copy-NavDatabase
         try
         {
             Write-Host "Taking database $SourceDatabaseName offline"
-            Invoke-SqlCmdWithRetry -Query ("ALTER DATABASE [{0}] SET OFFLINE WITH ROLLBACK IMMEDIATE" -f $SourceDatabaseName)
+            Invoke-SqlCmdWithRetry -Query ("ALTER DATABASE [{0}] SET OFFLINE WITH ROLLBACK IMMEDIATE" -f $SourceDatabaseName) -maxattempts 10
     
             Write-Host "Copying database files"
             $files = ""
@@ -195,12 +195,12 @@ function Copy-NavDatabase
             }
     
             Write-Host "Attaching files as new Database $DestinationDatabaseName"
-            Invoke-SqlCmdWithRetry -Query ("CREATE DATABASE [{0}] ON {1} FOR ATTACH" -f $DestinationDatabaseName, $Files.ToString())
+            Invoke-SqlCmdWithRetry -Query ("CREATE DATABASE [{0}] ON {1} FOR ATTACH" -f $DestinationDatabaseName, $Files.ToString()) -maxattempts 10
         }
         finally
         {
             Write-Host "Putting database $SourceDatabaseName back online"
-            Invoke-SqlCmdWithRetry -Query ("ALTER DATABASE [{0}] SET ONLINE" -f $SourceDatabaseName)
+            Invoke-SqlCmdWithRetry -Query ("ALTER DATABASE [{0}] SET ONLINE" -f $SourceDatabaseName) -maxattempts 10
         }
 
     } else {
@@ -441,6 +441,7 @@ function Invoke-SqlCmdWithRetry
                 throw    
             }
             Write-Host -ForegroundColor Yellow  "Warning, exception when running: $Query"
+            Write-Host -ForegroundColor Yellow "Exception was: $($_.Exception.Message)"
             Write-Host -NoNewline "Waiting"
             1..$attempt*3 | % {
                 Start-Sleep -Seconds 10
