@@ -216,13 +216,10 @@ else {
 # Restore CRONUS Demo database to databases folder
 if (!$skipDb -and $databasePath) {
 
-#    Write-Host "Determining Database Collation from $databasePath"
-#    $collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -ConnectionTimeout 300 -QueryTimeOut 300 "RESTORE HEADERONLY FROM DISK = '$databasePath'").Collation
-#    SetDatabaseServerCollation -collation $collation
+    Write-Host "Determining Database Collation from $databasePath"
+    $collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -ConnectionTimeout 300 -QueryTimeOut 300 "RESTORE HEADERONLY FROM DISK = '$databasePath'").Collation
+    SetDatabaseServerCollation -collation $collation
 
-    get-service MSSQL`$SQLEXPRESS
-    Start-Sleep -Seconds 300    
-    get-service MSSQL`$SQLEXPRESS
     Write-Host "Restoring CRONUS Demo Database"
     New-NAVDatabase -DatabaseServer $databaseServer `
                     -DatabaseInstance $databaseInstance `
@@ -238,13 +235,10 @@ elseif (!$skipDb -and (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Contain
     
     $databaseFile = $bak.FullName
 
-#    Write-Host "Determining Database Collation"
-#    $collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -ConnectionTimeout 300 -QueryTimeOut 300 "RESTORE HEADERONLY FROM DISK = '$databaseFile'").Collation
-#    SetDatabaseServerCollation -collation $collation
+    Write-Host "Determining Database Collation"
+    $collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -ConnectionTimeout 300 -QueryTimeOut 300 "RESTORE HEADERONLY FROM DISK = '$databaseFile'").Collation
+    SetDatabaseServerCollation -collation $collation
 
-    get-service MSSQL`$SQLEXPRESS
-    Start-Sleep -Seconds 300    
-    get-service MSSQL`$SQLEXPRESS
     Write-Host "Restoring CRONUS Demo Database"
     New-NAVDatabase -DatabaseServer $databaseServer `
                     -DatabaseInstance $databaseInstance `
