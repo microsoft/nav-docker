@@ -183,7 +183,7 @@ Copy-Item -Path (Join-Path $runPath 'Install\t2embed.dll') -Destination "c:\wind
 Copy-Item -Path (Join-Path $runPath 'Install\Microsoft.IdentityModel.dll') -Destination (Join-Path $serviceTierFolder 'Microsoft.IdentityModel.dll')
 
 Write-Host "Copying ReportBuilder"
-Start-Job -ScriptBlock { Param($runPath)
+#Start-Job -ScriptBlock { Param($runPath)
     $reportBuilderPath = "C:\Program Files (x86)\ReportBuilder"
     $reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder2016'
     Move-Item -Path $reportBuilderSrc -Destination $reportBuilderPath -Force
@@ -193,7 +193,7 @@ Start-Job -ScriptBlock { Param($runPath)
     New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open" -itemtype Directory -ErrorAction Ignore | Out-null
     New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -itemtype Directory -ErrorAction Ignore | Out-null
     Set-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -value "$reportBuilderPath\MSReportBuilder.exe ""%1"""
-} -ArgumentList $runPath | Out-Null
+#} -ArgumentList $runPath | Out-Null
 
 Write-Host "Importing PowerShell Modules"
 try {
