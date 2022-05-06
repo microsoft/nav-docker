@@ -184,15 +184,15 @@ Copy-Item -Path (Join-Path $runPath 'Install\Microsoft.IdentityModel.dll') -Dest
 
 Write-Host "Copying ReportBuilder"
 #Start-Job -ScriptBlock { Param($runPath)
-    $reportBuilderPath = "C:\Program Files (x86)\ReportBuilder"
-    $reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder2016'
-    Move-Item -Path $reportBuilderSrc -Destination $reportBuilderPath -Force
-    New-PSDrive -Name HKCR -PSProvider Registry -Root HKEY_CLASSES_ROOT -ErrorAction Ignore | Out-null
-    New-Item "HKCR:\MSReportBuilder_ReportFile_32" -itemtype Directory -ErrorAction Ignore | Out-null
-    New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell" -itemtype Directory -ErrorAction Ignore | Out-null
-    New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open" -itemtype Directory -ErrorAction Ignore | Out-null
-    New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -itemtype Directory -ErrorAction Ignore | Out-null
-    Set-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -value "$reportBuilderPath\MSReportBuilder.exe ""%1"""
+#    $reportBuilderPath = "C:\Program Files (x86)\ReportBuilder"
+#    $reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder2016'
+#    Move-Item -Path $reportBuilderSrc -Destination $reportBuilderPath -Force
+#    New-PSDrive -Name HKCR -PSProvider Registry -Root HKEY_CLASSES_ROOT -ErrorAction Ignore | Out-null
+#    New-Item "HKCR:\MSReportBuilder_ReportFile_32" -itemtype Directory -ErrorAction Ignore | Out-null
+#    New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell" -itemtype Directory -ErrorAction Ignore | Out-null
+#    New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open" -itemtype Directory -ErrorAction Ignore | Out-null
+#    New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -itemtype Directory -ErrorAction Ignore | Out-null
+#    Set-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -value "$reportBuilderPath\MSReportBuilder.exe ""%1"""
 #} -ArgumentList $runPath | Out-Null
 
 Write-Host "Importing PowerShell Modules"
