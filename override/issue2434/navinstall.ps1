@@ -79,7 +79,7 @@ if (Test-Path "$navDvdPath\WindowsPowerShellScripts\WebSearch") {
     RoboCopyFiles -Source "$navDvdPath\WindowsPowerShellScripts\WebSearch" -Destination "$runPath\WebSearch" -e
 }
 
-Start-Job -ScriptBlock { Param($NavDvdPath, $runPath, $appArtifactPath)
+#Start-Job -ScriptBlock { Param($NavDvdPath, $runPath, $appArtifactPath)
 
     $runPath = "c:\Run"
     $myPath = Join-Path $runPath "my"
@@ -138,6 +138,7 @@ Start-Job -ScriptBlock { Param($NavDvdPath, $runPath, $appArtifactPath)
     Write-Host "Copying additional files"
     "ConfigurationPackages","Test Assemblies","TestToolKit","UpgradeToolKit","Extensions","Applications","Applications.*","My" | % {
         $dir = Get-ExistingDirectory -pri1 $appArtifactPath -pri2 $navDvdPath -folder $_
+        Write-Host "'$dir'"
         if ($dir)
         {
             $name = [System.IO.Path]::GetFileName($dir)
@@ -172,7 +173,7 @@ Start-Job -ScriptBlock { Param($NavDvdPath, $runPath, $appArtifactPath)
         }
     }
 
-} -ArgumentList $navDvdPath, $runPath, $appArtifactPath | Out-Null
+#} -ArgumentList $navDvdPath, $runPath, $appArtifactPath | Out-Null
 
 Write-Host "Copying dependencies"
 $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName
