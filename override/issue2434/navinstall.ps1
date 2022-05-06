@@ -220,7 +220,9 @@ if (!$skipDb -and $databasePath) {
 #    $collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -ConnectionTimeout 300 -QueryTimeOut 300 "RESTORE HEADERONLY FROM DISK = '$databasePath'").Collation
 #    SetDatabaseServerCollation -collation $collation
 
+    get-service MSSQL`$SQLEXPRESS
     Start-Sleep -Seconds 300    
+    get-service MSSQL`$SQLEXPRESS
     Write-Host "Restoring CRONUS Demo Database"
     New-NAVDatabase -DatabaseServer $databaseServer `
                     -DatabaseInstance $databaseInstance `
@@ -240,7 +242,9 @@ elseif (!$skipDb -and (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Contain
 #    $collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -ConnectionTimeout 300 -QueryTimeOut 300 "RESTORE HEADERONLY FROM DISK = '$databaseFile'").Collation
 #    SetDatabaseServerCollation -collation $collation
 
+    get-service MSSQL`$SQLEXPRESS
     Start-Sleep -Seconds 300    
+    get-service MSSQL`$SQLEXPRESS
     Write-Host "Restoring CRONUS Demo Database"
     New-NAVDatabase -DatabaseServer $databaseServer `
                     -DatabaseInstance $databaseInstance `
