@@ -181,7 +181,7 @@ function Copy-NavDatabase
         try
         {
             Write-Host "Taking database $SourceDatabaseName offline"
-            Invoke-SqlCmdWithRetry -Query ("ALTER DATABASE [{0}] SET OFFLINE WITH ROLLBACK IMMEDIATE" -f $SourceDatabaseName) -maxattempts 10
+            Invoke-SqlCmdWithRetry -Query ("ALTER DATABASE [{0}] SET OFFLINE WITH ROLLBACK IMMEDIATE" -f $SourceDatabaseName)
     
             Write-Host "Copying database files"
             $files = ""
@@ -195,12 +195,12 @@ function Copy-NavDatabase
             }
     
             Write-Host "Attaching files as new Database $DestinationDatabaseName"
-            Invoke-SqlCmdWithRetry -Query ("CREATE DATABASE [{0}] ON {1} FOR ATTACH" -f $DestinationDatabaseName, $Files.ToString()) -maxattempts 10
+            Invoke-SqlCmdWithRetry -Query ("CREATE DATABASE [{0}] ON {1} FOR ATTACH" -f $DestinationDatabaseName, $Files.ToString())
         }
         finally
         {
             Write-Host "Putting database $SourceDatabaseName back online"
-            Invoke-SqlCmdWithRetry -Query ("ALTER DATABASE [{0}] SET ONLINE" -f $SourceDatabaseName) -maxattempts 10
+            Invoke-SqlCmdWithRetry -Query ("ALTER DATABASE [{0}] SET ONLINE" -f $SourceDatabaseName)
         }
 
     } else {
