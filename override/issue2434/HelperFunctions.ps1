@@ -621,14 +621,7 @@ function SetDatabaseServerCollation {
     Param(
         [string] $collation
     )
-
-    $oldcollation = Get-Content -Path "C:\Run\Collation.txt" -ErrorAction SilentlyContinue
-    if ("$oldcollation" -ne "$collation") {
-        Write-Host "Changing Database Server Collation to $collation"
-        $sqlSetupExe = (Get-item "C:\Program Files\Microsoft SQL Server\*\Setup Bootstrap\*\Setup.exe").FullName
-        & $sqlSetupExe /q /ACTION=REBUILDDATABASE /INSTANCENAME=SQLEXPRESS /SQLSYSADMINACCOUNTS='BUILTIN\Administrators' /SQLCOLLATION=$collation > $null
-#        Set-Content -Path  "C:\Run\Collation.txt" -Value $collation
-    }
+    # Left empty if anybody uses the file for override in older generic images
 }
 
 function Download-File {

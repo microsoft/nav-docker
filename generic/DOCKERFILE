@@ -37,12 +37,9 @@ RUN Invoke-WebRequest -Uri 'https://bcdocker.blob.core.windows.net/public/nav-do
     [System.IO.Compression.ZipFile]::ExtractToDirectory('.\nav-docker-install.zip', 'c:\run') ; \
     Remove-Item -Force 'nav-docker-install.zip' ; \
     . C:\Run\UpdatePowerShellExeConfig.ps1 ; \
-    Set-Content -Path "C:\Run\Collation.txt" -Value "SQL_Latin1_General_CP1_CI_AS" ; \
-    . c:\run\helperfunctions.ps1 ; \
     Start-Service -Name `$SqlBrowserServiceName -ErrorAction Ignore -WarningAction Ignore ; \
     Start-Service -Name `$SqlWriterServiceName -ErrorAction Ignore -WarningAction Ignore ; \
     Start-Service -Name `$SqlServiceName -ErrorAction Ignore -WarningAction Ignore ; \
-    SetDatabaseServerCollation -collation "Latin1_General_100_CS_AS" ; \
     Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/rewrite_2.0_rtw_x64.msi' -OutFile rewrite_amd64.msi ; \
     start-process -Wait -FilePath .\rewrite_amd64.msi -ArgumentList /quiet, /qn, /passive ; \
     Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/OpenXMLSDKv25.msi' -OutFile OpenXMLSDKV25.msi ; \

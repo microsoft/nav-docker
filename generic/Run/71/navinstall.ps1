@@ -123,11 +123,6 @@ $databaseFolder = "c:\databases"
 New-Item -Path $databaseFolder -itemtype Directory -ErrorAction Ignore | Out-Null
 $databaseFile = $bak.FullName
 
-Write-Host "Determining Database Collation"
-$collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -ConnectionTimeout 300 -QueryTimeOut 300 "RESTORE HEADERONLY FROM DISK = '$databaseFile'").Collation
-
-SetDatabaseServerCollation -collation $collation
-
 Write-Host "Restoring CRONUS Demo Database"
 New-NAVDatabase -DatabaseServer $databaseServer `
                 -DatabaseInstance $databaseInstance `

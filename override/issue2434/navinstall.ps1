@@ -202,10 +202,6 @@ if (!$skipDb -and $databasePath) {
         Remove-NavDatabase -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseCredentials $databaseCredentials -DatabaseName $databaseName
     }
 
-    Write-Host "Determining Database Collation from $databasePath"
-    $collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -ConnectionTimeout 300 -QueryTimeOut 300 "RESTORE HEADERONLY FROM DISK = '$databasePath'").Collation
-    SetDatabaseServerCollation -collation $collation
-
     Write-Host "Restoring CRONUS Demo Database"
     New-NAVDatabase -DatabaseServer $databaseServer `
                     -DatabaseInstance $databaseInstance `
@@ -226,10 +222,6 @@ elseif (!$skipDb -and (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Contain
         Remove-NavDatabase -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseCredentials $databaseCredentials -DatabaseName $databaseName
     }
 
-    Write-Host "Determining Database Collation"
-    $collation = (Invoke-Sqlcmd -ServerInstance localhost\SQLEXPRESS -ConnectionTimeout 300 -QueryTimeOut 300 "RESTORE HEADERONLY FROM DISK = '$databaseFile'").Collation
-    SetDatabaseServerCollation -collation $collation
-
     Write-Host "Restoring CRONUS Demo Database"
     New-NAVDatabase -DatabaseServer $databaseServer `
                     -DatabaseInstance $databaseInstance `
@@ -248,11 +240,6 @@ elseif (!$skipDb -and (Test-Path "$navDvdPath\databases")) {
     if (Test-NavDatabase -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseCredentials $databaseCredentials -DatabaseName $databaseName) {
         Write-Host "Removing database $databaseName"
         Remove-NavDatabase -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseCredentials $databaseCredentials -DatabaseName $databaseName
-    }
-
-    $collation = Get-Content -Path "$navDvdPath\databases\Collation.txt" -ErrorAction SilentlyContinue
-    if ($collation) {
-        SetDatabaseServerCollation -collation $collation
     }
 
     Write-Host "Copying Cronus database"
