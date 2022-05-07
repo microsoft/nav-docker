@@ -18,6 +18,7 @@ $navDvdPathCreated = $false
 $navFSPath = "C:\NAVFS"
 $dlPath = "C:\DL"
 $dlPathCreated = $false
+$rebootContainer = $false
 
 $publicDnsNameFile = "$RunPath\PublicDnsName.txt"
 $restartingInstance = Test-Path -Path $publicDnsNameFile -PathType Leaf
@@ -155,12 +156,16 @@ try {
                         }
 
                         if ($env:doNotUseNewFolder -ne "Y") {
+                            if ($versionNo -ge 150) {
+                                $useNewFolder = $true
+                            }
                             if (($versionFolder) -and (Test-Path "$versionFolder-new")) {
                                 $versionFolder = "$versionFolder-new"
                                 $useNewFolder = $true
-                                if ($multitenant) {
-                                    $mtParam = @{ "multitenant" = $true }
-                                }
+                                $rebootContainer = $true
+                            }
+                            if ($useNewFolder) {
+                                $mtParam = @{ "multitenant" = $multitenant; "rebootContainer" = $rebootContainer }
                             }
                         }
                     }
