@@ -33,6 +33,8 @@ $NAVWebClientManagementModule = "$webClientFolder\Modules\NAVWebClientManagement
 if (!(Test-Path $NAVWebClientManagementModule)) {
     $NAVWebClientManagementModule = "$webClientFolder\Scripts\NAVWebClientManagement.psm1"
 }
+
+$NAVWebClientManagementModule = "c:\run\my\NAVWebClientManagement.psm1"
 Write-Host "b"
 Import-Module $NAVWebClientManagementModule
 Write-Host "c"

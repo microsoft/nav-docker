@@ -24,6 +24,7 @@ $hostname = hostname
 . (Get-MyFilePath "SetupVariables.ps1")
 
 $newPublicDnsName = $true
+$restartCount = 0
 if ($restartingInstance) {
     Write-Host "Restarting Container"
     $prevPublicDnsName = Get-Content -Path $publicDnsNameFile
@@ -31,10 +32,23 @@ if ($restartingInstance) {
         $newPublicDnsName = $false
         Write-Host "PublicDnsName unchanged"
     }
+    else {
+        $restartCount = [int32]0
+        if ([int32]::TryParse($prevPublicDnsName, [ref]$restartCount)) {
+            $restartCount++
+            Write-Host "Restart count $restartCount"
+            if ($restartCount -gt 2) {
+                throw "Error starting container"
+            }
+        }
+        else {
+            Write-Host "PublicDnsName waschanged"
+        }
+    }
 } else {
     Write-Host "Starting Container"
 }
-Set-Content -Path $publicDnsNameFile -Value "n/a"
+Set-Content -Path $publicDnsNameFile -Value "$restartCount"
 
 $applicationInsightsInstrumentationKeyFile = Get-MyFilePath "applicationInsightsInstrumentationKey.txt"
 if (Test-Path $applicationInsightsInstrumentationKeyFile) {
