@@ -564,8 +564,8 @@ function New-NavWebSite
     }
 
     Write-Host "Copy files to WWW root $siteRootFolder"
-    Copy-Item $SourcePath -Destination $siteRootFolder -Recurse -Container -Force
-
+    RoboCopyFiles -Source $SourcePath -Destination $siteRootFolder -e
+#    Copy-Item $SourcePath -Destination $siteRootFolder -Recurse -Container -Force
 
     Write-Host "Create the application pool $AppPoolName"
     if (Test-Path "IIS:\AppPools\$AppPoolName") {
