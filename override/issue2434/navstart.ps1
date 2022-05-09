@@ -42,7 +42,7 @@ if ($restartingInstance) {
             }
         }
         else {
-            Write-Host "PublicDnsName waschanged"
+            Write-Host "PublicDnsName was changed"
         }
     }
 } else {
