@@ -130,11 +130,16 @@ $skipDb = $false
 # Restore CRONUS Demo database to databases folder
 if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
     $bak = (Get-ChildItem -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\*.bak")[0]
-    
+
     # Restore database
     $databaseFolder = "c:\databases"
     New-Item -Path $databaseFolder -itemtype Directory -ErrorAction Ignore | Out-Null
     $databaseFile = $bak.FullName
+
+    if (Test-NavDatabase -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseCredentials $databaseCredentials -DatabaseName $databaseName) {
+        Write-Host "Removing database $databaseName"
+        Remove-NavDatabase -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseCredentials $databaseCredentials -DatabaseName $databaseName
+    }
 
     Write-Host "Restoring CRONUS Demo Database"
     New-NAVDatabase -DatabaseServer $databaseServer `
