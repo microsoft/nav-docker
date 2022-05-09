@@ -4,7 +4,7 @@ Get-WebBinding | Remove-WebBinding
 
 $certparam = @{}
 if ($servicesUseSSL) {
-    Write-Host "certificateThumprint $certificateThumbprint"
+    Write-Host "CertificateThumprint $certificateThumbprint"
     $certparam += @{CertificateThumbprint = $certificateThumbprint}
 }
 
@@ -28,17 +28,25 @@ if (Test-Path $runtimeConfigJsonFile) {
     }
 }
 
-Write-Host "a"
 $NAVWebClientManagementModule = "$webClientFolder\Modules\NAVWebClientManagement\NAVWebClientManagement.psm1"
 if (!(Test-Path $NAVWebClientManagementModule)) {
     $NAVWebClientManagementModule = "$webClientFolder\Scripts\NAVWebClientManagement.psm1"
 }
-
+# Replace Copy with Robocopy
+$WebManagementModuleSource = Get-Content -Path $NAVWebClientManagementModule -Raw -Encoding UTF8
+$WebManagementModuleSource = $WebManagementModuleSource.Replace('Copy-Item $SourcePath -Destination $siteRootFolder -Recurse -Container -Force','RoboCopy "$SourcePath" "$siteRootFolder" "*" /e /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
+Get-ChildItem -Path $SourcePath -Filter "*" -Recurse | ForEach-Object {
+    $destPath = Join-Path $siteRootFolder $_.FullName.Substring($SourcePath.Length)
+    while (!(Test-Path $destPath)) {
+        Write-Host "Waiting for $destPath to be available"
+        Start-Sleep -Seconds 1
+    }
+}')
+$WebManagementModuleSource = $WebManagementModuleSource.Replace('Write-Verbose','Write-Host')
 $NAVWebClientManagementModule = "c:\run\my\NAVWebClientManagement.psm1"
-Write-Host "b"
+Set-Content -Path $NAVWebClientManagementModule -Value $WebManagementModuleSource -Encoding UTF8
+
 Import-Module $NAVWebClientManagementModule
-Write-Host "c"
-Write-Host "New-NAVWebServerInstance -PublishFolder $publishFolder -WebServerInstance $WebServerInstance -Server localhost -ServerInstance $ServerInstance -ClientServicesCredentialType $Auth -ClientServicesPort $clientServicesPort -WebSitePort $webClientPort"
 New-NAVWebServerInstance -PublishFolder $publishFolder `
                          -WebServerInstance "$WebServerInstance" `
                          -Server "localhost" `
@@ -47,7 +55,6 @@ New-NAVWebServerInstance -PublishFolder $publishFolder `
                          -ClientServicesPort "$clientServicesPort" `
                          -WebSitePort $webClientPort @certparam
 
-Write-Host "d"
 $navsettingsFile = Join-Path $wwwRootPath "$WebServerInstance\navsettings.json"
 $config = Get-Content $navSettingsFile | ConvertFrom-Json
 Add-Member -InputObject $config.NAVWebSettings -NotePropertyName "RequireSSL" -NotePropertyValue "true" -ErrorAction SilentlyContinue
@@ -56,7 +63,6 @@ Add-Member -InputObject $config.NAVWebSettings -NotePropertyName "Personalizatio
 $config.NAVWebSettings.PersonalizationEnabled = $true
 $config.NAVWebSettings.ManagementServicesPort = $ManagementServicesPort
 
-Write-Host "e"
 if ($customWebSettings -ne "") {
     Write-Host "Modifying Web Client config with settings from environment variable"        
 
@@ -75,6 +81,4 @@ if ($customWebSettings -ne "") {
     }
 }
 
-Write-Host "f"
 $config | ConvertTo-Json | set-content $navSettingsFile
-Write-Host "g"

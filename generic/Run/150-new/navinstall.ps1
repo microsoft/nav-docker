@@ -9,7 +9,8 @@ Param(
     [switch] $includeTestToolkit,
     [switch] $includeTestLibrariesOnly,
     [switch] $includeTestFrameworkOnly,
-    [switch] $includePerformanceToolkit
+    [switch] $includePerformanceToolkit,
+    [switch] $rebootContainer
 )
 
 Write-Host "Installing Business Central"
@@ -25,6 +26,19 @@ function Get-MyFilePath([string]$FileName)
         (Join-Path $myPath $FileName)
     } else {
         (Join-Path $runPath $FileName)
+    }
+}
+
+function Get-ExistingDirectory([string]$pri1, [string]$pri2, [string]$folder)
+{
+    if ($pri1 -and (Test-Path (Join-Path $pri1 $folder))) {
+        (Get-Item (Join-Path $pri1 $folder)).FullName
+    }
+    elseif ($pri2 -and (Test-Path (Join-Path $pri2 $folder))) {
+        (Get-Item (Join-Path $pri2 $folder)).FullName
+    }
+    else {
+        ""
     }
 }
 
@@ -79,100 +93,67 @@ if (Test-Path "$navDvdPath\WindowsPowerShellScripts\WebSearch") {
     RoboCopyFiles -Source "$navDvdPath\WindowsPowerShellScripts\WebSearch" -Destination "$runPath\WebSearch" -e
 }
 
-Start-Job -ScriptBlock { Param($NavDvdPath, $runPath, $appArtifactPath)
+Write-Host "Copying Web Client Files"
+RoboCopyFiles -Source "$NavDvdPath\WebClient\Microsoft Dynamics NAV" -Destination "C:\Program Files\Microsoft Dynamics NAV" -e
 
-    $runPath = "c:\Run"
-    $myPath = Join-Path $runPath "my"
+if (Test-Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV\*\RoleTailored Client" -PathType Container) {
+    Write-Host "Copying Client Files"
+    RoboCopyFiles -Source "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\Microsoft Dynamics NAV" -Files "*.dll" -e
+    RoboCopyFiles -Source "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\Microsoft Dynamics NAV" -Files "*.exe" -e
+    RoboCopyFiles -Source "$navDvdPath\RoleTailoredClient\systemFolder" -Destination "C:\Windows\SysWow64" -Files "NavSip.dll"
+}
+if (Test-Path "$navDvdPath\LegacyDlls\program files\Microsoft Dynamics NAV\*\RoleTailored Client" -PathType Container) {
+    Write-Host "Copying Client Files"
+    RoboCopyFiles -Source "$navDvdPath\LegacyDlls\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\Microsoft Dynamics NAV" -Files "*.dll" -e
+    RoboCopyFiles -Source "$navDvdPath\LegacyDlls\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\Microsoft Dynamics NAV" -Files "*.exe" -e
+    RoboCopyFiles -Source "$navDvdPath\LegacyDlls\systemFolder" -Destination "C:\Windows\SysWow64" -Files "NavSip.dll"
+}
 
-    function Get-ExistingDirectory([string]$pri1, [string]$pri2, [string]$folder)
+Write-Host "Copying ModernDev Files"
+RoboCopyFiles -Source "$navDvdPath" -Destination "$runPath" -Files "*.vsix"
+if (Test-Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV") {
+    RoboCopyFiles -Source "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files\Microsoft Dynamics NAV" -e
+}
+if ((Test-Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV\*\*\*.vsix") -and !(Test-Path (Join-Path $runPath "*.vsix"))) {
+    Copy-Item -Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV\*\*\*.vsix" -Destination $runPath -Force
+}
+
+Write-Host "Copying additional files"
+"ConfigurationPackages","Test Assemblies","TestToolKit","UpgradeToolKit","Extensions","Applications","Applications.*","My" | ForEach-Object {
+    $dir = Get-ExistingDirectory -pri1 $appArtifactPath -pri2 $navDvdPath -folder $_
+    if ($dir)
     {
-        if ($pri1 -and (Test-Path (Join-Path $pri1 $folder))) {
-            (Get-Item (Join-Path $pri1 $folder)).FullName
-        }
-        elseif ($pri2 -and (Test-Path (Join-Path $pri2 $folder))) {
-            (Get-Item (Join-Path $pri2 $folder)).FullName
-        }
-        else {
-            ""
-        }
+        $name = [System.IO.Path]::GetFileName($dir)
+        Write-Host "Copying $name"
+        RoboCopyFiles -Source "$dir" -Destination "C:\$name" -e
     }
-    
-    function Get-MyFilePath([string]$FileName)
-    {
-        if ((Test-Path $myPath -PathType Container) -and (Test-Path (Join-Path $myPath $FileName) -PathType Leaf)) {
-            (Join-Path $myPath $FileName)
-        } else {
-            (Join-Path $runPath $FileName)
-        }
-    }
-    
-    . (Get-MyFilePath "ServiceSettings.ps1")
-    . (Get-MyFilePath "HelperFunctions.ps1")
+}
 
-    Write-Host "Copying Web Client Files"
-    RoboCopyFiles -Source "$NavDvdPath\WebClient\Microsoft Dynamics NAV" -Destination "C:\Program Files\Microsoft Dynamics NAV" -e
-    
-    if (Test-Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV\*\RoleTailored Client" -PathType Container) {
-        Write-Host "Copying Client Files"
-        RoboCopyFiles -Source "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\Microsoft Dynamics NAV" -Files "*.dll" -e
-        RoboCopyFiles -Source "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\Microsoft Dynamics NAV" -Files "*.exe" -e
-        RoboCopyFiles -Source "$navDvdPath\RoleTailoredClient\systemFolder" -Destination "C:\Windows\SysWow64" -Files "NavSip.dll"
+$mockAssembliesPath = "C:\Test Assemblies\Mock Assemblies"
+if (Test-Path $mockAssembliesPath) {
+    $serviceTierAddInsFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service\Add-ins").FullName
+    if (!(Test-Path (Join-Path $serviceTierAddInsFolder "Mock Assemblies"))) {
+        new-item -itemtype symboliclink -path $serviceTierAddInsFolder -name "Mock Assemblies" -value $mockAssembliesPath | Out-Null
     }
+}
 
-    if (Test-Path "$navDvdPath\LegacyDlls\program files\Microsoft Dynamics NAV\*\RoleTailored Client" -PathType Container) {
-        Write-Host "Copying Client Files"
-        RoboCopyFiles -Source "$navDvdPath\LegacyDlls\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\Microsoft Dynamics NAV" -Files "*.dll" -e
-        RoboCopyFiles -Source "$navDvdPath\LegacyDlls\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\Microsoft Dynamics NAV" -Files "*.exe" -e
-        RoboCopyFiles -Source "$navDvdPath\LegacyDlls\systemFolder" -Destination "C:\Windows\SysWow64" -Files "NavSip.dll"
-    }
-    
-    Write-Host "Copying ModernDev Files"
-    RoboCopyFiles -Source "$navDvdPath" -Destination "$runPath" -Files "*.vsix"
-    if (Test-Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV") {
-        RoboCopyFiles -Source "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files\Microsoft Dynamics NAV" -e
-    }
-    if ((Test-Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV\*\*\*.vsix") -and !(Test-Path (Join-Path $runPath "*.vsix"))) {
-        Copy-Item -Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV\*\*\*.vsix" -Destination $runPath -Force
-    }
-    
-    Write-Host "Copying additional files"
-    "ConfigurationPackages","Test Assemblies","TestToolKit","UpgradeToolKit","Extensions","Applications","Applications.*","My" | % {
-        $dir = Get-ExistingDirectory -pri1 $appArtifactPath -pri2 $navDvdPath -folder $_
-        if ($dir)
-        {
-            $name = [System.IO.Path]::GetFileName($dir)
-            Write-Host "Copying $name"
-            RoboCopyFiles -Source "$dir" -Destination "C:\$name" -e
-        }
-    }
-
-    $mockAssembliesPath = "C:\Test Assemblies\Mock Assemblies"
-    if (Test-Path $mockAssembliesPath) {
-        $serviceTierAddInsFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service\Add-ins").FullName
-        if (!(Test-Path (Join-Path $serviceTierAddInsFolder "Mock Assemblies"))) {
-            new-item -itemtype symboliclink -path $serviceTierAddInsFolder -name "Mock Assemblies" -value $mockAssembliesPath | Out-Null
-        }
-    }
-
-    $installersFolder = Get-ExistingDirectory -pri1 $appArtifactPath -pri2 $navDvdPath -folder "Intallers"
-    if ($installersFolder) {
-        Get-ChildItem $installersFolder -Recurse | Where-Object { $_.PSIsContainer } | % {
-            Get-ChildItem $_.FullName | Where-Object { $_.PSIsContainer } | % {
-                $dir = $_.FullName
-                Get-ChildItem (Join-Path $dir "*.msi") | % {
-                    $filepath = $_.FullName
-                    if ($filepath.Contains('\WebHelp\')) {
-                        Write-Host "Skipping $filepath"
-                    } else {
-                        Write-Host "Installing $filepath"
-                        Start-Process -FilePath $filepath -WorkingDirectory $dir -ArgumentList "/qn /norestart" -Wait
-                    }
+$installersFolder = Get-ExistingDirectory -pri1 $appArtifactPath -pri2 $navDvdPath -folder "Intallers"
+if ($installersFolder) {
+    Get-ChildItem $installersFolder -Recurse | Where-Object { $_.PSIsContainer } | % {
+        Get-ChildItem $_.FullName | Where-Object { $_.PSIsContainer } | % {
+            $dir = $_.FullName
+            Get-ChildItem (Join-Path $dir "*.msi") | % {
+                $filepath = $_.FullName
+                if ($filepath.Contains('\WebHelp\')) {
+                    Write-Host "Skipping $filepath"
+                } else {
+                    Write-Host "Installing $filepath"
+                    Start-Process -FilePath $filepath -WorkingDirectory $dir -ArgumentList "/qn /norestart" -Wait
                 }
             }
         }
     }
-
-} -ArgumentList $navDvdPath, $runPath, $appArtifactPath | Out-Null
+}
 
 Write-Host "Copying dependencies"
 $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName
@@ -182,9 +163,9 @@ Copy-Item -Path (Join-Path $runPath 'Install\t2embed.dll') -Destination "c:\wind
 Copy-Item -Path (Join-Path $runPath 'Install\Microsoft.IdentityModel.dll') -Destination (Join-Path $serviceTierFolder 'Microsoft.IdentityModel.dll')
 
 Write-Host "Copying ReportBuilder"
-Start-Job -ScriptBlock { Param($runPath)
-    $reportBuilderPath = "C:\Program Files (x86)\ReportBuilder"
-    $reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder2016'
+$reportBuilderPath = "C:\Program Files (x86)\ReportBuilder"
+$reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder2016'
+if (Test-Path $reportBuilderSrc) {
     Move-Item -Path $reportBuilderSrc -Destination $reportBuilderPath -Force
     New-PSDrive -Name HKCR -PSProvider Registry -Root HKEY_CLASSES_ROOT -ErrorAction Ignore | Out-null
     New-Item "HKCR:\MSReportBuilder_ReportFile_32" -itemtype Directory -ErrorAction Ignore | Out-null
@@ -192,7 +173,7 @@ Start-Job -ScriptBlock { Param($runPath)
     New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open" -itemtype Directory -ErrorAction Ignore | Out-null
     New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -itemtype Directory -ErrorAction Ignore | Out-null
     Set-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -value "$reportBuilderPath\MSReportBuilder.exe ""%1"""
-} -ArgumentList $runPath | Out-Null
+}
 
 Write-Host "Importing PowerShell Modules"
 try {
@@ -216,6 +197,11 @@ else {
 # Restore CRONUS Demo database to databases folder
 if (!$skipDb -and $databasePath) {
 
+    if (Test-NavDatabase -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseCredentials $databaseCredentials -DatabaseName $databaseName) {
+        Write-Host "Removing database $databaseName"
+        Remove-NavDatabase -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseCredentials $databaseCredentials -DatabaseName $databaseName
+    }
+
     Write-Host "Restoring CRONUS Demo Database"
     New-NAVDatabase -DatabaseServer $databaseServer `
                     -DatabaseInstance $databaseInstance `
@@ -231,6 +217,11 @@ elseif (!$skipDb -and (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Contain
     
     $databaseFile = $bak.FullName
 
+    if (Test-NavDatabase -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseCredentials $databaseCredentials -DatabaseName $databaseName) {
+        Write-Host "Removing database $databaseName"
+        Remove-NavDatabase -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseCredentials $databaseCredentials -DatabaseName $databaseName
+    }
+
     Write-Host "Restoring CRONUS Demo Database"
     New-NAVDatabase -DatabaseServer $databaseServer `
                     -DatabaseInstance $databaseInstance `
@@ -245,6 +236,11 @@ elseif (!$skipDb -and (Test-Path "$navDvdPath\databases")) {
 
     $multitenant = $false
     $databaseName = "CRONUS"
+
+    if (Test-NavDatabase -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseCredentials $databaseCredentials -DatabaseName $databaseName) {
+        Write-Host "Removing database $databaseName"
+        Remove-NavDatabase -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseCredentials $databaseCredentials -DatabaseName $databaseName
+    }
 
     Write-Host "Copying Cronus database"
     RoboCopy "$navDvdPath\databases" "c:\databases" /e /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
@@ -269,6 +265,10 @@ $databaseName = "CRONUS"
 
 if (!$skipDb) {
     if ($multitenant) {
+        if (Test-NavDatabase -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseCredentials $databaseCredentials -DatabaseName $databaseName) {
+            Write-Host "Removing database $databaseName"
+            Remove-NavDatabase -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseCredentials $databaseCredentials -DatabaseName $databaseName
+        }
         Write-Host "Exporting Application to $DatabaseName"
         Invoke-sqlcmd -serverinstance "$DatabaseServer\$DatabaseInstance" -Database tenant -query 'CREATE USER "NT AUTHORITY\SYSTEM" FOR LOGIN "NT AUTHORITY\SYSTEM";'
         Export-NAVApplication -DatabaseServer $DatabaseServer -DatabaseInstance $DatabaseInstance -DatabaseName "tenant" -DestinationDatabaseName $databaseName -Force -ServiceAccount 'NT AUTHORITY\SYSTEM' | Out-Null
@@ -316,8 +316,6 @@ New-ItemProperty -Path $registryPath -Name 'Path' -Value "$serviceTierFolder\" -
 New-ItemProperty -Path $registryPath -Name 'Installed' -Value 1 -Force | Out-Null
 
 Install-NAVSipCryptoProvider
-
-Get-Job | Wait-Job | Receive-Job | Out-Host
 
 $installApps = @()
 if ($includeTestToolkit) {

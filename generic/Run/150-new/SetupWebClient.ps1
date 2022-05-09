@@ -4,6 +4,7 @@ Get-WebBinding | Remove-WebBinding
 
 $certparam = @{}
 if ($servicesUseSSL) {
+    Write-Host "CertificateThumprint $certificateThumbprint"
     $certparam += @{CertificateThumbprint = $certificateThumbprint}
 }
 
@@ -31,6 +32,20 @@ $NAVWebClientManagementModule = "$webClientFolder\Modules\NAVWebClientManagement
 if (!(Test-Path $NAVWebClientManagementModule)) {
     $NAVWebClientManagementModule = "$webClientFolder\Scripts\NAVWebClientManagement.psm1"
 }
+# Replace Copy with Robocopy
+$WebManagementModuleSource = Get-Content -Path $NAVWebClientManagementModule -Raw -Encoding UTF8
+$WebManagementModuleSource = $WebManagementModuleSource.Replace('Copy-Item $SourcePath -Destination $siteRootFolder -Recurse -Container -Force','RoboCopy "$SourcePath" "$siteRootFolder" "*" /e /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
+Get-ChildItem -Path $SourcePath -Filter "*" -Recurse | ForEach-Object {
+    $destPath = Join-Path $siteRootFolder $_.FullName.Substring($SourcePath.Length)
+    while (!(Test-Path $destPath)) {
+        Write-Host "Waiting for $destPath to be available"
+        Start-Sleep -Seconds 1
+    }
+}')
+$WebManagementModuleSource = $WebManagementModuleSource.Replace('Write-Verbose','Write-Host')
+$NAVWebClientManagementModule = "c:\run\my\NAVWebClientManagement.psm1"
+Set-Content -Path $NAVWebClientManagementModule -Value $WebManagementModuleSource -Encoding UTF8
+
 Import-Module $NAVWebClientManagementModule
 New-NAVWebServerInstance -PublishFolder $publishFolder `
                          -WebServerInstance "$WebServerInstance" `

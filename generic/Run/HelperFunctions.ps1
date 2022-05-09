@@ -441,6 +441,7 @@ function Invoke-SqlCmdWithRetry
                 throw    
             }
             Write-Host -ForegroundColor Yellow  "Warning, exception when running: $Query"
+            Write-Host -ForegroundColor Yellow "Exception was: $($_.Exception.Message)"
             Write-Host -NoNewline "Waiting"
             1..$attempt*3 | % {
                 Start-Sleep -Seconds 10
@@ -620,6 +621,7 @@ function SetDatabaseServerCollation {
     Param(
         [string] $collation
     )
+    # Left empty if anybody uses the file for override in older generic images
 }
 
 function Download-File {
