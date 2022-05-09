@@ -126,7 +126,7 @@ try {
             }
         }
     
-        if (!(get-service | Where-Object { $_.Name -like 'MicrosoftDynamicsNavServexr*' })) {
+        if (!(get-service | Where-Object { $_.Name -like 'MicrosoftDynamicsNavServer*' })) {
     
             if (-not (Test-Path $navDvdPath -PathType Container)) {
                 if (!($artifactUrl)) {
