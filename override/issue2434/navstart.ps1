@@ -34,6 +34,7 @@ if ($restartingInstance) {
 } else {
     Write-Host "Starting Container"
 }
+Set-Content -Path $publicDnsNameFile -Value "n/a"
 
 $applicationInsightsInstrumentationKeyFile = Get-MyFilePath "applicationInsightsInstrumentationKey.txt"
 if (Test-Path $applicationInsightsInstrumentationKeyFile) {

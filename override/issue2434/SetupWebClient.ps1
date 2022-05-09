@@ -4,6 +4,7 @@ Get-WebBinding | Remove-WebBinding
 
 $certparam = @{}
 if ($servicesUseSSL) {
+    Write-Host "certificateThumprint $certificateThumbprint"
     $certparam += @{CertificateThumbprint = $certificateThumbprint}
 }
 
@@ -35,6 +36,7 @@ if (!(Test-Path $NAVWebClientManagementModule)) {
 Write-Host "b"
 Import-Module $NAVWebClientManagementModule
 Write-Host "c"
+Write-Host "New-NAVWebServerInstance -PublishFolder $publishFolder -WebServerInstance $WebServerInstance -Server localhost -ServerInstance $ServerInstance -ClientServicesCredentialType $Auth -ClientServicesPort $clientServicesPort -WebSitePort $webClientPort"
 New-NAVWebServerInstance -PublishFolder $publishFolder `
                          -WebServerInstance "$WebServerInstance" `
                          -Server "localhost" `
