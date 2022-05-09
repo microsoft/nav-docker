@@ -108,7 +108,6 @@ Set-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -value "$repor
 Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.dll"
 
 # Restore CRONUS Demo database to databases folder
-Write-Host "Restoring CRONUS Demo Database"
 $bak = (Get-ChildItem -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\*.bak")[0]
 
 # Restore database
