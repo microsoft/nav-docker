@@ -564,7 +564,14 @@ function New-NavWebSite
     }
 
     Write-Host "Copy files to WWW root $siteRootFolder"
-    RoboCopyFiles -Source $SourcePath -Destination $siteRootFolder -e
+    RoboCopy "$SourcePath" "$siteRootFolder" "*" /e /NFL /NDL /NJH /NJS /nc /ns /np /mt /z /nooffload | Out-Null
+    Get-ChildItem -Path $SourcePath -Filter "*" -Recurse | ForEach-Object {
+        $destPath = Join-Path $siteRootFolder $_.FullName.Substring($SourcePath.Length)
+        while (!(Test-Path $destPath)) {
+            Write-Host "Waiting for $destPath to be available"
+            Start-Sleep -Seconds 1
+        }
+    }
 #    Copy-Item $SourcePath -Destination $siteRootFolder -Recurse -Container -Force
 
     Write-Host "Create the application pool $AppPoolName"
