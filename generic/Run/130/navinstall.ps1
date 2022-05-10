@@ -57,38 +57,36 @@ Write-Host "Starting Internet Information Server"
 Start-Service -name $IisServiceName
 
 Write-Host "Copying Service Tier Files"
-RoboCopyFiles -Source "$NavDvdPath\ServiceTier\Program Files" -Destination "C:\Program Files" -e
-RoboCopyFiles -Source "$NavDvdPath\ServiceTier\System64Folder" -Destination "C:\Windows\System32" -Files "NavSip.dll" -e
-
-Write-Host "Copying PowerShell Scripts"
-RoboCopyFiles -Source "$navDvdPath\WindowsPowerShellScripts\Cloud\NAVAdministration" -Destination "$runPath\NAVAdministration" -e
-if (Test-Path "$navDvdPath\WindowsPowerShellScripts\WebSearch") {
-    RoboCopyFiles -Source "$navDvdPath\WindowsPowerShellScripts\WebSearch" -Destination "$runPath\WebSearch" -e
-}
+Copy-Item -Path "$NavDvdPath\ServiceTier\Program Files" -Destination "C:\" -Recurse -Force
+Copy-Item -Path "$NavDvdPath\ServiceTier\System64Folder\NavSip.dll" -Destination "C:\Windows\System32\NavSip.dll" -Force -ErrorAction Ignore
 
 Write-Host "Copying Web Client Files"
-RoboCopyFiles -Source "$NavDvdPath\WebClient\Microsoft Dynamics NAV" -Destination "C:\Program Files\Microsoft Dynamics NAV" -e
+Copy-Item -Path "$NavDvdPath\WebClient\Microsoft Dynamics NAV" -Destination "C:\Program Files\" -Recurse -Force
 
 Write-Host "Copying Windows Client Files"
-RoboCopyFiles -Source "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\Microsoft Dynamics NAV" -e
-RoboCopyFiles -Source "$navDvdPath\RoleTailoredClient\systemFolder" -Destination "C:\Windows\SysWow64" -Files "NavSip.dll" -e
-RoboCopyFiles -Source "$navDvdPath\ClickOnceInstallerTools\Program Files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\Microsoft Dynamics NAV" -e
-RoboCopyFiles -Source "$navDvdPath" -Destination "$runPath" -Files "*.vsix"
+Copy-Item -Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force
+Copy-Item -Path "$navDvdPath\RoleTailoredClient\systemFolder\NavSip.dll" -Destination "C:\Windows\SysWow64\NavSip.dll" -Force -ErrorAction Ignore
+Copy-Item -Path "$navDvdPath\ClickOnceInstallerTools\Program Files\Microsoft Dynamics NAV" -Destination "C:\Program Files (x86)\" -Recurse -Force
+Copy-Item -Path "$navDvdPath\*.vsix" -Destination $runPath
 if (Test-Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV") {
-    RoboCopyFiles -Source "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files\Microsoft Dynamics NAV" -e
+    Copy-Item -Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV" -Destination "C:\Program Files\" -Recurse -Force
 }
 if (!(Test-Path (Join-Path $runPath "*.vsix"))) {
     Copy-Item -Path "$navDvdPath\ModernDev\program files\Microsoft Dynamics NAV\*\*\*.vsix" -Destination $runPath -Force
 }
 
-Write-Host "Copying additional files"
-"ConfigurationPackages","Test Assemblies","TestToolKit","UpgradeToolKit","Extensions","My" | ForEach-Object {
+Write-Host "Copying PowerShell Scripts"
+Copy-Item -Path "$navDvdPath\WindowsPowerShellScripts\Cloud\NAVAdministration\" -Destination $runPath -Recurse -Force
+if (Test-Path "$navDvdPath\WindowsPowerShellScripts\WebSearch") {
+    Copy-Item -Path "$navDvdPath\WindowsPowerShellScripts\WebSearch\" -Destination $runPath -Recurse -Force
+}
+
+"ConfigurationPackages","Test Assemblies","TestToolKit","UpgradeToolKit","Extensions","My" | % {
     $dir = "$navDvdPath\$_" 
     if (Test-Path $dir -PathType Container)
     {
-        $name = [System.IO.Path]::GetFileName($dir)
-        Write-Host "Copying $name"
-        RoboCopyFiles -Source "$dir" -Destination "C:\$name" -e
+        Write-Host "Copying $_"
+        Copy-Item -Path $dir -Destination "C:\" -Recurse
     }
 }
 
@@ -107,18 +105,17 @@ Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path
 Copy-Item -Path (Join-Path $runPath 'Install\t2embed.dll') -Destination "c:\windows\system32\t2embed.dll"
 Copy-Item -Path (Join-Path $runPath 'Install\Microsoft.IdentityModel.dll') -Destination (Join-Path $serviceTierFolder 'Microsoft.IdentityModel.dll')
 
-Write-Host "Copying ReportBuilder"
 $reportBuilderPath = "C:\Program Files (x86)\ReportBuilder"
 $reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder2016'
-if (Test-Path $reportBuilderSrc) {
-    Move-Item -Path $reportBuilderSrc -Destination $reportBuilderPath -Force
-    New-PSDrive -Name HKCR -PSProvider Registry -Root HKEY_CLASSES_ROOT -ErrorAction Ignore | Out-null
-    New-Item "HKCR:\MSReportBuilder_ReportFile_32" -itemtype Directory -ErrorAction Ignore | Out-null
-    New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell" -itemtype Directory -ErrorAction Ignore | Out-null
-    New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open" -itemtype Directory -ErrorAction Ignore | Out-null
-    New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -itemtype Directory -ErrorAction Ignore | Out-null
-    Set-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -value "$reportBuilderPath\MSReportBuilder.exe ""%1"""
-}
+Write-Host "Copying ReportBuilder"
+New-Item $reportBuilderPath -ItemType Directory | Out-Null
+Copy-Item -Path "$reportBuilderSrc\*" -Destination "$reportBuilderPath\" -Recurse
+New-PSDrive -Name HKCR -PSProvider Registry -Root HKEY_CLASSES_ROOT -ErrorAction Ignore | Out-null
+New-Item "HKCR:\MSReportBuilder_ReportFile_32" -itemtype Directory -ErrorAction Ignore | Out-null
+New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell" -itemtype Directory -ErrorAction Ignore | Out-null
+New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open" -itemtype Directory -ErrorAction Ignore | Out-null
+New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -itemtype Directory -ErrorAction Ignore | Out-null
+Set-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -value "$reportBuilderPath\MSReportBuilder.exe ""%1"""
 
 Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
 
@@ -129,17 +126,13 @@ $skipDb = $false
 
 # Restore CRONUS Demo database to databases folder
 if (Test-Path "$navDvdPath\SQLDemoDatabase" -PathType Container) {
+    Write-Host "Restoring CRONUS Demo Database"
     $bak = (Get-ChildItem -Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\*.bak")[0]
-
+    
     # Restore database
     $databaseFolder = "c:\databases"
     New-Item -Path $databaseFolder -itemtype Directory -ErrorAction Ignore | Out-Null
     $databaseFile = $bak.FullName
-
-    if (Test-NavDatabase -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseCredentials $databaseCredentials -DatabaseName $databaseName) {
-        Write-Host "Removing database $databaseName"
-        Remove-NavDatabase -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseCredentials $databaseCredentials -DatabaseName $databaseName
-    }
 
     Write-Host "Restoring CRONUS Demo Database"
     New-NAVDatabase -DatabaseServer $databaseServer `
