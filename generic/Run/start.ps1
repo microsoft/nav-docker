@@ -360,6 +360,10 @@ try {
         }
     }
 
+    if ($filesOnly) {
+        Set-Content -Path $publicDnsNameFile -Value "n/a"
+    }
+
     if (!$installOnly) {
         if ($filesOnly) {
             Write-Host "Ready for connections!"
