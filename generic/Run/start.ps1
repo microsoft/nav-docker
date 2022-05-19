@@ -125,6 +125,11 @@ try {
                 Copy-Item -Path "$navFSPath\$($_.Name)" -Destination "c:\" -recurse -force
             }
         }
+
+        if (!(Test-Path $myPath)) {
+            Write-Host "c:\run\my folder doesn't exist, creating it"
+            New-Item -Path $myPath -ItemType Directory | Out-Null
+        }
     
         if (!(get-service | Where-Object { $_.Name -like 'MicrosoftDynamicsNavServer*' })) {
     
