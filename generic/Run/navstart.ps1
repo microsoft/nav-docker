@@ -6,6 +6,7 @@ $myPath = Join-Path $runPath "my"
 $navDvdPath = "C:\NAVDVD"
 
 $publicDnsNameFile = "$RunPath\PublicDnsName.txt"
+$startCountFile = "$RunPath\StartCount.txt"
 $restartingInstance = Test-Path -Path $publicDnsNameFile -PathType Leaf
 
 function Get-MyFilePath([string]$FileName)
@@ -24,7 +25,6 @@ $hostname = hostname
 . (Get-MyFilePath "SetupVariables.ps1")
 
 $newPublicDnsName = $true
-$restartCount = 0
 if ($restartingInstance) {
     Write-Host "Restarting Container"
     $prevPublicDnsName = Get-Content -Path $publicDnsNameFile
@@ -33,22 +33,24 @@ if ($restartingInstance) {
         Write-Host "PublicDnsName unchanged"
     }
     else {
-        $restartCount = [int32]0
-        if ([int32]::TryParse($prevPublicDnsName, [ref]$restartCount)) {
-            $restartCount++
-            Write-Host "Restart count $restartCount"
-            if ($restartCount -gt 2) {
-                throw "Error starting container"
-            }
-        }
-        else {
-            Write-Host "PublicDnsName was changed"
-        }
+        Write-Host "PublicDnsName was changed"
     }
 } else {
     Write-Host "Starting Container"
 }
-Set-Content -Path $publicDnsNameFile -Value "$restartCount"
+
+$startCount = 0
+if (Test-Path $startCountFile -PathType Leaf) {
+    $startCount = [int](Get-Content -Path $startCountFile)
+}
+$startCount++
+if ($startCount -gt 1) {
+    Write-Host "Restart count $($startCount-1)"
+    if ($startCount -gt 3) {
+        throw "Error starting container"
+    }
+}
+Set-Content -Path $startCountFile -Value "$startCount"
 
 $applicationInsightsInstrumentationKeyFile = Get-MyFilePath "applicationInsightsInstrumentationKey.txt"
 if (Test-Path $applicationInsightsInstrumentationKeyFile) {
@@ -233,6 +235,7 @@ if ($newPublicDnsName -and $httpSite -ne "N" -and $clickOnce -eq "Y") {
     }
 }
 Set-Content -Path $publicDnsNameFile -Value $publicDnsName
+Set-Content -Path $startCountFile -Value "0"
 
 . (Get-MyFilePath "AdditionalSetup.ps1")
 
