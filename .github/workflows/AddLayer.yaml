@@ -27,8 +27,8 @@ jobs:
             $url = "https://mcr.microsoft.com/v2/businesscentral/tags/list"
             $version = [System.Version]"0.0.0.0"
             $versions = (($webclient.DownloadString("$url") | ConvertFrom-Json)).tags | Where-Object { [System.Version]::TryParse($_, [ref] $version) } | ForEach-Object { $version }
-            $server2019 = @($versions | Where-Object { $_ -lt [System.Version]"10.0.17764.0" } | ForEach-Object { "$_" } | ConvertTo-Json -compress
-            $server2022 = @($versions | Where-Object { $_ -ge [System.Version]"10.0.17764.0" } | ForEach-Object { "$_" } | ConvertTo-Json -compress
+            $server2019 = @($versions | Where-Object { $_ -lt [System.Version]"10.0.17764.0" } | ForEach-Object { "$_" }) | ConvertTo-Json -compress
+            $server2022 = @($versions | Where-Object { $_ -ge [System.Version]"10.0.17764.0" } | ForEach-Object { "$_" }) | ConvertTo-Json -compress
             Write-Host "::set-output name=server2019::$server2019"
             Write-Host "set-output name=server2019::$server2019"
             Write-Host "::set-output name=server2022::$server2022"
