@@ -1,0 +1,65 @@
+name: AddLayer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: PowerShell
+
+jobs:
+  AnalyzeImages:
+    runs-on: [ windows-latest ]
+    outputs:
+      server2019: ${{ steps.Analyze.outputs.server2019 }}
+      server2022: ${{ steps.Analyze.outputs.server2022 }}
+    steps:
+      - name: Analyze
+        id: Analyze
+        run: |
+          $webclient = New-Object System.Net.WebClient
+          $webclient.Headers.Add('Accept', “application/json”)
+          $url = "https://mcr.microsoft.com/v2/businesscentral/tags/list"
+          $version = [System.Version]"0.0.0.0"
+          $versions = (($webclient.DownloadString("$url") | ConvertFrom-Json)).tags | Where-Object { [System.Version]::TryParse($_, [ref] $version) } | ForEach-Object { $version }
+          $server2019 = @($versions | Where-Object { $_ -lt [System.Version]"10.0.17764.0" } | ForEach-Object { "$_" }) | ConvertTo-Json -compress
+          $server2022 = @($versions | Where-Object { $_ -ge [System.Version]"10.0.17764.0" } | ForEach-Object { "$_" }) | ConvertTo-Json -compress
+          Write-Host "::set-output name=server2019::$server2019"
+          Write-Host "set-output name=server2019::$server2019"
+          Write-Host "::set-output name=server2022::$server2022"
+          Write-Host "set-output name=server2022::$server2022"
+
+  Server2019:
+    runs-on: [ windows-2019 ]
+    needs: [ AnalyzeImages ]
+    strategy:
+      matrix:
+        version: ${{fromJson(needs.AnalyzeImages.outputs.server2019)}}
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build Image
+        run: |
+          $version = '${{ matrix.version }}'
+          docker pull mcr.microsoft.com/businesscentral:$version
+
+  Server2019:
+    runs-on: [ windows-2022 ]
+    needs: [ AnalyzeImages ]
+    strategy:
+      matrix:
+        version: ${{fromJson(needs.AnalyzeImages.outputs.server2022)}}
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build Image
+        run: |
+          $version = '${{ matrix.version }}'
+          docker pull mcr.microsoft.com/businesscentral:$version
