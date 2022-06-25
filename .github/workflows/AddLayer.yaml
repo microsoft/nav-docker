@@ -21,7 +21,7 @@ jobs:
         id: Analyze
         run: |
           $webclient = New-Object System.Net.WebClient
-          $webclient.Headers.Add('Accept', “application/json”)
+          $webclient.Headers.Add('Accept', "application/json")
           $url = "https://mcr.microsoft.com/v2/businesscentral/tags/list"
           $version = [System.Version]"0.0.0.0"
           $versions = (($webclient.DownloadString("$url") | ConvertFrom-Json)).tags | Where-Object { [System.Version]::TryParse($_, [ref] $version) } | ForEach-Object { $version }
