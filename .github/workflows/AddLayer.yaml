@@ -48,7 +48,7 @@ jobs:
           $version = '${{ matrix.version }}'
           docker pull mcr.microsoft.com/businesscentral:$version
 
-  Server2019:
+  Server2022:
     runs-on: [ windows-2022 ]
     needs: [ AnalyzeImages ]
     strategy:
