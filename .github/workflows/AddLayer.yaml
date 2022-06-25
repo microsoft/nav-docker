@@ -20,17 +20,24 @@ jobs:
       - name: Analyze
         id: Analyze
         run: |
-          $webclient = New-Object System.Net.WebClient
-          $webclient.Headers.Add('Accept', "application/json")
-          $url = "https://mcr.microsoft.com/v2/businesscentral/tags/list"
-          $version = [System.Version]"0.0.0.0"
-          $versions = (($webclient.DownloadString("$url") | ConvertFrom-Json)).tags | Where-Object { [System.Version]::TryParse($_, [ref] $version) } | ForEach-Object { $version }
-          $server2019 = @($versions | Where-Object { $_ -lt [System.Version]"10.0.17764.0" } | ForEach-Object { "$_" } | Select-Object -first 2) | ConvertTo-Json -compress
-          $server2022 = @($versions | Where-Object { $_ -ge [System.Version]"10.0.17764.0" } | ForEach-Object { "$_" } | Select-Object -first 2) | ConvertTo-Json -compress
-          Write-Host "::set-output name=server2019::$server2019"
-          Write-Host "set-output name=server2019::$server2019"
-          Write-Host "::set-output name=server2022::$server2022"
-          Write-Host "set-output name=server2022::$server2022"
+          $erroractionpreference = "STOP"
+          try {
+            $webclient = New-Object System.Net.WebClient
+            $webclient.Headers.Add('Accept', "application/json")
+            $url = "https://mcr.microsoft.com/v2/businesscentral/tags/list"
+            $version = [System.Version]"0.0.0.0"
+            $versions = (($webclient.DownloadString("$url") | ConvertFrom-Json)).tags | Where-Object { [System.Version]::TryParse($_, [ref] $version) } | ForEach-Object { $version }
+            $server2019 = @($versions | Where-Object { $_ -lt [System.Version]"10.0.17764.0" } | ForEach-Object { "$_" } | Select-Object -last 2) | ConvertTo-Json -compress
+            $server2022 = @($versions | Where-Object { $_ -ge [System.Version]"10.0.17764.0" } | ForEach-Object { "$_" } | Select-Object -last 2) | ConvertTo-Json -compress
+            Write-Host "::set-output name=server2019::$server2019"
+            Write-Host "set-output name=server2019::$server2019"
+            Write-Host "::set-output name=server2022::$server2022"
+            Write-Host "set-output name=server2022::$server2022"
+          }
+          catch {
+            Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
+            $host.SetShouldExit(1)            
+          }
 
   Server2019:
     runs-on: [ windows-2019 ]
@@ -46,17 +53,24 @@ jobs:
 
       - name: Build Image
         run: |
-          $osversion = '${{ matrix.version }}'
-          $baseimage = "mcr.microsoft.com/businesscentral:$osversion"
-          $genericTag = "1.0.2.10"
-          $filesOnlyStr = ""
-          $image = "my:$osversion-$genericTag$filesonlyStr"
-          $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
-          docker pull $baseimage
-          Set-Location "generic"
-          $dockerfile = Join-Path $RootPath "DOCKERFILE.UPDATE"
-          "FROM $baseimage`nCOPY Run /Run/`nLABEL tag=""$genericTag"" \`n      created=""$created""`n" | Set-Content $dockerfile
-          docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location)
+          $erroractionpreference = "STOP"
+          try {
+            $osversion = '${{ matrix.version }}'
+            $baseimage = "mcr.microsoft.com/businesscentral:$osversion"
+            $genericTag = "1.0.2.10"
+            $filesOnlyStr = ""
+            $image = "my:$osversion-$genericTag$filesonlyStr"
+            $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
+            docker pull $baseimage
+            Set-Location "generic"
+            $dockerfile = Join-Path (Get-Location) "DOCKERFILE.UPDATE"
+            "FROM $baseimage`nCOPY Run /Run/`nLABEL tag=""$genericTag"" \`n      created=""$created""`n" | Set-Content $dockerfile
+            docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location)
+          }
+          catch {
+            Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
+            $host.SetShouldExit(1)            
+          }
 
 
   Server2022:
@@ -73,14 +87,21 @@ jobs:
 
       - name: Build Image
         run: |
-          $osversion = '${{ matrix.version }}'
-          $baseimage = "mcr.microsoft.com/businesscentral:$osversion"
-          $genericTag = "1.0.2.10"
-          $filesOnlyStr = ""
-          $image = "my:$osversion-$genericTag$filesonlyStr"
-          $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
-          docker pull $baseimage
-          Set-Location "generic"
-          $dockerfile = Join-Path $RootPath "DOCKERFILE.UPDATE"
-          "FROM $baseimage`nCOPY Run /Run/`nLABEL tag=""$genericTag"" \`n      created=""$created""`n" | Set-Content $dockerfile
-          docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location)
+          $erroractionpreference = "STOP"
+          try {
+            $osversion = '${{ matrix.version }}'
+            $baseimage = "mcr.microsoft.com/businesscentral:$osversion"
+            $genericTag = "1.0.2.10"
+            $filesOnlyStr = ""
+            $image = "my:$osversion-$genericTag$filesonlyStr"
+            $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
+            docker pull $baseimage
+            Set-Location "generic"
+            $dockerfile = Join-Path (Get-Location) "DOCKERFILE.UPDATE"
+            "FROM $baseimage`nCOPY Run /Run/`nLABEL tag=""$genericTag"" \`n      created=""$created""`n" | Set-Content $dockerfile
+            docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location)
+          }
+          catch {
+            Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
+            $host.SetShouldExit(1)            
+          }
