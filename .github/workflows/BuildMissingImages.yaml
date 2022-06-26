@@ -1,0 +1,207 @@
+name: Build missing images (after new windows updates)
+
+on:
+  workflow_dispatch:
+    inputs:
+      GenericTag:
+        description: Generic Tag (leave empty to use value in generic/tag.txt)
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: PowerShell
+
+jobs:
+  AnalyzeImages:
+    runs-on: [ windows-latest ]
+    outputs:
+      server2019: ${{ steps.Analyze.outputs.server2019 }}
+      server2022: ${{ steps.Analyze.outputs.server2022 }}
+      server2019filesOnly: ${{ steps.Analyze.outputs.server2019filesOnly }}
+      server2022filesOnly: ${{ steps.Analyze.outputs.server2022filesOnly }}
+    steps:
+      - name: Analyze
+        id: Analyze
+        run: |
+          $erroractionpreference = "STOP"
+          try {
+            $webclient = New-Object System.Net.WebClient
+            $webclient.Headers.Add('Accept', "application/json")
+            $alltags = (($webclient.DownloadString("https://mcr.microsoft.com/v2/businesscentral/tags/list") | ConvertFrom-Json)).tags
+            $version = [System.Version]"0.0.0.0"
+            $versions = $alltags | Where-Object { [System.Version]::TryParse($_, [ref] $version) } | ForEach-Object { $version }
+            $filesOnlyVersions = $alltags | Where-Object { $_ -like '*-filesonly' } | Where-Object { [System.Version]::TryParse($_.SubString(0,$_.Length-10), [ref] $version) } | ForEach-Object { $version }
+            $missingImages = @{}
+            $missingFilesOnlyImages = @{}
+            $alldotnetFrameworkTags = (($webclient.DownloadString("https://mcr.microsoft.com/v2/dotnet/framework/runtime/tags/list") | ConvertFrom-Json)).tags
+            $alldotnetFrameworkTags | Where-Object { $_.startswith("4.8-w") -or $_.startswith("4.8-20") } | ForEach-Object {
+                Write-Host -NoNewline "Test $_ ($OSVersion)"
+                $osVersion = [System.Version](($webclient.DownloadString("https://mcr.microsoft.com/v2/dotnet/framework/runtime/manifests/$_") | ConvertFrom-Json).history[0].v1Compatibility | ConvertFrom-Json)."os.version"
+                if ($versions.Contains($osversion)) {
+                    Write-Host -NoNewline " - OK"
+                }
+                else {
+                    $missingImages."$osversion" = $_
+                    Write-Host -NoNewline " - Missing"
+                }
+                if ($filesOnlyVersions.Contains($osversion)) {
+                    Write-Host " - OK"
+                }
+                else {
+                    $missingFilesOnlyImages."$osversion" = $_
+                    Write-Host " - Missing"
+                }
+            }
+            $server2019 = @($missingImages.GetEnumerator() | Where-Object { $_ } | Where-Object { [System.Version]$_.name -lt [System.Version]"10.0.17764.0" } | ForEach-Object { "$($_.name)|$($_.value)" }) | ConvertTo-Json -Compress
+            $server2022 = @($missingImages.GetEnumerator() | Where-Object { $_ } | Where-Object { [System.Version]$_.name -ge [System.Version]"10.0.17764.0" } | ForEach-Object { "$($_.name)|$($_.value)" }) | ConvertTo-Json -Compress
+            $server2019filesOnly = @($missingFilesOnlyImages.GetEnumerator() | Where-Object { $_ } | Where-Object { [System.Version]$_.name -lt [System.Version]"10.0.17764.0" } | ForEach-Object { "$($_.name)|$($_.value)" }) | ConvertTo-Json -Compress
+            $server2022filesOnly = @($missingFilesOnlyImages.GetEnumerator() | Where-Object { $_ } | Where-Object { [System.Version]$_.name -ge [System.Version]"10.0.17764.0" } | ForEach-Object { "$($_.name)|$($_.value)" }) | ConvertTo-Json -Compress
+            Write-Host "::set-output name=server2019::[$("$server2019".Trim('[]'))]"
+            Write-Host "set-output name=server2019::[$("$server2019".Trim('[]'))]"
+            Write-Host "::set-output name=server2022::[$("$server2022".Trim('[]'))]"
+            Write-Host "set-output name=server2022::[$("$server2022".Trim('[]'))]"
+            Write-Host "::set-output name=server2019filesOnly::[$("$server2019filesOnly".Trim('[]'))]"
+            Write-Host "set-output name=server2019filesOnly::[$("$server2019filesOnly".Trim('[]'))]"
+            Write-Host "::set-output name=server2022filesOnly::[$("$server2022filesOnly".Trim('[]'))]"
+            Write-Host "set-output name=server2022filesOnly::[$("$server2022filesOnly".Trim('[]'))]"
+          }
+          catch {
+            Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
+            $host.SetShouldExit(1)            
+          }
+
+  Server2019:
+    runs-on: [ windows-2019 ]
+    needs: [ AnalyzeImages ]
+    strategy:
+      matrix:
+        version: ${{fromJson(needs.AnalyzeImages.outputs.server2019)}}
+      fail-fast: false
+      max-parallel: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build Image
+        run: |
+          $filesOnlyStr = ""
+          $erroractionpreference = "STOP"
+          Set-StrictMode -version 2.0
+          try {
+            Set-Location "generic"
+            $genericTag = '${{ github.event.inputs.GenericTag }}'
+            if ($genericTag -eq '') { $genericTag = Get-Content -path 'tag.txt' }
+            [System.Version]$genericTag | Out-Null
+
+            $osversion = '${{ matrix.version }}'.split('|')[0]
+            $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[0]
+
+            Write-Host "Build generic image $genericTag mcr.microsoft.com/businesscentral:$osversion$filesOnlyStr based on mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
+          }
+          catch {
+            Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
+            $host.SetShouldExit(1)            
+          }
+
+  Server2022:
+    runs-on: [ windows-2022 ]
+    needs: [ AnalyzeImages ]
+    strategy:
+      matrix:
+        version: ${{fromJson(needs.AnalyzeImages.outputs.server2022)}}
+      fail-fast: false
+      max-parallel: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build Image
+        run: |
+          $filesOnlyStr = ""
+          $erroractionpreference = "STOP"
+          Set-StrictMode -version 2.0
+          try {
+            Set-Location "generic"
+            $genericTag = '${{ github.event.inputs.GenericTag }}'
+            if ($genericTag -eq '') { $genericTag = Get-Content -path 'tag.txt' }
+            [System.Version]$genericTag | Out-Null
+
+            $osversion = '${{ matrix.version }}'.split('|')[0]
+            $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[0]
+
+            Write-Host "Build generic image $genericTag mcr.microsoft.com/businesscentral:$osversion$filesOnlyStr based on mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
+          }
+          catch {
+            Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
+            $host.SetShouldExit(1)            
+          }
+
+  Server2019filesOnly:
+    runs-on: [ windows-2019 ]
+    needs: [ AnalyzeImages ]
+    strategy:
+      matrix:
+        version: ${{fromJson(needs.AnalyzeImages.outputs.server2019filesOnly)}}
+      fail-fast: false
+      max-parallel: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build Image
+        run: |
+          $filesOnlyStr = "-filesonly"
+          $erroractionpreference = "STOP"
+          Set-StrictMode -version 2.0
+          try {
+            Set-Location "generic"
+            $genericTag = '${{ github.event.inputs.GenericTag }}'
+            if ($genericTag -eq '') { $genericTag = Get-Content -path 'tag.txt' }
+            [System.Version]$genericTag | Out-Null
+
+            $osversion = '${{ matrix.version }}'.split('|')[0]
+            $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[0]
+
+            Write-Host "Build generic image $genericTag mcr.microsoft.com/businesscentral:$osversion$filesOnlyStr based on mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
+          }
+          catch {
+            Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
+            $host.SetShouldExit(1)            
+          }
+
+  Server2022filesOnly:
+    runs-on: [ windows-2022 ]
+    needs: [ AnalyzeImages ]
+    strategy:
+      matrix:
+        version: ${{fromJson(needs.AnalyzeImages.outputs.server2022filesOnly)}}
+      fail-fast: false
+      max-parallel: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build Image
+        run: |
+          $filesOnlyStr = "-filesonly"
+          $erroractionpreference = "STOP"
+          Set-StrictMode -version 2.0
+          try {
+            Set-Location "generic"
+            $genericTag = '${{ github.event.inputs.GenericTag }}'
+            if ($genericTag -eq '') { $genericTag = Get-Content -path 'tag.txt' }
+            [System.Version]$genericTag | Out-Null
+
+            $osversion = '${{ matrix.version }}'.split('|')[0]
+            $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[0]
+
+            Write-Host "Build generic image $genericTag mcr.microsoft.com/businesscentral:$osversion$filesOnlyStr based on mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
+          }
+          catch {
+            Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
+            $host.SetShouldExit(1)            
+          }
