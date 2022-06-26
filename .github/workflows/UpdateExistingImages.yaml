@@ -86,8 +86,8 @@ jobs:
             $job = start-job -ScriptBlock { Param($username, $token, $registry)
               Write-Output $token | docker login --username $username --password-stdin $registry
             } -ArgumentList '${{ secrets.PushUsername }}', '${{ secrets.PushToken }}', $pushRegistry
-            $job | Wait-Job | Out-Null
-            $result = receive-job $job 2> $NULL
+            $job | Wait-Job -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null
+            $result = Receive-Job -ErrorAction SilentlyContinue -WarningAction SilentlyContinue $job 2> $NULL
             if ($result -ne 'Login Succeeded') {
               throw "docker login failed"
             }
@@ -164,8 +164,8 @@ jobs:
             $job = start-job -ScriptBlock { Param($username, $token, $registry)
               Write-Output $token | docker login --username $username --password-stdin $registry
             } -ArgumentList '${{ secrets.PushUsername }}', '${{ secrets.PushToken }}', $pushRegistry
-            $job | Wait-Job | Out-Null
-            $result = receive-job $job 2> $NULL
+            $job | Wait-Job -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null
+            $result = Receive-Job -ErrorAction SilentlyContinue -WarningAction SilentlyContinue $job 2> $NULL
             if ($result -ne 'Login Succeeded') {
               throw "docker login failed"
             }
@@ -242,8 +242,8 @@ jobs:
             $job = start-job -ScriptBlock { Param($username, $token, $registry)
               Write-Output $token | docker login --username $username --password-stdin $registry
             } -ArgumentList '${{ secrets.PushUsername }}', '${{ secrets.PushToken }}', $pushRegistry
-            $job | Wait-Job | Out-Null
-            $result = receive-job $job 2> $NULL
+            $job | Wait-Job -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null
+            $result = Receive-Job -ErrorAction SilentlyContinue -WarningAction SilentlyContinue $job 2> $NULL
             if ($result -ne 'Login Succeeded') {
               throw "docker login failed"
             }
@@ -320,8 +320,8 @@ jobs:
             $job = start-job -ScriptBlock { Param($username, $token, $registry)
               Write-Output $token | docker login --username $username --password-stdin $registry
             } -ArgumentList '${{ secrets.PushUsername }}', '${{ secrets.PushToken }}', $pushRegistry
-            $job | Wait-Job | Out-Null
-            $result = receive-job $job 2> $NULL
+            $job | Wait-Job -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null
+            $result = Receive-Job -ErrorAction SilentlyContinue -WarningAction SilentlyContinue $job 2> $NULL
             if ($result -ne 'Login Succeeded') {
               throw "docker login failed"
             }
