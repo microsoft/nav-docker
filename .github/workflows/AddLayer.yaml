@@ -6,6 +6,10 @@ on:
       GenericTag:
         description: Generic Tag
         required: true
+      BaseGenericTag:
+        description: Base Generic Tag (leave empty to use latest)
+        required: false
+        default: ''
       PushToProd:
         description: Push to production (Y/N)
         required: false
@@ -24,6 +28,8 @@ jobs:
     outputs:
       server2019: ${{ steps.Analyze.outputs.server2019 }}
       server2022: ${{ steps.Analyze.outputs.server2022 }}
+      server2019filesOnly: ${{ steps.Analyze.outputs.server2019filesOnly }}
+      server2022filesOnly: ${{ steps.Analyze.outputs.server2022filesOnly }}
     steps:
       - name: Analyze
         id: Analyze
@@ -34,13 +40,21 @@ jobs:
             $webclient.Headers.Add('Accept', "application/json")
             $url = "https://mcr.microsoft.com/v2/businesscentral/tags/list"
             $version = [System.Version]"0.0.0.0"
-            $versions = (($webclient.DownloadString("$url") | ConvertFrom-Json)).tags | Where-Object { [System.Version]::TryParse($_, [ref] $version) } | ForEach-Object { $version }
-            $server2019 = @($versions | Where-Object { $_ -lt [System.Version]"10.0.17764.0" } | ForEach-Object { "$_" } | Select-Object -last 2 ) | ConvertTo-Json -compress
-            $server2022 = @($versions | Where-Object { $_ -ge [System.Version]"10.0.17764.0" } | ForEach-Object { "$_" } | Select-Object -last 2 ) | ConvertTo-Json -compress
+            $alltags = (($webclient.DownloadString("$url") | ConvertFrom-Json)).tags
+            $versions = $alltags | Where-Object { [System.Version]::TryParse($_, [ref] $version) } | ForEach-Object { $version }
+            $server2019 = @($versions | Where-Object { $_ -lt [System.Version]"10.0.17764.0" } | ForEach-Object { "$_" } | Select-Object -first 1 ) | ConvertTo-Json -compress
+            $server2022 = @($versions | Where-Object { $_ -ge [System.Version]"10.0.17764.0" } | ForEach-Object { "$_" } | Select-Object -first 1 ) | ConvertTo-Json -compress
+            $filesOnlyVersions = $alltags | Where-Object { $_ -like '*-filesonly' } | Where-Object { [System.Version]::TryParse($_.SubString(0,$_.Length-10), [ref] $version) } | ForEach-Object { $version }
+            $server2019filesOnly = @($filesOnlyVersions | Where-Object { $_ -lt [System.Version]"10.0.17764.0" } | ForEach-Object { "$_" } | Select-Object -first 1 ) | ConvertTo-Json -compress
+            $server2022filesOnly = @($filesOnlyVersions | Where-Object { $_ -ge [System.Version]"10.0.17764.0" } | ForEach-Object { "$_" } | Select-Object -first 1 ) | ConvertTo-Json -compress
             Write-Host "::set-output name=server2019::$server2019"
             Write-Host "set-output name=server2019::$server2019"
             Write-Host "::set-output name=server2022::$server2022"
             Write-Host "set-output name=server2022::$server2022"
+            Write-Host "::set-output name=server2019filesOnly::$server2019filesOnly"
+            Write-Host "set-output name=server2019filesOnly::$server2019filesOnly"
+            Write-Host "::set-output name=server2022filesOnly::$server2022filesOnly"
+            Write-Host "set-output name=server2022filesOnly::$server2022filesOnly"
           }
           catch {
             Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
@@ -62,6 +76,8 @@ jobs:
       - name: Build Image
         run: |
           $filesOnlyStr = ""
+          $baseGenericTag = '${{ github.event.inputs.BaseGenericTag }}'
+          if ($baseGenericTag) { $baseGenericTag = "-$baseGenericTag" }
           $erroractionpreference = "STOP"
           Set-StrictMode -version 2.0
           try {
@@ -69,7 +85,7 @@ jobs:
             $job = start-job -ScriptBlock { Param($username, $token, $registry)
               Write-Output $token | docker login --username $username --password-stdin $registry
             } -ArgumentList '${{ secrets.PushUsername }}', '${{ secrets.PushToken }}', $pushRegistry
-            $job | Wait-Job
+            $job | Wait-Job | Out-Null
             $result = receive-job $job 2> $NULL
             if ($result -ne 'Login Succeeded') {
               throw "docker login failed"
@@ -78,7 +94,7 @@ jobs:
             [System.Version]$genericTag | Out-Null
             $pushToProd = '${{ github.event.inputs.PushToProd }}' -eq 'Y'
             $osversion = '${{ matrix.version }}'
-            $baseimage = "mcr.microsoft.com/businesscentral:$osversion"
+            $baseimage = "mcr.microsoft.com/businesscentral:$osversion$baseGenericTag$fileOnlyStr"
             $image = "my:$osversion-$genericTag$filesonlyStr"
             $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
             docker pull $baseimage
@@ -128,6 +144,8 @@ jobs:
       - name: Build Image
         run: |
           $filesOnlyStr = ""
+          $baseGenericTag = '${{ github.event.inputs.BaseGenericTag }}'
+          if ($baseGenericTag) { $baseGenericTag = "-$baseGenericTag" }
           $erroractionpreference = "STOP"
           Set-StrictMode -version 2.0
           try {
@@ -135,7 +153,7 @@ jobs:
             $job = start-job -ScriptBlock { Param($username, $token, $registry)
               Write-Output $token | docker login --username $username --password-stdin $registry
             } -ArgumentList '${{ secrets.PushUsername }}', '${{ secrets.PushToken }}', $pushRegistry
-            $job | Wait-Job
+            $job | Wait-Job | Out-Null
             $result = receive-job $job 2> $NULL
             if ($result -ne 'Login Succeeded') {
               throw "docker login failed"
@@ -144,7 +162,143 @@ jobs:
             [System.Version]$genericTag | Out-Null
             $pushToProd = '${{ github.event.inputs.PushToProd }}' -eq 'Y'
             $osversion = '${{ matrix.version }}'
-            $baseimage = "mcr.microsoft.com/businesscentral:$osversion"
+            $baseimage = "mcr.microsoft.com/businesscentral:$osversion$baseGenericTag$fileOnlyStr"
+            $image = "my:$osversion-$genericTag$filesonlyStr"
+            $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
+            docker pull $baseimage
+            $inspect = docker inspect $baseimage | ConvertFrom-Json
+            if ([version]$inspect.config.Labels.tag -ge [version]$generictag) {
+              Write-Host "::Warning::Base Image is Generic Tag $($inspect.config.Labels.tag), skipping build of $osversion-$genericTag$filesonlyStr."
+            }
+            else {
+              Set-Location "generic"
+              $dockerfile = Join-Path (Get-Location) "DOCKERFILE.UPDATE"
+              "FROM $baseimage`nCOPY Run /Run/`nLABEL tag=""$genericTag"" \`n      created=""$created""`n" | Set-Content $dockerfile
+              docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location)
+
+              $newtags = @(
+                "$pushRegistry/public/businesscentral:$osversion$filesonlyStr-dev"
+              )
+              if ($pushToProd) {
+                $newtags += @(
+                    "$pushRegistry/public/businesscentral:$osversion$filesonlyStr"
+                    "$pushRegistry/public/businesscentral:$osversion-$genericTag$filesonlyStr"
+                )
+              }
+              $newtags | ForEach-Object {
+                Write-Host "Push $_"
+                docker tag $image $_
+                docker push $_
+              }
+            }
+          }
+          catch {
+            Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
+            $host.SetShouldExit(1)            
+          }
+
+  Server2019filesOnly:
+    runs-on: [ windows-2019 ]
+    needs: [ AnalyzeImages ]
+    strategy:
+      matrix:
+        version: ${{fromJson(needs.AnalyzeImages.outputs.server2019filesOnly)}}
+      fail-fast: false
+      max-parallel: 100
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build Image
+        run: |
+          $filesOnlyStr = "-filesonly"
+          $baseGenericTag = '${{ github.event.inputs.BaseGenericTag }}'
+          if ($baseGenericTag) { $baseGenericTag = "-$baseGenericTag" }
+          $erroractionpreference = "STOP"
+          Set-StrictMode -version 2.0
+          try {
+            $pushRegistry = "mcrbusinesscentral.azurecr.io"
+            $job = start-job -ScriptBlock { Param($username, $token, $registry)
+              Write-Output $token | docker login --username $username --password-stdin $registry
+            } -ArgumentList '${{ secrets.PushUsername }}', '${{ secrets.PushToken }}', $pushRegistry
+            $job | Wait-Job | Out-Null
+            $result = receive-job $job 2> $NULL
+            if ($result -ne 'Login Succeeded') {
+              throw "docker login failed"
+            }
+            $genericTag = '${{ github.event.inputs.GenericTag }}'
+            [System.Version]$genericTag | Out-Null
+            $pushToProd = '${{ github.event.inputs.PushToProd }}' -eq 'Y'
+            $osversion = '${{ matrix.version }}'
+            $baseimage = "mcr.microsoft.com/businesscentral:$osversion$baseGenericTag$fileOnlyStr"
+            $image = "my:$osversion-$genericTag$filesonlyStr"
+            $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
+            docker pull $baseimage
+            $inspect = docker inspect $baseimage | ConvertFrom-Json
+            if ([version]$inspect.config.Labels.tag -ge [version]$generictag) {
+              Write-Host "::Warning::Base Image is Generic Tag $($inspect.config.Labels.tag), skipping build of $osversion-$genericTag$filesonlyStr."
+            }
+            else {
+              Set-Location "generic"
+              $dockerfile = Join-Path (Get-Location) "DOCKERFILE.UPDATE"
+              "FROM $baseimage`nCOPY Run /Run/`nLABEL tag=""$genericTag"" \`n      created=""$created""`n" | Set-Content $dockerfile
+              docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location)
+
+              $newtags = @(
+                "$pushRegistry/public/businesscentral:$osversion$filesonlyStr-dev"
+              )
+              if ($pushToProd) {
+                $newtags += @(
+                    "$pushRegistry/public/businesscentral:$osversion$filesonlyStr"
+                    "$pushRegistry/public/businesscentral:$osversion-$genericTag$filesonlyStr"
+                )
+              }
+              $newtags | ForEach-Object {
+                Write-Host "Push $_"
+                docker tag $image $_
+                docker push $_
+              }
+            }
+          }
+          catch {
+            Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
+            $host.SetShouldExit(1)            
+          }
+
+  Server2022filesOnly:
+    runs-on: [ windows-2022 ]
+    needs: [ AnalyzeImages ]
+    strategy:
+      matrix:
+        version: ${{fromJson(needs.AnalyzeImages.outputs.server2022filesOnly)}}
+      fail-fast: false
+      max-parallel: 100
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build Image
+        run: |
+          $filesOnlyStr = "-filesonly"
+          $baseGenericTag = '${{ github.event.inputs.BaseGenericTag }}'
+          if ($baseGenericTag) { $baseGenericTag = "-$baseGenericTag" }
+          $erroractionpreference = "STOP"
+          Set-StrictMode -version 2.0
+          try {
+            $pushRegistry = "mcrbusinesscentral.azurecr.io"
+            $job = start-job -ScriptBlock { Param($username, $token, $registry)
+              Write-Output $token | docker login --username $username --password-stdin $registry
+            } -ArgumentList '${{ secrets.PushUsername }}', '${{ secrets.PushToken }}', $pushRegistry
+            $job | Wait-Job | Out-Null
+            $result = receive-job $job 2> $NULL
+            if ($result -ne 'Login Succeeded') {
+              throw "docker login failed"
+            }
+            $genericTag = '${{ github.event.inputs.GenericTag }}'
+            [System.Version]$genericTag | Out-Null
+            $pushToProd = '${{ github.event.inputs.PushToProd }}' -eq 'Y'
+            $osversion = '${{ matrix.version }}'
+            $baseimage = "mcr.microsoft.com/businesscentral:$osversion$baseGenericTag$fileOnlyStr"
             $image = "my:$osversion-$genericTag$filesonlyStr"
             $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
             docker pull $baseimage
