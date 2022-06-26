@@ -99,7 +99,7 @@ jobs:
 
             $osversion = '${{ matrix.version }}'.split('|')[0]
             $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[1]
-            $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$tag"
+            $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
             
             $rootPath = Get-Location
             if ($filesOnlyStr) {
@@ -155,7 +155,7 @@ jobs:
 
             $osversion = '${{ matrix.version }}'.split('|')[0]
             $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[1]
-            $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$tag"
+            $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
             
             $rootPath = Get-Location
             if ($filesOnlyStr) {
@@ -211,7 +211,7 @@ jobs:
 
             $osversion = '${{ matrix.version }}'.split('|')[0]
             $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[1]
-            $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$tag"
+            $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
             
             $rootPath = Get-Location
             if ($filesOnlyStr) {
@@ -267,7 +267,7 @@ jobs:
 
             $osversion = '${{ matrix.version }}'.split('|')[0]
             $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[1]
-            $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$tag"
+            $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
             
             $rootPath = Get-Location
             if ($filesOnlyStr) {
