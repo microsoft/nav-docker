@@ -24,7 +24,9 @@ jobs:
     runs-on: [ windows-latest ]
     outputs:
       server2022: ${{ steps.Analyze.outputs.server2022 }}
+      server2022count: ${{ steps.Analyze.outputs.server2022count }}
       server2022filesOnly: ${{ steps.Analyze.outputs.server2022filesOnly }}
+      server2022filesOnlyCount: ${{ steps.Analyze.outputs.server2022filesOnlyCount }}
     steps:
       - name: Analyze
         id: Analyze
@@ -58,21 +60,39 @@ jobs:
                     Write-Host " - Missing"
                 }
             }
-            $server2022 = @($missingImages.GetEnumerator() | Where-Object { $_ } | ForEach-Object { "$($_.name)|$($_.value)" }) | ConvertTo-Json -Compress
-            $server2022filesOnly = @($missingFilesOnlyImages.GetEnumerator() | Where-Object { $_ } | ForEach-Object { "$($_.name)|$($_.value)" }) | ConvertTo-Json -Compress
+            $server2022array = @($missingImages.GetEnumerator() | Where-Object { $_ } | ForEach-Object { "$($_.name)|$($_.value)" })
+            $server2022filesOnlyArray = @($missingFilesOnlyImages.GetEnumerator() | Where-Object { $_ } | ForEach-Object { "$($_.name)|$($_.value)" })
+            $server2022count = $server2022array.Count
+            $server2022filesOnlyCount = $server2022filesOnlyArray.Count
+            $server2022 = $server2022array | ConvertTo-Json -Compress
+            $server2022filesOnly = $server2022filesOnlyArray | ConvertTo-Json -Compress
             Write-Host "::set-output name=server2022::[$("$server2022".Trim('[]'))]"
             Write-Host "set-output name=server2022::[$("$server2022".Trim('[]'))]"
             Write-Host "::set-output name=server2022filesOnly::[$("$server2022filesOnly".Trim('[]'))]"
             Write-Host "set-output name=server2022filesOnly::[$("$server2022filesOnly".Trim('[]'))]"
+            Write-Host "::set-output name=server2022count::$server2022count"
+            Write-Host "set-output name=server2022count::$server2022count"
+            Write-Host "::set-output name=server2022filesOnlyCount::$server2022filesOnlyCount"
+            Write-Host "set-output name=server2022filesOnlyCount::$server2022filesOnlyCount"
           }
           catch {
             Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
             $host.SetShouldExit(1)            
           }
 
+  CreateAgents:
+    runs-on: [ windows-latest ]
+    needs: [ AnalyzeImages ]
+    if: ${{ needs.AnalyzeImages.outputs.server2022count > 0 || needs.AnalyzeImages.outputs.server2022filesOnlyCount > 0 }}
+    steps:
+      - name: Create Build Agents
+        run: |
+          Write-Host "Create Build Agents"
+
   Server2022:
     runs-on: [ buildgeneric ]
-    needs: [ AnalyzeImages ]
+    needs: [ AnalyzeImages, CreateAgents ]
+    if: ${{ needs.AnalyzeImages.outputs.server2022count > 0 }}
     strategy:
       matrix:
         version: ${{fromJson(needs.AnalyzeImages.outputs.server2022)}}
@@ -160,6 +180,7 @@ jobs:
   Server2022filesOnly:
     runs-on: [ buildgeneric ]
     needs: [ AnalyzeImages ]
+    if: ${{ needs.AnalyzeImages.outputs.server2022filesOnlyCount > 0 }}
     strategy:
       matrix:
         version: ${{fromJson(needs.AnalyzeImages.outputs.server2022filesOnly)}}
@@ -243,3 +264,12 @@ jobs:
             Write-Host "::Error::Error building images. Error was $($_.Exception.Message)"
             $host.SetShouldExit(1)            
           }
+
+  RemoveAgents:
+    runs-on: [ buildgeneric ]
+    needs: [ AnalyzeImages, CreateAgents, Server2022, Server2022filesOnly ]
+    if: ${{ needs.AnalyzeImages.outputs.server2022count > 0 || needs.AnalyzeImages.outputs.server2022filesOnlyCount > 0 }}
+    steps:
+      - name: Remove Build Agents
+        run: |
+          Write-Host "Remove Build Agents"
