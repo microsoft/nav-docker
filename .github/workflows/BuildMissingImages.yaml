@@ -7,6 +7,10 @@ on:
         description: Generic Tag (leave empty to use value in generic/tag.txt)
         required: false
         default: ''
+      PushToProd:
+        description: Push to production (Y/N)
+        required: false
+        default: 'N'
 
 permissions:
   contents: read
@@ -19,9 +23,7 @@ jobs:
   AnalyzeImages:
     runs-on: [ windows-latest ]
     outputs:
-      server2019: ${{ steps.Analyze.outputs.server2019 }}
       server2022: ${{ steps.Analyze.outputs.server2022 }}
-      server2019filesOnly: ${{ steps.Analyze.outputs.server2019filesOnly }}
       server2022filesOnly: ${{ steps.Analyze.outputs.server2022filesOnly }}
     steps:
       - name: Analyze
@@ -56,74 +58,12 @@ jobs:
                     Write-Host " - Missing"
                 }
             }
-            $server2019 = @($missingImages.GetEnumerator() | Where-Object { $_ } | Where-Object { [System.Version]$_.name -lt [System.Version]"10.0.17764.0" } | ForEach-Object { "$($_.name)|$($_.value)" }) | ConvertTo-Json -Compress
-            $server2022 = @($missingImages.GetEnumerator() | Where-Object { $_ } | Where-Object { [System.Version]$_.name -ge [System.Version]"10.0.17764.0" } | ForEach-Object { "$($_.name)|$($_.value)" }) | ConvertTo-Json -Compress
-            $server2019filesOnly = @($missingFilesOnlyImages.GetEnumerator() | Where-Object { $_ } | Where-Object { [System.Version]$_.name -lt [System.Version]"10.0.17764.0" } | ForEach-Object { "$($_.name)|$($_.value)" }) | ConvertTo-Json -Compress
-            $server2022filesOnly = @($missingFilesOnlyImages.GetEnumerator() | Where-Object { $_ } | Where-Object { [System.Version]$_.name -ge [System.Version]"10.0.17764.0" } | ForEach-Object { "$($_.name)|$($_.value)" }) | ConvertTo-Json -Compress
-            Write-Host "::set-output name=server2019::[$("$server2019".Trim('[]'))]"
-            Write-Host "set-output name=server2019::[$("$server2019".Trim('[]'))]"
+            $server2022 = @($missingImages.GetEnumerator() | Where-Object { $_ } | ForEach-Object { "$($_.name)|$($_.value)" }) | ConvertTo-Json -Compress
+            $server2022filesOnly = @($missingFilesOnlyImages.GetEnumerator() | Where-Object { $_ } | ForEach-Object { "$($_.name)|$($_.value)" }) | ConvertTo-Json -Compress
             Write-Host "::set-output name=server2022::[$("$server2022".Trim('[]'))]"
             Write-Host "set-output name=server2022::[$("$server2022".Trim('[]'))]"
-            Write-Host "::set-output name=server2019filesOnly::[$("$server2019filesOnly".Trim('[]'))]"
-            Write-Host "set-output name=server2019filesOnly::[$("$server2019filesOnly".Trim('[]'))]"
             Write-Host "::set-output name=server2022filesOnly::[$("$server2022filesOnly".Trim('[]'))]"
             Write-Host "set-output name=server2022filesOnly::[$("$server2022filesOnly".Trim('[]'))]"
-          }
-          catch {
-            Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
-            $host.SetShouldExit(1)            
-          }
-
-  Server2019:
-    runs-on: [ buildgeneric ]
-    needs: [ AnalyzeImages ]
-    strategy:
-      matrix:
-        version: ${{fromJson(needs.AnalyzeImages.outputs.server2019)}}
-      fail-fast: false
-      max-parallel: 5
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Build Image
-        run: |
-          $filesOnlyStr = ""
-          $erroractionpreference = "STOP"
-          Set-StrictMode -version 2.0
-          try {
-            Set-Location "generic"
-            $genericTag = '${{ github.event.inputs.GenericTag }}'
-            if ($genericTag -eq '') { $genericTag = Get-Content -path 'tag.txt' }
-            [System.Version]$genericTag | Out-Null
-
-            $osversion = '${{ matrix.version }}'.split('|')[0]
-            $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[1]
-            $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
-            
-            $rootPath = Get-Location
-            if ($filesOnlyStr) {
-              $dockerfile = Join-Path $rootPath "DOCKERFILE.filesonly"
-            }
-            else {
-              $dockerfile = Join-Path $rootPath "DOCKERFILE"
-            }
-
-            $image = "my:$osversion-$genericTag$filesonlyStr"
-            $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
-            docker pull $baseimage
-            $inspect = docker inspect $baseimage | ConvertFrom-Json
-
-            docker build --build-arg baseimage=$baseimage `
-                         --build-arg created=$created `
-                         --build-arg tag="$genericTag" `
-                         --build-arg osversion="$osversion" `
-                         --isolation=hyperv `
-                         --memory 8G `
-                         --tag $image `
-                         --file $dockerfile `
-                         $RootPath
-
           }
           catch {
             Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
@@ -148,11 +88,20 @@ jobs:
           $erroractionpreference = "STOP"
           Set-StrictMode -version 2.0
           try {
+            $pushRegistry = "mcrbusinesscentral.azurecr.io"
+            $job = start-job -ScriptBlock { Param($username, $token, $registry)
+              Write-Output $token | docker login --username $username --password-stdin $registry
+            } -ArgumentList '${{ secrets.PushUsername }}', '${{ secrets.PushToken }}', $pushRegistry
+            $job | Wait-Job | Out-Null
+            $result = receive-job $job 2> $NULL
+            if ($result -ne 'Login Succeeded') {
+              throw "docker login failed"
+            }
             Set-Location "generic"
             $genericTag = '${{ github.event.inputs.GenericTag }}'
             if ($genericTag -eq '') { $genericTag = Get-Content -path 'tag.txt' }
             [System.Version]$genericTag | Out-Null
-
+            $pushToProd = '${{ github.event.inputs.PushToProd }}' -eq 'Y'
             $osversion = '${{ matrix.version }}'.split('|')[0]
             $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[1]
             $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
@@ -170,6 +119,7 @@ jobs:
             docker pull $baseimage
             $inspect = docker inspect $baseimage | ConvertFrom-Json
 
+            $success = $false
             docker build --build-arg baseimage=$baseimage `
                          --build-arg created=$created `
                          --build-arg tag="$genericTag" `
@@ -178,64 +128,29 @@ jobs:
                          --memory 8G `
                          --tag $image `
                          --file $dockerfile `
-                         $RootPath
-
-          }
-          catch {
-            Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
-            $host.SetShouldExit(1)            
-          }
-
-  Server2019filesOnly:
-    runs-on: [ buildgeneric ]
-    needs: [ AnalyzeImages ]
-    strategy:
-      matrix:
-        version: ${{fromJson(needs.AnalyzeImages.outputs.server2019filesOnly)}}
-      fail-fast: false
-      max-parallel: 5
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Build Image
-        run: |
-          $filesOnlyStr = "-filesonly"
-          $erroractionpreference = "STOP"
-          Set-StrictMode -version 2.0
-          try {
-            Set-Location "generic"
-            $genericTag = '${{ github.event.inputs.GenericTag }}'
-            if ($genericTag -eq '') { $genericTag = Get-Content -path 'tag.txt' }
-            [System.Version]$genericTag | Out-Null
-
-            $osversion = '${{ matrix.version }}'.split('|')[0]
-            $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[1]
-            $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
-            
-            $rootPath = Get-Location
-            if ($filesOnlyStr) {
-              $dockerfile = Join-Path $rootPath "DOCKERFILE.filesonly"
+                         $RootPath | % {
+              $_ | Out-Host
+              if ($_ -like "Successfully built*") {
+                $success = $true
+              }
             }
-            else {
-              $dockerfile = Join-Path $rootPath "DOCKERFILE"
+            if (!$success) {
+              throw "Error building image"
             }
-
-            $image = "my:$osversion-$genericTag$filesonlyStr"
-            $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
-            docker pull $baseimage
-            $inspect = docker inspect $baseimage | ConvertFrom-Json
-
-            docker build --build-arg baseimage=$baseimage `
-                         --build-arg created=$created `
-                         --build-arg tag="$genericTag" `
-                         --build-arg osversion="$osversion" `
-                         --isolation=hyperv `
-                         --memory 8G `
-                         --tag $image `
-                         --file $dockerfile `
-                         $RootPath
-
+            $newtags = @(
+              "$pushRegistry/public/businesscentral:$osversion$filesonlyStr-dev"
+            )
+            if ($pushToProd) {
+              $newtags += @(
+                  "$pushRegistry/public/businesscentral:$osversion$filesonlyStr"
+                  "$pushRegistry/public/businesscentral:$osversion-$genericTag$filesonlyStr"
+              )
+            }
+            $newtags | ForEach-Object {
+              Write-Host "Push $_"
+              docker tag $image $_
+              docker push $_
+            }
           }
           catch {
             Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
@@ -260,11 +175,20 @@ jobs:
           $erroractionpreference = "STOP"
           Set-StrictMode -version 2.0
           try {
+            $pushRegistry = "mcrbusinesscentral.azurecr.io"
+            $job = start-job -ScriptBlock { Param($username, $token, $registry)
+              Write-Output $token | docker login --username $username --password-stdin $registry
+            } -ArgumentList '${{ secrets.PushUsername }}', '${{ secrets.PushToken }}', $pushRegistry
+            $job | Wait-Job | Out-Null
+            $result = receive-job $job 2> $NULL
+            if ($result -ne 'Login Succeeded') {
+              throw "docker login failed"
+            }
             Set-Location "generic"
             $genericTag = '${{ github.event.inputs.GenericTag }}'
             if ($genericTag -eq '') { $genericTag = Get-Content -path 'tag.txt' }
             [System.Version]$genericTag | Out-Null
-
+            $pushToProd = '${{ github.event.inputs.PushToProd }}' -eq 'Y'
             $osversion = '${{ matrix.version }}'.split('|')[0]
             $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[1]
             $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
@@ -282,6 +206,7 @@ jobs:
             docker pull $baseimage
             $inspect = docker inspect $baseimage | ConvertFrom-Json
 
+            $success = $false
             docker build --build-arg baseimage=$baseimage `
                          --build-arg created=$created `
                          --build-arg tag="$genericTag" `
@@ -290,8 +215,29 @@ jobs:
                          --memory 8G `
                          --tag $image `
                          --file $dockerfile `
-                         $RootPath
-
+                         $RootPath | % {
+              $_ | Out-Host
+              if ($_ -like "Successfully built*") {
+                $success = $true
+              }
+            }
+            if (!$success) {
+              throw "Error building image"
+            }
+            $newtags = @(
+              "$pushRegistry/public/businesscentral:$osversion$filesonlyStr-dev"
+            )
+            if ($pushToProd) {
+              $newtags += @(
+                  "$pushRegistry/public/businesscentral:$osversion$filesonlyStr"
+                  "$pushRegistry/public/businesscentral:$osversion-$genericTag$filesonlyStr"
+              )
+            }
+            $newtags | ForEach-Object {
+              Write-Host "Push $_"
+              docker tag $image $_
+              docker push $_
+            }
           }
           catch {
             Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"

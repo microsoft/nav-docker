@@ -108,7 +108,16 @@ jobs:
             else {
               $dockerfile = Join-Path (Get-Location) "DOCKERFILE.UPDATE"
               "FROM $baseimage`nCOPY Run /Run/`nLABEL tag=""$genericTag"" \`n      created=""$created""`n" | Set-Content $dockerfile
-              docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location)
+              $success = $false
+              docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location) | % {
+                $_ | Out-Host
+                if ($_ -like "Successfully built*") {
+                  $success = $true
+                }
+              }
+              if (!$success) {
+                throw "Error building image"
+              }
 
               $newtags = @(
                 "$pushRegistry/public/businesscentral:$osversion$filesonlyStr-dev"
@@ -177,7 +186,16 @@ jobs:
             else {
               $dockerfile = Join-Path (Get-Location) "DOCKERFILE.UPDATE"
               "FROM $baseimage`nCOPY Run /Run/`nLABEL tag=""$genericTag"" \`n      created=""$created""`n" | Set-Content $dockerfile
-              docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location)
+              $success = $false
+              docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location) | % {
+                $_ | Out-Host
+                if ($_ -like "Successfully built*") {
+                  $success = $true
+                }
+              }
+              if (!$success) {
+                throw "Error building image"
+              }
 
               $newtags = @(
                 "$pushRegistry/public/businesscentral:$osversion$filesonlyStr-dev"
@@ -246,7 +264,16 @@ jobs:
             else {
               $dockerfile = Join-Path (Get-Location) "DOCKERFILE.UPDATE"
               "FROM $baseimage`nCOPY Run /Run/`nLABEL tag=""$genericTag"" \`n      created=""$created""`n" | Set-Content $dockerfile
-              docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location)
+              $success = $false
+              docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location) | % {
+                $_ | Out-Host
+                if ($_ -like "Successfully built*") {
+                  $success = $true
+                }
+              }
+              if (!$success) {
+                throw "Error building image"
+              }
 
               $newtags = @(
                 "$pushRegistry/public/businesscentral:$osversion$filesonlyStr-dev"
@@ -315,7 +342,16 @@ jobs:
             else {
               $dockerfile = Join-Path (Get-Location) "DOCKERFILE.UPDATE"
               "FROM $baseimage`nCOPY Run /Run/`nLABEL tag=""$genericTag"" \`n      created=""$created""`n" | Set-Content $dockerfile
-              docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location)
+              $success = $false
+              docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location) | % {
+                $_ | Out-Host
+                if ($_ -like "Successfully built*") {
+                  $success = $true
+                }
+              }
+              if (!$success) {
+                throw "Error building image"
+              }
 
               $newtags = @(
                 "$pushRegistry/public/businesscentral:$osversion$filesonlyStr-dev"
