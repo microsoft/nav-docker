@@ -179,7 +179,7 @@ jobs:
 
   Server2022filesOnly:
     runs-on: [ buildgeneric ]
-    needs: [ AnalyzeImages ]
+    needs: [ AnalyzeImages, CreateAgents ]
     if: ${{ needs.AnalyzeImages.outputs.server2022filesOnlyCount > 0 }}
     strategy:
       matrix:
