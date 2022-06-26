@@ -1,4 +1,4 @@
-name: AddLayer
+name: Update all existing images (Add a new layer)
 
 on:
   workflow_dispatch:
