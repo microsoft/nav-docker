@@ -2,6 +2,14 @@ name: AddLayer
 
 on:
   workflow_dispatch:
+    inputs:
+      GenericTag:
+        description: Generic Tag
+        required: true
+      PushToProd:
+        description: Push to production (Y/N)
+        required: false
+        default: 'N'
 
 permissions:
   contents: read
@@ -27,8 +35,8 @@ jobs:
             $url = "https://mcr.microsoft.com/v2/businesscentral/tags/list"
             $version = [System.Version]"0.0.0.0"
             $versions = (($webclient.DownloadString("$url") | ConvertFrom-Json)).tags | Where-Object { [System.Version]::TryParse($_, [ref] $version) } | ForEach-Object { $version }
-            $server2019 = @($versions | Where-Object { $_ -lt [System.Version]"10.0.17764.0" } | ForEach-Object { "$_" }) | ConvertTo-Json -compress
-            $server2022 = @($versions | Where-Object { $_ -ge [System.Version]"10.0.17764.0" } | ForEach-Object { "$_" }) | ConvertTo-Json -compress
+            $server2019 = @($versions | Where-Object { $_ -lt [System.Version]"10.0.17764.0" } | ForEach-Object { "$_" } | Select-Object -last 2 ) | ConvertTo-Json -compress
+            $server2022 = @($versions | Where-Object { $_ -ge [System.Version]"10.0.17764.0" } | ForEach-Object { "$_" } | Select-Object -last 2 ) | ConvertTo-Json -compress
             Write-Host "::set-output name=server2019::$server2019"
             Write-Host "set-output name=server2019::$server2019"
             Write-Host "::set-output name=server2022::$server2022"
@@ -53,19 +61,42 @@ jobs:
 
       - name: Build Image
         run: |
+          $filesOnlyStr = ""
           $erroractionpreference = "STOP"
           try {
+            $genericTag = '${{ github.event.inputs.GenericTag }}'
+            [System.Version]$genericTag | Out-Null
+            $pushToProd = '${{ github.event.inputs.PushToProd }}' -eq 'Y'
             $osversion = '${{ matrix.version }}'
             $baseimage = "mcr.microsoft.com/businesscentral:$osversion"
-            $genericTag = "1.0.2.10"
-            $filesOnlyStr = ""
             $image = "my:$osversion-$genericTag$filesonlyStr"
             $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
             docker pull $baseimage
-            Set-Location "generic"
-            $dockerfile = Join-Path (Get-Location) "DOCKERFILE.UPDATE"
-            "FROM $baseimage`nCOPY Run /Run/`nLABEL tag=""$genericTag"" \`n      created=""$created""`n" | Set-Content $dockerfile
-            docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location)
+            $inspect = docker inspect $baseimage | ConvertFrom-Json
+            if ([version]$inspect.config.Labels.tag -ge [version]$generictag) {
+              Write-Host "Base Image is Generic Tag $($inspect.config.Labels.tag), which is newer than $genericTag. Skipping"
+            }
+            else {
+              Set-Location "generic"
+              $dockerfile = Join-Path (Get-Location) "DOCKERFILE.UPDATE"
+              "FROM $baseimage`nCOPY Run /Run/`nLABEL tag=""$genericTag"" \`n      created=""$created""`n" | Set-Content $dockerfile
+              docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location)
+
+              $newtags = @(
+                "mcrbusinesscentral.azurecr.io/public/businesscentral:$osversion$filesonlyStr-dev"
+              )
+              if ($pushToProd) {
+                $newtags += @(
+                    "mcrbusinesscentral.azurecr.io/public/businesscentral:$osversion$filesonlyStr",
+                    "mcrbusinesscentral.azurecr.io/public/businesscentral:$osversion-$genericTag$filesonlyStr")
+                }
+              }
+              $newtags | ForEach-Object {
+                Write-Host "Push $_"
+                docker tag $image $_
+                #docker push $_
+              }
+            }
           }
           catch {
             Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
@@ -86,19 +117,42 @@ jobs:
 
       - name: Build Image
         run: |
+          $filesOnlyStr = ""
           $erroractionpreference = "STOP"
           try {
+            $genericTag = '${{ github.event.inputs.GenericTag }}'
+            [System.Version]$genericTag | Out-Null
+            $pushToProd = '${{ github.event.inputs.PushToProd }}' -eq 'Y'
             $osversion = '${{ matrix.version }}'
             $baseimage = "mcr.microsoft.com/businesscentral:$osversion"
-            $genericTag = "1.0.2.10"
-            $filesOnlyStr = ""
             $image = "my:$osversion-$genericTag$filesonlyStr"
             $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
             docker pull $baseimage
-            Set-Location "generic"
-            $dockerfile = Join-Path (Get-Location) "DOCKERFILE.UPDATE"
-            "FROM $baseimage`nCOPY Run /Run/`nLABEL tag=""$genericTag"" \`n      created=""$created""`n" | Set-Content $dockerfile
-            docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location)
+            $inspect = docker inspect $baseimage | ConvertFrom-Json
+            if ([version]$inspect.config.Labels.tag -ge [version]$generictag) {
+              Write-Host "Base Image is Generic Tag $($inspect.config.Labels.tag), which is newer than $genericTag. Skipping"
+            }
+            else {
+              Set-Location "generic"
+              $dockerfile = Join-Path (Get-Location) "DOCKERFILE.UPDATE"
+              "FROM $baseimage`nCOPY Run /Run/`nLABEL tag=""$genericTag"" \`n      created=""$created""`n" | Set-Content $dockerfile
+              docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location)
+
+              $newtags = @(
+                "mcrbusinesscentral.azurecr.io/public/businesscentral:$osversion$filesonlyStr-dev"
+              )
+              if ($pushToProd) {
+                $newtags += @(
+                    "mcrbusinesscentral.azurecr.io/public/businesscentral:$osversion$filesonlyStr",
+                    "mcrbusinesscentral.azurecr.io/public/businesscentral:$osversion-$genericTag$filesonlyStr")
+                }
+              }
+              $newtags | ForEach-Object {
+                Write-Host "Push $_"
+                docker tag $image $_
+                #docker push $_
+              }
+            }
           }
           catch {
             Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
