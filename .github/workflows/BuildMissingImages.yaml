@@ -98,9 +98,32 @@ jobs:
             [System.Version]$genericTag | Out-Null
 
             $osversion = '${{ matrix.version }}'.split('|')[0]
-            $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[0]
+            $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[1]
+            $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$tag"
+            
+            $rootPath = Get-Location
+            if ($filesOnlyStr) {
+              $dockerfile = Join-Path $rootPath "DOCKERFILE.filesonly"
+            }
+            else {
+              $dockerfile = Join-Path $rootPath "DOCKERFILE"
+            }
 
-            Write-Host "Build generic image $genericTag mcr.microsoft.com/businesscentral:$osversion$filesOnlyStr based on mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
+            $image = "my:$osversion-$genericTag$filesonlyStr"
+            $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
+            docker pull $baseimage
+            $inspect = docker inspect $baseimage | ConvertFrom-Json
+
+            docker build --build-arg baseimage=$baseimage `
+                         --build-arg created=$created `
+                         --build-arg tag="$genericTag" `
+                         --build-arg osversion="$osversion" `
+                         --isolation=hyperv `
+                         --memory 8G `
+                         --tag $image `
+                         --file $dockerfile `
+                         $RootPath
+
           }
           catch {
             Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
@@ -131,9 +154,32 @@ jobs:
             [System.Version]$genericTag | Out-Null
 
             $osversion = '${{ matrix.version }}'.split('|')[0]
-            $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[0]
+            $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[1]
+            $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$tag"
+            
+            $rootPath = Get-Location
+            if ($filesOnlyStr) {
+              $dockerfile = Join-Path $rootPath "DOCKERFILE.filesonly"
+            }
+            else {
+              $dockerfile = Join-Path $rootPath "DOCKERFILE"
+            }
 
-            Write-Host "Build generic image $genericTag mcr.microsoft.com/businesscentral:$osversion$filesOnlyStr based on mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
+            $image = "my:$osversion-$genericTag$filesonlyStr"
+            $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
+            docker pull $baseimage
+            $inspect = docker inspect $baseimage | ConvertFrom-Json
+
+            docker build --build-arg baseimage=$baseimage `
+                         --build-arg created=$created `
+                         --build-arg tag="$genericTag" `
+                         --build-arg osversion="$osversion" `
+                         --isolation=hyperv `
+                         --memory 8G `
+                         --tag $image `
+                         --file $dockerfile `
+                         $RootPath
+
           }
           catch {
             Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
@@ -164,9 +210,32 @@ jobs:
             [System.Version]$genericTag | Out-Null
 
             $osversion = '${{ matrix.version }}'.split('|')[0]
-            $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[0]
+            $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[1]
+            $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$tag"
+            
+            $rootPath = Get-Location
+            if ($filesOnlyStr) {
+              $dockerfile = Join-Path $rootPath "DOCKERFILE.filesonly"
+            }
+            else {
+              $dockerfile = Join-Path $rootPath "DOCKERFILE"
+            }
 
-            Write-Host "Build generic image $genericTag mcr.microsoft.com/businesscentral:$osversion$filesOnlyStr based on mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
+            $image = "my:$osversion-$genericTag$filesonlyStr"
+            $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
+            docker pull $baseimage
+            $inspect = docker inspect $baseimage | ConvertFrom-Json
+
+            docker build --build-arg baseimage=$baseimage `
+                         --build-arg created=$created `
+                         --build-arg tag="$genericTag" `
+                         --build-arg osversion="$osversion" `
+                         --isolation=hyperv `
+                         --memory 8G `
+                         --tag $image `
+                         --file $dockerfile `
+                         $RootPath
+
           }
           catch {
             Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
@@ -197,9 +266,32 @@ jobs:
             [System.Version]$genericTag | Out-Null
 
             $osversion = '${{ matrix.version }}'.split('|')[0]
-            $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[0]
+            $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[1]
+            $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$tag"
+            
+            $rootPath = Get-Location
+            if ($filesOnlyStr) {
+              $dockerfile = Join-Path $rootPath "DOCKERFILE.filesonly"
+            }
+            else {
+              $dockerfile = Join-Path $rootPath "DOCKERFILE"
+            }
 
-            Write-Host "Build generic image $genericTag mcr.microsoft.com/businesscentral:$osversion$filesOnlyStr based on mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
+            $image = "my:$osversion-$genericTag$filesonlyStr"
+            $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
+            docker pull $baseimage
+            $inspect = docker inspect $baseimage | ConvertFrom-Json
+
+            docker build --build-arg baseimage=$baseimage `
+                         --build-arg created=$created `
+                         --build-arg tag="$genericTag" `
+                         --build-arg osversion="$osversion" `
+                         --isolation=hyperv `
+                         --memory 8G `
+                         --tag $image `
+                         --file $dockerfile `
+                         $RootPath
+
           }
           catch {
             Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
