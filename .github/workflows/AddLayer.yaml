@@ -65,6 +65,15 @@ jobs:
           $erroractionpreference = "STOP"
           Set-StrictMode -version 2.0
           try {
+            $pushRegistry = "mcrbusinesscentral.azurecr.io"
+            $job = start-job -ScriptBlock { Param($username, $token, $registry)
+              Write-Output $token | docker login --username $username --password-stdin $registry
+            } -ArgumentList '${{ secrets.PushUsername }}', '${{ secrets.PushToken }}', $pushRegistry
+            $job | Wait-Job
+            $result = receive-job $job 2> $NULL
+            if ($result -ne 'Login Succeeded') {
+              throw "docker login failed"
+            }
             $genericTag = '${{ github.event.inputs.GenericTag }}'
             [System.Version]$genericTag | Out-Null
             $pushToProd = '${{ github.event.inputs.PushToProd }}' -eq 'Y'
@@ -75,7 +84,7 @@ jobs:
             docker pull $baseimage
             $inspect = docker inspect $baseimage | ConvertFrom-Json
             if ([version]$inspect.config.Labels.tag -ge [version]$generictag) {
-              Write-Host "Base Image is Generic Tag $($inspect.config.Labels.tag), which is newer than $genericTag. Skipping"
+              Write-Host "::Warning::Base Image is Generic Tag $($inspect.config.Labels.tag), skipping build of $osversion-$genericTag$filesonlyStr."
             }
             else {
               Set-Location "generic"
@@ -84,18 +93,18 @@ jobs:
               docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location)
 
               $newtags = @(
-                "mcrbusinesscentral.azurecr.io/public/businesscentral:$osversion$filesonlyStr-dev"
+                "$pushRegistry/public/businesscentral:$osversion$filesonlyStr-dev"
               )
               if ($pushToProd) {
                 $newtags += @(
-                    "mcrbusinesscentral.azurecr.io/public/businesscentral:$osversion$filesonlyStr"
-                    "mcrbusinesscentral.azurecr.io/public/businesscentral:$osversion-$genericTag$filesonlyStr"
+                    "$pushRegistry/public/businesscentral:$osversion$filesonlyStr"
+                    "$pushRegistry/public/businesscentral:$osversion-$genericTag$filesonlyStr"
                 )
               }
               $newtags | ForEach-Object {
                 Write-Host "Push $_"
                 docker tag $image $_
-                #docker push $_
+                docker push $_
               }
             }
           }
@@ -122,6 +131,15 @@ jobs:
           $erroractionpreference = "STOP"
           Set-StrictMode -version 2.0
           try {
+            $pushRegistry = "mcrbusinesscentral.azurecr.io"
+            $job = start-job -ScriptBlock { Param($username, $token, $registry)
+              Write-Output $token | docker login --username $username --password-stdin $registry
+            } -ArgumentList '${{ secrets.PushUsername }}', '${{ secrets.PushToken }}', $pushRegistry
+            $job | Wait-Job
+            $result = receive-job $job 2> $NULL
+            if ($result -ne 'Login Succeeded') {
+              throw "docker login failed"
+            }
             $genericTag = '${{ github.event.inputs.GenericTag }}'
             [System.Version]$genericTag | Out-Null
             $pushToProd = '${{ github.event.inputs.PushToProd }}' -eq 'Y'
@@ -132,7 +150,7 @@ jobs:
             docker pull $baseimage
             $inspect = docker inspect $baseimage | ConvertFrom-Json
             if ([version]$inspect.config.Labels.tag -ge [version]$generictag) {
-              Write-Host "Base Image is Generic Tag $($inspect.config.Labels.tag), which is newer than $genericTag. Skipping"
+              Write-Host "::Warning::Base Image is Generic Tag $($inspect.config.Labels.tag), skipping build of $osversion-$genericTag$filesonlyStr."
             }
             else {
               Set-Location "generic"
@@ -141,18 +159,18 @@ jobs:
               docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location)
 
               $newtags = @(
-                "mcrbusinesscentral.azurecr.io/public/businesscentral:$osversion$filesonlyStr-dev"
+                "$pushRegistry/public/businesscentral:$osversion$filesonlyStr-dev"
               )
               if ($pushToProd) {
                 $newtags += @(
-                    "mcrbusinesscentral.azurecr.io/public/businesscentral:$osversion$filesonlyStr"
-                    "mcrbusinesscentral.azurecr.io/public/businesscentral:$osversion-$genericTag$filesonlyStr"
+                    "$pushRegistry/public/businesscentral:$osversion$filesonlyStr"
+                    "$pushRegistry/public/businesscentral:$osversion-$genericTag$filesonlyStr"
                 )
               }
               $newtags | ForEach-Object {
                 Write-Host "Push $_"
                 docker tag $image $_
-                #docker push $_
+                docker push $_
               }
             }
           }
