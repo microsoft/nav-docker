@@ -83,7 +83,7 @@ jobs:
   CreateAgents:
     runs-on: [ windows-latest ]
     needs: [ AnalyzeImages ]
-    if: ${{ needs.AnalyzeImages.outputs.server2022count > 0 }}
+    if: ${{ needs.AnalyzeImages.outputs.server2022count > 0 || needs.AnalyzeImages.outputs.server2022filesOnlyCount > 0 }}
     steps:
       - name: Create Build Agents
         run: |
@@ -172,8 +172,8 @@ jobs:
           }
 
   Server2022filesOnly:
-    runs-on: [ windows-2022 ]
-    needs: [ AnalyzeImages ]
+    runs-on: [ buildgeneric ]
+    needs: [ AnalyzeImages, CreateAgents ]
     if: ${{ needs.AnalyzeImages.outputs.server2022filesOnlyCount > 0 }}
     strategy:
       matrix:
