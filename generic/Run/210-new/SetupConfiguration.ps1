@@ -59,7 +59,7 @@ if ($WebClient -ne "N") {
 $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicSOAPBaseUrl']").Value = "$protocol${publicDnsName}:$publicSoapPort/$ServerInstance/WS/"
 $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicODataBaseUrl']").Value = "$protocol${publicDnsName}:$publicODataPort/$ServerInstance/OData"
 $CustomConfig.SelectSingleNode("//appSettings/add[@key='PublicWinBaseUrl']").Value = "DynamicsNAV://${publicDnsName}:$publicWinClientPort/$ServerInstance/"
-if ($navUseSSL) {
+if ($servicesUseSSL) {
     $CustomConfig.SelectSingleNode("//appSettings/add[@key='ServicesCertificateThumbprint']").Value = "$certificateThumbprint"
     $CustomConfig.SelectSingleNode("//appSettings/add[@key='ServicesCertificateValidationEnabled']").Value = "false"
 }
