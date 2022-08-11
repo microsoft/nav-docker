@@ -10,7 +10,7 @@ on:
       PushToProd:
         description: Push to production (Y/N)
         required: false
-        default: 'N'
+        default: 'Y'
 
 permissions:
   contents: read
@@ -83,7 +83,7 @@ jobs:
   CreateAgents:
     runs-on: [ windows-latest ]
     needs: [ AnalyzeImages ]
-    if: ${{ needs.AnalyzeImages.outputs.server2022count > 0 || needs.AnalyzeImages.outputs.server2022filesOnlyCount > 0 }}
+    if: ${{ needs.AnalyzeImages.outputs.server2022count > 0 }}
     steps:
       - name: Create Build Agents
         run: |
@@ -104,7 +104,6 @@ jobs:
 
       - name: Build Image
         run: |
-          $filesOnlyStr = ""
           $erroractionpreference = "STOP"
           Set-StrictMode -version 2.0
           try {
@@ -127,14 +126,9 @@ jobs:
             $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
             
             $rootPath = Get-Location
-            if ($filesOnlyStr) {
-              $dockerfile = Join-Path $rootPath "DOCKERFILE.filesonly"
-            }
-            else {
-              $dockerfile = Join-Path $rootPath "DOCKERFILE"
-            }
+            $dockerfile = Join-Path $rootPath "DOCKERFILE"
 
-            $image = "my:$osversion-$genericTag$filesonlyStr"
+            $image = "my:$osversion-$genericTag"
             $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
             docker pull $baseimage
             $inspect = docker inspect $baseimage | ConvertFrom-Json
@@ -158,12 +152,12 @@ jobs:
               throw "Error building image"
             }
             $newtags = @(
-              "$pushRegistry/public/businesscentral:$osversion$filesonlyStr-dev"
+              "$pushRegistry/public/businesscentral:$osversion-dev"
             )
             if ($pushToProd) {
               $newtags += @(
-                  "$pushRegistry/public/businesscentral:$osversion$filesonlyStr"
-                  "$pushRegistry/public/businesscentral:$osversion-$genericTag$filesonlyStr"
+                  "$pushRegistry/public/businesscentral:$osversion"
+                  "$pushRegistry/public/businesscentral:$osversion-$genericTag"
               )
             }
             $newtags | ForEach-Object {
@@ -178,8 +172,8 @@ jobs:
           }
 
   Server2022filesOnly:
-    runs-on: [ buildgeneric ]
-    needs: [ AnalyzeImages, CreateAgents ]
+    runs-on: [ windows-2022 ]
+    needs: [ AnalyzeImages ]
     if: ${{ needs.AnalyzeImages.outputs.server2022filesOnlyCount > 0 }}
     strategy:
       matrix:
@@ -192,7 +186,6 @@ jobs:
 
       - name: Build Image
         run: |
-          $filesOnlyStr = "-filesonly"
           $erroractionpreference = "STOP"
           Set-StrictMode -version 2.0
           try {
@@ -215,14 +208,9 @@ jobs:
             $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
             
             $rootPath = Get-Location
-            if ($filesOnlyStr) {
-              $dockerfile = Join-Path $rootPath "DOCKERFILE.filesonly"
-            }
-            else {
-              $dockerfile = Join-Path $rootPath "DOCKERFILE"
-            }
+            $dockerfile = Join-Path $rootPath "DOCKERFILE.filesonly"
 
-            $image = "my:$osversion-$genericTag$filesonlyStr"
+            $image = "my:$osversion-$genericTag-filesonly"
             $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
             docker pull $baseimage
             $inspect = docker inspect $baseimage | ConvertFrom-Json
@@ -233,7 +221,7 @@ jobs:
                          --build-arg tag="$genericTag" `
                          --build-arg osversion="$osversion" `
                          --isolation=hyperv `
-                         --memory 8G `
+                         --memory 4G `
                          --tag $image `
                          --file $dockerfile `
                          $RootPath | % {
@@ -246,12 +234,12 @@ jobs:
               throw "Error building image"
             }
             $newtags = @(
-              "$pushRegistry/public/businesscentral:$osversion$filesonlyStr-dev"
+              "$pushRegistry/public/businesscentral:$osversion-filesonly-dev"
             )
             if ($pushToProd) {
               $newtags += @(
-                  "$pushRegistry/public/businesscentral:$osversion$filesonlyStr"
-                  "$pushRegistry/public/businesscentral:$osversion-$genericTag$filesonlyStr"
+                  "$pushRegistry/public/businesscentral:$osversion-filesonly"
+                  "$pushRegistry/public/businesscentral:$osversion-$genericTag-filesonly"
               )
             }
             $newtags | ForEach-Object {
