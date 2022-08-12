@@ -111,12 +111,13 @@ if ($auth -eq "AccessControlService") {
 
 $CustomConfig.Save($CustomConfigFile)
 
-$clientServicesPort,$managementServicesPort,$soapServicesPort,$oDataServicesPort,$developerServicesPort,$SnapshotDebuggerServicesPort | % {
+$managementServicesPort,$soapServicesPort,$oDataServicesPort,$developerServicesPort,$SnapshotDebuggerServicesPort | % {
     netsh http add urlacl url=$protocol+:$_/$ServerInstance user="NT AUTHORITY\SYSTEM" | Out-Null
     if ($servicesUseSSL) {
         netsh http add sslcert ipport=0.0.0.0:$_ certhash=$certificateThumbprint appid="{00112233-4455-6677-8899-AABBCCDDEEFF}" | Out-Null
     }
 }
+netsh http add urlacl url=http://+:$clientServicesPort/$ServerInstance user="NT AUTHORITY\SYSTEM" | Out-Null
 
 if ($developerServicesKeyExists) {
     $serverConfigFile = Join-Path $ServiceTierFolder "Microsoft.Dynamics.Nav.Server.exe.config"
