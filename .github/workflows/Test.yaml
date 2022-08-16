@@ -20,18 +20,18 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
           enable-AzPSSession: true 
 
-      -run: |
-        $resGroup = "buildgeneric"
-        $resLocation = "West Europe"
-        $repo = "microsoft/nav-docker"
-        $removeResGroupIfExist = $true
-        $machines = 2
-        $offset = 0
-        $resourceGroup = Get-AzResourceGroup -name $resGroup -ErrorAction Ignore
-        if ($resourceGroup) {
-          Write-Host "Resource Group Exists"
-          exit 1
-        }
-        $resourceGroup = New-AzResourceGroup -Name $resGroup -Location $resLocation -Force
+      - run: |
+          $resGroup = "buildgeneric"
+          $resLocation = "West Europe"
+          $repo = "microsoft/nav-docker"
+          $removeResGroupIfExist = $true
+          $machines = 2
+          $offset = 0
+          $resourceGroup = Get-AzResourceGroup -name $resGroup -ErrorAction Ignore
+          if ($resourceGroup) {
+            Write-Host "Resource Group Exists"
+            exit 1
+          }
+          $resourceGroup = New-AzResourceGroup -Name $resGroup -Location $resLocation -Force
 
 
