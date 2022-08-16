@@ -28,11 +28,16 @@ jobs:
           $machines = 2
           $offset = 0
           Write-Host $resGroup
-          $resourceGroup = Get-AzureRmResourceGroup -name $resGroup -ErrorAction Ignore
+          Write-Host "-------------------------------------------------------"
+          Get-Module | out-host
+          Write-Host "-------------------------------------------------------"
+          Get-Module -listavailable | out-host
+          Write-Host "-------------------------------------------------------"
+          $resourceGroup = Get-AzResourceGroup -name $resGroup -ErrorAction Ignore
           if ($resourceGroup) {
             Write-Host "Resource Group Exists"
             exit 1
           }
-          $resourceGroup = New-AzureRmResourceGroup -Name $resGroup -Location $resLocation -Force
+          $resourceGroup = New-AzResourceGroup -Name $resGroup -Location $resLocation -Force
 
 
