@@ -8,7 +8,7 @@ permissions:
 
 jobs:
     build-and-deploy:
-      runs-on: ubuntu-latest
+      runs-on: windows-latest
       steps:
 
         # Checkout code
@@ -27,6 +27,7 @@ jobs:
           $removeResGroupIfExist = $true
           $machines = 2
           $offset = 0
+          Write-Host $resGroup
           $resourceGroup = Get-AzResourceGroup -name $resGroup -ErrorAction Ignore
           if ($resourceGroup) {
             Write-Host "Resource Group Exists"
