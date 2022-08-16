@@ -20,24 +20,27 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
           enable-AzPSSession: true 
 
-      - run: |
-          $resGroup = "buildgeneric"
-          $resLocation = "West Europe"
-          $repo = "microsoft/nav-docker"
-          $removeResGroupIfExist = $true
-          $machines = 2
-          $offset = 0
-          Write-Host $resGroup
-          Write-Host "-------------------------------------------------------"
-          Get-Module | out-host
-          Write-Host "-------------------------------------------------------"
-          Get-Module -listavailable | out-host
-          Write-Host "-------------------------------------------------------"
-          $resourceGroup = Get-AzResourceGroup -name $resGroup -ErrorAction Ignore
-          if ($resourceGroup) {
-            Write-Host "Resource Group Exists"
-            exit 1
-          }
-          $resourceGroup = New-AzResourceGroup -Name $resGroup -Location $resLocation -Force
-
+      - name: Run Azure PowerShell script
+        uses: azure/powershell@v1
+        with:
+          azPSVersion: "latest"
+          inlineScript: |
+            $resGroup = "buildgeneric"
+            $resLocation = "West Europe"
+            $repo = "microsoft/nav-docker"
+            $removeResGroupIfExist = $true
+            $machines = 2
+            $offset = 0
+            Write-Host $resGroup
+            Write-Host "-------------------------------------------------------"
+            Get-Module | out-host
+            Write-Host "-------------------------------------------------------"
+            Get-Module -listavailable | out-host
+            Write-Host "-------------------------------------------------------"
+            $resourceGroup = Get-AzResourceGroup -name $resGroup -ErrorAction Ignore
+            if ($resourceGroup) {
+              Write-Host "Resource Group Exists"
+              exit 1
+            }
+            $resourceGroup = New-AzResourceGroup -Name $resGroup -Location $resLocation -Force
 
