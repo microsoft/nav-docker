@@ -30,22 +30,25 @@ jobs:
             $resGroup = "buildgeneric"
             $resLocation = "West Europe"
             $repo = "microsoft/nav-docker"
-            $removeResGroupIfExist = $true
             $machines = 2
             $offset = 0
-            Write-Host $resGroup
-            $runners = (gh api /repos/$repo/actions/runners | ConvertFrom-Json).runners
-            $runners | Where-Object { $_.status -eq "offline" } | ForEach-Object {
-                Write-host $_.name
-                $id = $_.id
-                gh api -X DELETE /repos/$repo/actions/runners/$id
-            }
+            Write-Host "Resource Group is $resGroup"
             $resourceGroup = Get-AzResourceGroup -name $resGroup -ErrorAction Ignore
             if ($resourceGroup) {
               Write-Host "Removing Resource Group $resGroup"
-              Remove-AzResourceGroup -Name $resGroup -Force
+              Remove-AzResourceGroup -Name $resGroup -Force | Out-Host
+              Write-Host "Done"
             }
+            $runners = (gh api /repos/$repo/actions/runners | ConvertFrom-Json).runners
+            $runners | Where-Object { $_.status -eq "offline" } | ForEach-Object {
+              Write-host "Unregistering runner $($_.name)"
+              $id = $_.id
+              gh api -X DELETE /repos/$repo/actions/runners/$id
+              Write-Host "Done"
+            }
+            Write-Host "Creating resource group $resGroup in $resLocation"
             $resourceGroup = New-AzResourceGroup -Name $resGroup -Location $resLocation -Force
+            Write-Host "Done"
             1..$machines | ForEach-Object {
               # Deployment
               $no                       = $offset + $_
@@ -87,9 +90,7 @@ jobs:
                 $err
                 throw "stop"
               }
+              Write-Host "Creating Azure VM $($parameters.VmName)"
               $resourceGroup | New-AzResourceGroupDeployment -TemplateUri $templateUri -TemplateParameterObject $Parameters -Name $Parameters.vmName -ErrorAction Ignore
+              Write-Host "Done"
             }
-
-
-            gh
-
