@@ -34,11 +34,6 @@ jobs:
             $machines = 2
             $offset = 0
             Write-Host $resGroup
-            Write-Host "-------------------------------------------------------"
-            Get-Module | out-host
-            Write-Host "-------------------------------------------------------"
-            Get-Module -listavailable | out-host
-            Write-Host "-------------------------------------------------------"
             $runners = (gh api /repos/$repo/actions/runners | ConvertFrom-Json).runners
             $runners | Where-Object { $_.status -eq "offline" } | ForEach-Object {
                 Write-host $_.name
@@ -69,7 +64,7 @@ jobs:
                 "VmSize"              = "Standard_D4as_v5"
                 "OSDiskSize"          = 128
                 "StorageAccountType"  = "Premium_LRS"
-                "AdminPassword"       = [SecureString]$AzureVmPasswordSecret.SecretValue
+                "AdminPassword"       = (ConvertTo-SecureString -String $env:GH_TOKEN -AsPlainText -Force)
                 "Count"               = 1
                 "Token"               = $registrationToken
                 "Organization"        = "https://github.com/$repo"
