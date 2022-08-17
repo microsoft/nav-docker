@@ -47,10 +47,47 @@ jobs:
             }
             $resourceGroup = Get-AzResourceGroup -name $resGroup -ErrorAction Ignore
             if ($resourceGroup) {
-              Write-Host "Resource Group Exists"
-              exit 1
+              Write-Host "Removing Resource Group $resGroup"
+              Remove-AzResourceGroup -Name $resGroup -Force
             }
             $resourceGroup = New-AzResourceGroup -Name $resGroup -Location $resLocation -Force
+            1..$machines | ForEach-Object {
+              # Deployment
+              $no                       = $offset + $_
+              $branch                   = "dev"
+              $template                 = "buildagent"
+
+              # ARM template
+              $templateUri = "https://raw.githubusercontent.com/microsoft/nav-arm-templates/$branch/$template.json"
+
+              $registrationToken = (gh api -X POST /repos/$repo/actions/runners/registration-token | ConvertFrom-Json).token
+
+              $Parameters = @{
+                "VmName"              = "$resgroup$no"
+                "Remotedesktopaccess" = "-"
+                "OperatingSystem"     = "Windows Server 2022"
+                "VmSize"              = "Standard_D4as_v5"
+                "OSDiskSize"          = 128
+                "StorageAccountType"  = "Premium_LRS"
+                "AdminPassword"       = [SecureString]$AzureVmPasswordSecret.SecretValue
+                "Count"               = 1
+                "Token"               = $registrationToken
+                "Organization"        = "https://github.com/$repo"
+                "LabelsOrPool"        = "buildgeneric"
+                "AgentUrl"            = "https://github.com/actions/runner/releases/download/v2.292.0/actions-runner-win-x64-2.292.0.zip"
+                "InstallHyperV"       = "Yes"
+                "RunInsideDocker"     = "No"
+                "FinalSetupScriptUrl" = "additional-installforbuildagent.ps1"
+              }
+
+              $err = $resourceGroup | Test-AzResourceGroupDeployment -TemplateUri $templateUri -TemplateParameterObject $Parameters
+              if ($err) {
+                $err
+                throw "stop"
+              }
+              $resourceGroup | New-AzResourceGroupDeployment -TemplateUri $templateUri -TemplateParameterObject $Parameters -Name $Parameters.vmName -ErrorAction Ignore
+            }
+
 
             gh
 
