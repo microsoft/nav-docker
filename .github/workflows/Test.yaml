@@ -56,6 +56,13 @@ jobs:
               $templateUri = "https://raw.githubusercontent.com/microsoft/nav-arm-templates/$branch/$template.json"
 
               $registrationToken = (gh api -X POST /repos/$repo/actions/runners/registration-token | ConvertFrom-Json).token
+              $headers = @{ 
+                "Accept"        = "application/json"
+              }
+              $uri = "https://api.github.com/repos/actions/runner/releases"
+              $result = Invoke-WebRequest -UseBasicParsing -Headers $headers -Uri $uri
+              $releases = $result.Content | ConvertFrom-Json
+              $asset = $releases[0].assets | Where-Object {  $_.name -like "actions-runner-win-x64-*.*.?.zip" }
 
               $Parameters = @{
                 "VmName"              = "$resgroup$no"
@@ -64,12 +71,12 @@ jobs:
                 "VmSize"              = "Standard_D4as_v5"
                 "OSDiskSize"          = 128
                 "StorageAccountType"  = "Premium_LRS"
-                "AdminPassword"       = (ConvertTo-SecureString -String $env:GH_TOKEN -AsPlainText -Force)
+                "AdminPassword"       = [SecureString](ConvertTo-SecureString -String $env:GH_TOKEN -AsPlainText -Force)
                 "Count"               = 1
                 "Token"               = $registrationToken
                 "Organization"        = "https://github.com/$repo"
                 "LabelsOrPool"        = "buildgeneric"
-                "AgentUrl"            = "https://github.com/actions/runner/releases/download/v2.292.0/actions-runner-win-x64-2.292.0.zip"
+                "AgentUrl"            = $asset.browser_download_url
                 "InstallHyperV"       = "Yes"
                 "RunInsideDocker"     = "No"
                 "FinalSetupScriptUrl" = "additional-installforbuildagent.ps1"
