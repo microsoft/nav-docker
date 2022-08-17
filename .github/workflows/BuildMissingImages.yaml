@@ -45,8 +45,8 @@ jobs:
             $webclient.Headers.Add('Accept', "application/json")
             $alltags = (($webclient.DownloadString("https://mcr.microsoft.com/v2/businesscentral/tags/list") | ConvertFrom-Json)).tags
             $version = [System.Version]"0.0.0.0"
-            $versions = $alltags | Where-Object { $_ -like "*$generictag" } | Where-Object { [System.Version]::TryParse($_.SubString(0,$_.Length-$endswith.Length), [ref] $version) } | ForEach-Object { $version }
-            $filesOnlyVersions = $alltags | Where-Object { $_ -like "*$generictag-filesonly" } | Where-Object { [System.Version]::TryParse($_.SubString(0,$_.Length-$endswith.Length-10), [ref] $version) } | ForEach-Object { $version }
+            $versions = $alltags | Where-Object { $_ -like "*$generictag" } | Where-Object { [System.Version]::TryParse($_.SubString(0,$_.Length-$generictag.Length), [ref] $version) } | ForEach-Object { $version }
+            $filesOnlyVersions = $alltags | Where-Object { $_ -like "*$generictag-filesonly" } | Where-Object { [System.Version]::TryParse($_.SubString(0,$_.Length-$generictag.Length-10), [ref] $version) } | ForEach-Object { $version }
             $missingImages = @{}
             $missingFilesOnlyImages = @{}
             $alldotnetFrameworkTags = (($webclient.DownloadString("https://mcr.microsoft.com/v2/dotnet/framework/runtime/tags/list") | ConvertFrom-Json)).tags
