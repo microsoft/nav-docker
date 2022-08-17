@@ -23,7 +23,7 @@ jobs:
       - name: Run Azure PowerShell script
         uses: azure/powershell@v1
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           azPSVersion: "latest"
           inlineScript: |
