@@ -29,7 +29,7 @@ if (!($baseImage)) {
 else {
 
     if ($filesOnly) {
-        $dockerfile = Join-Path $RootPath "DOCKERFILE.filesonly"
+        $dockerfile = Join-Path $RootPath "DOCKERFILE-filesonly"
     }
     else {
         $dockerfile = Join-Path $RootPath "DOCKERFILE"

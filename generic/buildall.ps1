@@ -85,7 +85,7 @@ $basetags | % {
 #$basetags = (Get-BcContainerImageTags -imageName "mcr.microsoft.com/dotnet/framework/runtime").tags | Where-Object { $_ -like "4.8-2*" } | Where-Object { $_ -like "*-windowsservercore-20H2" -or $_ -like "*-windowsservercore-2004" -or $_ -like "*-windowsservercore-1909" -or $_ -like "*-windowsservercore-ltsc2019" -or $_ -like "*-windowsservercore-ltsc2016" } | Sort-Object -Descending
 
 if ($filesOnly) {
-    $dockerfile = Join-Path $RootPath "DOCKERFILE.filesonly"
+    $dockerfile = Join-Path $RootPath "DOCKERFILE-filesonly"
 }
 else {
     $dockerfile = Join-Path $RootPath "DOCKERFILE"
