@@ -107,11 +107,18 @@ try {
                 Expand-Archive "c:\run\$temp\download.zip" -DestinationPath "c:\run\$temp\extract" -Force
 
                 if ($subfolder) {
-                    Write-Host "Moving $subfolder to target folder $dir"
-                    Get-ChildItem -Path "c:\run\$temp\extract\$subfolder\*" -Recurse | Move-Item -Destination $dir -Force
-                } else {
-                    Write-Host "Moving all extracted files to target folder $dir"
-                    Get-ChildItem -Path "c:\run\$temp\extract\*" -Recurse | Move-Item -Destination $dir -Force
+                    Write-Host "Copying $subfolder to target folder $dir"
+                    if (!(Test-Path $dir)) {
+                        New-Item -Path $dir -ItemType Directory | Out-Null
+                    }
+                    Copy-Item -Path "c:\run\$temp\extract\$subfolder\*" -Destination $dir -Recurse -Force
+                }
+                else {
+                    Write-Host "Copying all extracted files to target folder $dir"
+                    if (!(Test-Path $dir)) {
+                        New-Item -Path $dir -ItemType Directory | Out-Null
+                    }
+                    Copy-Item -Path "c:\run\$temp\extract\*" -Destination $dir -Recurse -Force
                 }
                 Remove-Item "c:\run\$temp" -Recurse -Force
             }
