@@ -35,12 +35,19 @@ jobs:
       server2022filesOnly: ${{ steps.Analyze.outputs.server2022filesOnly }}
       server2022filesOnlyCount: ${{ steps.Analyze.outputs.server2022filesOnlyCount }}
     steps:
+      - uses: actions/checkout@main
+
       - name: Analyze
         id: Analyze
         run: |
           $erroractionpreference = "STOP"
           try {
-            $generictag = "-1.0.2.12"
+            Set-Location "generic"
+            $genericTag = '${{ github.event.inputs.GenericTag }}'
+            if ($genericTag -eq '') { $genericTag = Get-Content -path 'tag.txt' }
+            [System.Version]$genericTag | Out-Null
+            Write-Host "Using generic Tag $genericTag"
+            $genericTag = "-$genericTag"
             $webclient = New-Object System.Net.WebClient
             $webclient.Headers.Add('Accept', "application/json")
             $alltags = (($webclient.DownloadString("https://mcr.microsoft.com/v2/businesscentral/tags/list") | ConvertFrom-Json)).tags
@@ -175,7 +182,6 @@ jobs:
   Server2022:
     runs-on: [ buildgeneric ]
     needs: [ AnalyzeImages, CreateAgents ]
-    if: ${{ needs.AnalyzeImages.outputs.server2022count > 0 }}
     strategy:
       matrix:
         version: ${{fromJson(needs.AnalyzeImages.outputs.server2022)}}
@@ -257,7 +263,6 @@ jobs:
   Server2022filesOnly:
     runs-on: [ buildgeneric ]
     needs: [ AnalyzeImages, CreateAgents ]
-    if: ${{ needs.AnalyzeImages.outputs.server2022filesOnlyCount > 0 }}
     strategy:
       matrix:
         version: ${{fromJson(needs.AnalyzeImages.outputs.server2022filesOnly)}}
@@ -339,7 +344,6 @@ jobs:
   RemoveAgents:
     runs-on: [ windows-latest ]
     needs: [ AnalyzeImages, CreateAgents, Server2022, Server2022filesOnly ]
-    if: ${{ needs.AnalyzeImages.outputs.server2022count > 0 || needs.AnalyzeImages.outputs.server2022filesOnlyCount > 0 }}
     steps:
       - uses: actions/checkout@main
 
