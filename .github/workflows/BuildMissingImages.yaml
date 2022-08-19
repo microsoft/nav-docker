@@ -1,6 +1,8 @@
 name: Build missing images (after new windows updates)
 
 on:
+  schedule:
+  - cron: '0 5 * * *'
   workflow_dispatch:
     inputs:
       GenericTag:
@@ -41,7 +43,10 @@ jobs:
           $erroractionpreference = "STOP"
           try {
             Set-Location "generic"
-            $genericTag = '${{ github.event.inputs.GenericTag }}'
+            $genericTag = ''
+            if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
+              $genericTag = '${{ github.event.inputs.GenericTag }}'
+            }
             if ($genericTag -eq '') { $genericTag = Get-Content -path 'tag.txt' }
             [System.Version]$genericTag | Out-Null
             Write-Host "Using generic Tag $genericTag"
@@ -198,10 +203,14 @@ jobs:
               throw "docker login failed"
             }
             Set-Location "generic"
-            $genericTag = '${{ github.event.inputs.GenericTag }}'
+            $genericTag = ''
+            $pushToProd = $true
+            if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
+              $genericTag = '${{ github.event.inputs.GenericTag }}'
+              $pushToProd = '${{ github.event.inputs.PushToProd }}' -eq 'Y'
+            }
             if ($genericTag -eq '') { $genericTag = Get-Content -path 'tag.txt' }
             [System.Version]$genericTag | Out-Null
-            $pushToProd = '${{ github.event.inputs.PushToProd }}' -eq 'Y'
             $osversion = '${{ matrix.version }}'.split('|')[0].split('-')[0]
             $filesonly = ''
             if ('${{ matrix.version }}' -like '*-filesonly|*') {
