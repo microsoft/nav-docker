@@ -103,9 +103,13 @@ if ($auth -eq "AccessControlService") {
     }
 
     $customConfig.SelectSingleNode("//appSettings/add[@key='AppIdUri']").Value = $appIdUri
-    $customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesFederationMetadataLocation']").Value = $federationMetadata
-    if ($customConfig.SelectSingleNode("//appSettings/add[@key='WSFederationLoginEndpoint']") -ne $null) {
-        $customConfig.SelectSingleNode("//appSettings/add[@key='WSFederationLoginEndpoint']").Value = $federationLoginEndpoint
+    $clientServicesFederationMetadataLocationNode = $customConfig.SelectSingleNode("//appSettings/add[@key='ClientServicesFederationMetadataLocation']")
+    if ($clientServicesFederationMetadataLocationNode) {
+        $clientServicesFederationMetadataLocationNode.Value = $federationMetadata
+    }
+    $WSFederationLoginEndpointNode = $customConfig.SelectSingleNode("//appSettings/add[@key='WSFederationLoginEndpoint']")
+    if ($WSFederationLoginEndpointNode) {
+        $WSFederationLoginEndpointNode.Value = $federationLoginEndpoint
     }
 }
 
