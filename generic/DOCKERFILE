@@ -48,13 +48,15 @@ RUN Invoke-WebRequest -Uri 'https://bcdocker.blob.core.windows.net/public/nav-do
     start-process -Wait -FilePath .\DotNetCore-WindowsHosting.exe -ArgumentList /quiet ; \
     Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/dotnet-hosting-5.0.4-win.exe' -OutFile DotNet-Win.exe ; \
     start-process -Wait -FilePath .\DotNet-Win.exe -ArgumentList /quiet ; \
+    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/dotnet-hosting-6.0.13-win.exe' -OutFile DotNet6-Win.exe ; \
+    start-process -Wait -FilePath .\DotNet6-Win.exe -ArgumentList /quiet ; \
     Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/sqlncli.msi' -OutFile sqlncli.msi ; \
     start-process -Wait -FilePath .\sqlncli.msi -ArgumentList /quiet, /qn, /passive ; \
     Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/vcredist_x86.exe' -OutFile vcredist_x86.exe ; \
     start-process -Wait -FilePath .\vcredist_x86.exe -ArgumentList /q, /norestart ; \
     Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/vcredist_x64.exe' -OutFile vcredist_x64.exe ; \
     start-process -Wait -FilePath .\vcredist_x64.exe -ArgumentList /q, /norestart ; \
-    Remove-Item -Recurse -Force rewrite_amd64.msi, OpenXMLSDKV25.msi, DotNetCore-WindowsHosting.exe, sqlncli.msi, vcredist_x86.exe, vcredist_x64.exe
+    Remove-Item -Recurse -Force rewrite_amd64.msi, OpenXMLSDKV25.msi, DotNetCore-WindowsHosting.exe, DotNet-Win, DotNet6-Win, sqlncli.msi, vcredist_x86.exe, vcredist_x64.exe
 
 HEALTHCHECK --interval=30s --timeout=10s CMD [ "powershell", ".\\Run\\HealthCheck.ps1" ]
 
