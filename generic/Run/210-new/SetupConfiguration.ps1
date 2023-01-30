@@ -112,8 +112,8 @@ if ($auth -eq "AccessControlService") {
         $WSFederationLoginEndpointNode.Value = $federationLoginEndpoint
     }
     $ADOpenIdMetadataLocationNode = $customConfig.SelectSingleNode("//appSettings/add[@key='ADOpenIdMetadataLocation']")
-    if ($ADOpenIdMetadataLocationNode) {
-        $ADOpenIdMetadataLocationNode.Value = $federationLoginEndpoint
+    if ($ADOpenIdMetadataLocationNode -and $ADOpenIdMetadataLocationNode.Value -eq "") {
+        $ADOpenIdMetadataLocationNode.Value = "https://login.microsoftonline.com/common/.well-known/openid-configuration"
     }
 }
 
