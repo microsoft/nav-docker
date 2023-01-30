@@ -187,7 +187,7 @@ jobs:
               $dockerfile = Join-Path (Get-Location) "DOCKERFILE.UPDATE"
               "FROM $baseimage`nCOPY Run /Run/`nRUN Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/dotnet-hosting-6.0.13-win.exe' -OutFile DotNet6-Win.exe ; \`n    start-process -Wait -FilePath .\DotNet6-Win.exe -ArgumentList /quiet ; \`n    Remove-Item -force DotNet5-Win.exe`n`nLABEL tag=""$genericTag"" \`n      created=""$created""`n" | Set-Content $dockerfile
               $success = $false
-              docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location) | % {
+              docker build --isolation=process --tag $image --file $dockerfile --memory 4G (Get-Location) | % {
                 $_ | Out-Host
                 if ($_ -like "Successfully built*") {
                   $success = $true
@@ -265,7 +265,7 @@ jobs:
               $dockerfile = Join-Path (Get-Location) "DOCKERFILE.UPDATE"
               "FROM $baseimage`nCOPY Run /Run/`nRUN Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/dotnet-hosting-6.0.13-win.exe' -OutFile DotNet6-Win.exe ; \`n    start-process -Wait -FilePath .\DotNet6-Win.exe -ArgumentList /quiet ; \`n    Remove-Item -force DotNet5-Win.exe`n`nLABEL tag=""$genericTag"" \`n      created=""$created""`n" | Set-Content $dockerfile
               $success = $false
-              docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location) | % {
+              docker build --isolation=process --tag $image --file $dockerfile --memory 4G (Get-Location) | % {
                 $_ | Out-Host
                 if ($_ -like "Successfully built*") {
                   $success = $true
