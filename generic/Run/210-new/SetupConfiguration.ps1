@@ -111,6 +111,10 @@ if ($auth -eq "AccessControlService") {
     if ($WSFederationLoginEndpointNode) {
         $WSFederationLoginEndpointNode.Value = $federationLoginEndpoint
     }
+    $ADOpenIdMetadataLocationNode = $customConfig.SelectSingleNode("//appSettings/add[@key='ADOpenIdMetadataLocation']")
+    if ($ADOpenIdMetadataLocationNode) {
+        $ADOpenIdMetadataLocationNode.Value = $federationLoginEndpoint
+    }
 }
 
 $CustomConfig.Save($CustomConfigFile)
