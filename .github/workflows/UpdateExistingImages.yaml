@@ -55,23 +55,23 @@ jobs:
             $filesOnlyVersions = $alltags | Where-Object { $_ -like '*-filesonly' } | Where-Object { [System.Version]::TryParse($_.SubString(0,$_.Length-10), [ref] $version) } | ForEach-Object { $version }
             $server2019filesOnly = @($filesOnlyVersions | Where-Object { $_ -lt [System.Version]"10.0.17764.0" } | Sort-Object -Descending | ForEach-Object { "$_" } ) | ConvertTo-Json -compress
             $server2022filesOnly = @($filesOnlyVersions | Where-Object { $_ -ge [System.Version]"10.0.17764.0" } | Sort-Object -Descending | ForEach-Object { "$_" } ) | ConvertTo-Json -compress
-            Write-Host "::set-output name=server2019::[$("$server2019".Trim('[]'))]"
-            Write-Host "set-output name=server2019::[$("$server2019".Trim('[]'))]"
-            Write-Host "::set-output name=server2022::[$("$server2022".Trim('[]'))]"
-            Write-Host "set-output name=server2022::[$("$server2022".Trim('[]'))]"
-            Write-Host "::set-output name=server2019filesOnly::[$("$server2019filesOnly".Trim('[]'))]"
-            Write-Host "set-output name=server2019filesOnly::[$("$server2019filesOnly".Trim('[]'))]"
-            Write-Host "::set-output name=server2022filesOnly::[$("$server2022filesOnly".Trim('[]'))]"
-            Write-Host "set-output name=server2022filesOnly::[$("$server2022filesOnly".Trim('[]'))]"
+            Add-Content -Path $ENV:GITHUB_OUTPUT -Value "server2019=[$("$server2019".Trim('[]'))]"
+            Write-Host "server2019=[$("$server2019".Trim('[]'))]"
+            Add-Content -Path $ENV:GITHUB_OUTPUT -Value "server2022=[$("$server2022".Trim('[]'))]"
+            Write-Host "server2022=[$("$server2022".Trim('[]'))]"
+            Add-Content -Path $ENV:GITHUB_OUTPUT -Value "server2019filesOnly=[$("$server2019filesOnly".Trim('[]'))]"
+            Write-Host "server2019filesOnly=[$("$server2019filesOnly".Trim('[]'))]"
+            Add-Content -Path $ENV:GITHUB_OUTPUT -Value "server2022filesOnly=[$("$server2022filesOnly".Trim('[]'))]"
+            Write-Host "server2022filesOnly=[$("$server2022filesOnly".Trim('[]'))]"
           }
           catch {
             Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
             $host.SetShouldExit(1)            
           }
+
   CreateAgents:
     runs-on: [ windows-latest ]
     needs: [ AnalyzeImages ]
-    if: ${{ needs.AnalyzeImages.outputs.server2022count > 0 }}
     steps:
       - uses: actions/checkout@main
 

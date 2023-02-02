@@ -83,10 +83,10 @@ jobs:
             $server2022array += @($missingFilesOnlyImages.GetEnumerator() | Where-Object { $_ } | ForEach-Object { "$($_.name)-filesonly|$($_.value)" })
             $server2022count = $server2022array.Count
             $server2022 = $server2022array | ConvertTo-Json -Compress
-            Write-Host "::set-output name=server2022::[$("$server2022".Trim('[]'))]"
-            Write-Host "set-output name=server2022::[$("$server2022".Trim('[]'))]"
-            Write-Host "::set-output name=server2022count::$server2022count"
-            Write-Host "set-output name=server2022count::$server2022count"
+            Add-Content -Path $ENV:GITHUB_OUTPUT -Value "server2022=[$("$server2022".Trim('[]'))]"
+            Write-Host "server2022=[$("$server2022".Trim('[]'))]"
+            Add-Content -Path $ENV:GITHUB_OUTPUT -Value "server2022count=$server2022count"
+            Write-Host "server2022count=$server2022count"
           }
           catch {
             Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
