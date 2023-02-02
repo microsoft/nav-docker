@@ -23,6 +23,13 @@ defaults:
   run:
     shell: PowerShell
 
+env:
+  resGroup: "buildgeneric"
+  resLocation: "West Europe"
+  machines: "5"
+  ARMbranch: "dev"
+  ARMtemplate: "buildagent"
+
 jobs:
   AnalyzeImages:
     runs-on: [ windows-latest ]
@@ -61,10 +68,93 @@ jobs:
             Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
             $host.SetShouldExit(1)            
           }
+  CreateAgents:
+    runs-on: [ windows-latest ]
+    needs: [ AnalyzeImages ]
+    if: ${{ needs.AnalyzeImages.outputs.server2022count > 0 }}
+    steps:
+      - uses: actions/checkout@main
+
+      - uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          enable-AzPSSession: true 
+
+      - name: Run Azure PowerShell script
+        uses: azure/powershell@v1
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          azPSVersion: "latest"
+          inlineScript: |
+            $resGroup = $env:resGroup
+            $resLocation = $env:resLocation
+            $repo = $env:GITHUB_REPOSITORY
+            $machines = [int]$env:machines
+            Write-Host "Resource Group is $resGroup"
+            $resourceGroup = Get-AzResourceGroup -name $resGroup -ErrorAction Ignore
+            if ($resourceGroup) {
+              Write-Host "Removing Resource Group $resGroup"
+              Remove-AzResourceGroup -Name $resGroup -Force | Out-Host
+              Write-Host "Done"
+            }
+            $runners = (gh api /repos/$repo/actions/runners | ConvertFrom-Json).runners
+            $runners | Where-Object { $_.status -eq "offline" } | ForEach-Object {
+              Write-host "Unregistering runner $($_.name)"
+              $id = $_.id
+              gh api -X DELETE /repos/$repo/actions/runners/$id
+              Write-Host "Done"
+            }
+            Write-Host "Creating resource group $resGroup in $resLocation"
+            $resourceGroup = New-AzResourceGroup -Name $resGroup -Location $resLocation -Force
+            Write-Host "Done"
+            1..$machines | ForEach-Object {
+              # Deployment
+              $no                       = $_
+
+              # ARM template
+              $templateUri = "https://raw.githubusercontent.com/microsoft/nav-arm-templates/$($env:ARMbranch)/$($env:ARMtemplate).json"
+
+              $registrationToken = (gh api -X POST /repos/$repo/actions/runners/registration-token | ConvertFrom-Json).token
+              $headers = @{ 
+                "Accept"        = "application/json"
+              }
+              $uri = "https://api.github.com/repos/actions/runner/releases"
+              $result = Invoke-WebRequest -UseBasicParsing -Headers $headers -Uri $uri
+              $releases = $result.Content | ConvertFrom-Json
+              $asset = $releases[0].assets | Where-Object {  $_.name -like "actions-runner-win-x64-*.*.?.zip" }
+
+              $Parameters = @{
+                "VmName"              = "$resgroup$no"
+                "Remotedesktopaccess" = "-"
+                "OperatingSystem"     = "Windows Server 2022"
+                "VmSize"              = "Standard_D4as_v5"
+                "OSDiskSize"          = 128
+                "StorageAccountType"  = "Premium_LRS"
+                "AdminPassword"       = [SecureString](ConvertTo-SecureString -String $env:GH_TOKEN -AsPlainText -Force)
+                "Count"               = 1
+                "Token"               = $registrationToken
+                "Organization"        = "https://github.com/$repo"
+                "LabelsOrPool"        = "buildgeneric"
+                "AgentUrl"            = $asset.browser_download_url
+                "InstallHyperV"       = "Yes"
+                "RunInsideDocker"     = "No"
+                "FinalSetupScriptUrl" = "additional-installforbuildagent.ps1"
+              }
+
+              $err = $resourceGroup | Test-AzResourceGroupDeployment -TemplateUri $templateUri -TemplateParameterObject $Parameters
+              if ($err) {
+                $err
+                throw "stop"
+              }
+              Write-Host "Creating Azure VM $($parameters.VmName)"
+              $resourceGroup | New-AzResourceGroupDeployment -TemplateUri $templateUri -TemplateParameterObject $Parameters -Name $Parameters.vmName -ErrorAction Ignore
+              Write-Host "Done"
+            }
 
   Server2019:
-    runs-on: [ windows-2019 ]
-    needs: [ AnalyzeImages ]
+    runs-on: [ buildgeneric ]
+    needs: [ AnalyzeImages, CreateAgents ]
     strategy:
       matrix:
         version: ${{fromJson(needs.AnalyzeImages.outputs.server2019)}}
@@ -102,12 +192,16 @@ jobs:
             $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
             docker pull $baseimage
             $inspect = docker inspect $baseimage | ConvertFrom-Json
+            $installdotnet6 = ""
+            if ($baseGenericTag -eq "1.0.2.13") {
+              $installdotnet6 = "RUN Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/dotnet-hosting-6.0.13-win.exe' -OutFile DotNet6-Win.exe ; \`n    start-process -Wait -FilePath .\DotNet6-Win.exe -ArgumentList /quiet ; \`n    Remove-Item -force DotNet6-Win.exe`n"
+            }
             if ([version]$inspect.config.Labels.tag -ge [version]$generictag) {
               Write-Host "::Warning::Base Image is Generic Tag $($inspect.config.Labels.tag), skipping build of $osversion-$genericTag$filesonlyStr."
             }
             else {
               $dockerfile = Join-Path (Get-Location) "DOCKERFILE.UPDATE"
-              "FROM $baseimage`nCOPY Run /Run/`nLABEL tag=""$genericTag"" \`n      created=""$created""`n" | Set-Content $dockerfile
+              "FROM $baseimage`nCOPY Run /Run/`n$($installdotnet6)LABEL tag=""$genericTag"" \`n      created=""$created""`n" | Set-Content $dockerfile
               $success = $false
               docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location) | % {
                 $_ | Out-Host
@@ -141,8 +235,8 @@ jobs:
           }
 
   Server2022:
-    runs-on: [ windows-2022 ]
-    needs: [ AnalyzeImages ]
+    runs-on: [ buildgeneric ]
+    needs: [ AnalyzeImages, CreateAgents ]
     strategy:
       matrix:
         version: ${{fromJson(needs.AnalyzeImages.outputs.server2022)}}
@@ -180,12 +274,16 @@ jobs:
             $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
             docker pull $baseimage
             $inspect = docker inspect $baseimage | ConvertFrom-Json
+            $installdotnet6 = ""
+            if ($baseGenericTag -eq "1.0.2.13") {
+              $installdotnet6 = "RUN Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/dotnet-hosting-6.0.13-win.exe' -OutFile DotNet6-Win.exe ; \`n    start-process -Wait -FilePath .\DotNet6-Win.exe -ArgumentList /quiet ; \`n    Remove-Item -force DotNet6-Win.exe`n"
+            }
             if ([version]$inspect.config.Labels.tag -ge [version]$generictag) {
               Write-Host "::Warning::Base Image is Generic Tag $($inspect.config.Labels.tag), skipping build of $osversion-$genericTag$filesonlyStr."
             }
             else {
               $dockerfile = Join-Path (Get-Location) "DOCKERFILE.UPDATE"
-              "FROM $baseimage`nCOPY Run /Run/`nLABEL tag=""$genericTag"" \`n      created=""$created""`n" | Set-Content $dockerfile
+              "FROM $baseimage`nCOPY Run /Run/`n$($installdotnet6)LABEL tag=""$genericTag"" \`n      created=""$created""`n" | Set-Content $dockerfile
               $success = $false
               docker build --isolation=hyperv --tag $image --file $dockerfile --memory 4G (Get-Location) | % {
                 $_ | Out-Host
@@ -220,7 +318,7 @@ jobs:
 
   Server2019filesOnly:
     runs-on: [ windows-2019 ]
-    needs: [ AnalyzeImages ]
+    needs: [ AnalyzeImages, CreateAgents ]
     strategy:
       matrix:
         version: ${{fromJson(needs.AnalyzeImages.outputs.server2019filesOnly)}}
@@ -298,7 +396,7 @@ jobs:
 
   Server2022filesOnly:
     runs-on: [ windows-2022 ]
-    needs: [ AnalyzeImages ]
+    needs: [ AnalyzeImages, CreateAgents ]
     strategy:
       matrix:
         version: ${{fromJson(needs.AnalyzeImages.outputs.server2022filesOnly)}}
@@ -373,3 +471,39 @@ jobs:
             Write-Host "::Error::Error building images. Error was $($_.Exception.Message)"
             $host.SetShouldExit(1)            
           }
+
+  RemoveAgents:
+    runs-on: [ windows-latest ]
+    needs: [ AnalyzeImages, CreateAgents, Server2019, Server2019filesOnly, Server2022, Server2022filesOnly ]
+    steps:
+      - uses: actions/checkout@main
+
+      - uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          enable-AzPSSession: true 
+
+      - name: Run Azure PowerShell script
+        uses: azure/powershell@v1
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          azPSVersion: "latest"
+          inlineScript: |
+            $resGroup = $env:resGroup
+            $resLocation = $env:resLocation
+            $repo = $env:GITHUB_REPOSITORY
+            Write-Host "Resource Group is $resGroup"
+            $resourceGroup = Get-AzResourceGroup -name $resGroup -ErrorAction Ignore
+            if ($resourceGroup) {
+              Write-Host "Removing Resource Group $resGroup"
+              Remove-AzResourceGroup -Name $resGroup -Force | Out-Host
+              Write-Host "Done"
+            }
+            $runners = (gh api /repos/$repo/actions/runners | ConvertFrom-Json).runners
+            $runners | Where-Object { $_.status -eq "offline" } | ForEach-Object {
+              Write-host "Unregistering runner $($_.name)"
+              $id = $_.id
+              gh api -X DELETE /repos/$repo/actions/runners/$id
+              Write-Host "Done"
+            }
