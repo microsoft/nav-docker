@@ -131,6 +131,7 @@ jobs:
               "RunInsideDocker"     = "No"
               "FinalSetupScriptUrl" = "additional-installforbuildagent.ps1"
             }
+            $resourceGroup = Get-AzResourceGroup -name $resGroup
             $err = $resourceGroup | Test-AzResourceGroupDeployment -TemplateUri $templateUri -TemplateParameterObject $Parameters
             if ($err) {
               $err
