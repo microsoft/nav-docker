@@ -139,4 +139,3 @@ jobs:
             Write-Host "Creating Azure VM $($parameters.VmName)"
             $resourceGroup | New-AzResourceGroupDeployment -TemplateUri $templateUri -TemplateParameterObject $Parameters -Name $Parameters.vmName -ErrorAction Ignore
             Write-Host "Done"
-          }
