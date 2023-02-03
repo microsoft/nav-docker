@@ -170,7 +170,7 @@ jobs:
   Server2022:
     runs-on: ${{ fromJson(github.event.inputs.AgentPool) }}
     needs: [ AnalyzeImages ]
-    if: ${{ needs.AnalyzeImages.outputs.server2019 != '[]' }}
+    if: ${{ needs.AnalyzeImages.outputs.server2022 != '[]' }}
     strategy:
       matrix:
         version: ${{fromJson(needs.AnalyzeImages.outputs.server2022)}}
@@ -253,7 +253,7 @@ jobs:
   Server2019filesOnly:
     runs-on: [ windows-2019 ]
     needs: [ AnalyzeImages ]
-    if: needs.AnalyzeImages.outputs.server2019filesOnly != "[]"
+    if: ${{ needs.AnalyzeImages.outputs.server2019filesOnly != '[]' }}
     strategy:
       matrix:
         version: ${{fromJson(needs.AnalyzeImages.outputs.server2019filesOnly)}}
@@ -332,7 +332,7 @@ jobs:
   Server2022filesOnly:
     runs-on: [ windows-2022 ]
     needs: [ AnalyzeImages ]
-    if: needs.AnalyzeImages.outputs.server2022filesOnly != "[]"
+    if: ${{ needs.AnalyzeImages.outputs.server2022filesOnly != '[]' }}
     strategy:
       matrix:
         version: ${{fromJson(needs.AnalyzeImages.outputs.server2022filesOnly)}}
