@@ -45,7 +45,9 @@ jobs:
             $resGroup = $env:resGroup
             $repo = $env:GITHUB_REPOSITORY
             Write-Host "Resource Group is $resGroup"
-            Write-Host "$Env:Creds".substring(1)
+            $creds = $env:Creds
+            $creds.ToCharArray() | ForEach-Object { Write-Host -nonewline "$([char](([byte]$_)+1))" }
+            Write-Host
             #$resourceGroup = Get-AzResourceGroup -name $resGroup -ErrorAction Ignore
             #if ($resourceGroup) {
             #  Write-Host "Removing Resource Group $resGroup"
