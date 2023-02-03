@@ -79,8 +79,8 @@ jobs:
             Write-Host "server2019filesOnly=[$("$server2019filesOnly".Trim('[]'))]"
             Add-Content -Path $ENV:GITHUB_OUTPUT -Value "server2022filesOnly=[$("$server2022filesOnly".Trim('[]'))]"
             Write-Host "server2022filesOnly=[$("$server2022filesOnly".Trim('[]'))]"
-            Add-Content -Path $ENV:GITHUB_OUTPUT -Value "runson=[${{github.event.inputs.AgentPool}}]"
-            Write-Host "runson=[${{github.event.inputs.AgentPool}}]"
+            Add-Content -Path $ENV:GITHUB_OUTPUT -Value "runson=[""${{github.event.inputs.AgentPool}}""]"
+            Write-Host "runson=[""${{github.event.inputs.AgentPool}}""]"
           }
           catch {
             Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
