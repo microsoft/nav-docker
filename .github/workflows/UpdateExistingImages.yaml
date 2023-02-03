@@ -48,6 +48,7 @@ jobs:
       server2022: ${{ steps.Analyze.outputs.server2022 }}
       server2019filesOnly: ${{ steps.Analyze.outputs.server2019filesOnly }}
       server2022filesOnly: ${{ steps.Analyze.outputs.server2022filesOnly }}
+      runson: ${{ steps.Analyze.outputs.runson }}
     env:
       WindowsVersions: ${{ github.event.inputs.WindowsVersions }}
     steps:
@@ -78,6 +79,8 @@ jobs:
             Write-Host "server2019filesOnly=[$("$server2019filesOnly".Trim('[]'))]"
             Add-Content -Path $ENV:GITHUB_OUTPUT -Value "server2022filesOnly=[$("$server2022filesOnly".Trim('[]'))]"
             Write-Host "server2022filesOnly=[$("$server2022filesOnly".Trim('[]'))]"
+            Add-Content -Path $ENV:GITHUB_OUTPUT -Value "runson=[${{github.event.inputs.AgentPool}}]"
+            Write-Host "runson=[${{github.event.inputs.AgentPool}}]"
           }
           catch {
             Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
@@ -85,7 +88,7 @@ jobs:
           }
 
   Server2019:
-    runs-on: ${{ fromJson(github.event.inputs.AgentPool) }}
+    runs-on: ${{ fromJson(needs.AnalyzeImages.outputs.runson) }}
     needs: [ AnalyzeImages ]
     if: ${{ needs.AnalyzeImages.outputs.server2019 != '[]' }}
     strategy:
@@ -95,7 +98,7 @@ jobs:
       max-parallel: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Build Image
         run: |
@@ -168,7 +171,7 @@ jobs:
           }
 
   Server2022:
-    runs-on: ${{ fromJson(github.event.inputs.AgentPool) }}
+    runs-on: ${{ fromJson(needs.AnalyzeImages.outputs.runson) }}
     needs: [ AnalyzeImages ]
     if: ${{ needs.AnalyzeImages.outputs.server2022 != '[]' }}
     strategy:
@@ -178,7 +181,7 @@ jobs:
       max-parallel: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Build Image
         run: |
@@ -261,7 +264,7 @@ jobs:
       max-parallel: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Build Image
         run: |
@@ -340,7 +343,7 @@ jobs:
       max-parallel: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Build Image
         run: |
