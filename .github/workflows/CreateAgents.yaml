@@ -119,7 +119,7 @@ jobs:
               "Remotedesktopaccess" = "-"
               "OperatingSystem"     = "Windows Server 2022"
               "VmSize"              = "Standard_D4as_v5"
-              "OSDiskSize"          = 128
+              "OSDiskSize"          = 1000
               "StorageAccountType"  = "Premium_LRS"
               "AdminPassword"       = [SecureString](ConvertTo-SecureString -String $env:GH_TOKEN -AsPlainText -Force)
               "Count"               = 1

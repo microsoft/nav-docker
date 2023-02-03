@@ -1,0 +1,51 @@
+name: Create Self-Hosted Agents
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: PowerShell
+
+env:
+  resGroup: "buildgeneric"
+
+jobs:
+  Preparation:
+    runs-on: [ windows-latest ]
+    outputs:
+      matrix: ${{steps.CalculateMatrix.outputs.matrix}}
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          enable-AzPSSession: true 
+
+      - name: Remove Old Agents
+        uses: azure/powershell@v1
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          azPSVersion: "latest"
+          inlineScript: |
+            $resGroup = $env:resGroup
+            $repo = $env:GITHUB_REPOSITORY
+            Write-Host "Resource Group is $resGroup"
+            Write-Host
+            $resourceGroup = Get-AzResourceGroup -name $resGroup -ErrorAction Ignore
+            if ($resourceGroup) {
+              Write-Host "Removing Resource Group $resGroup"
+              Remove-AzResourceGroup -Name $resGroup -Force | Out-Host
+              Write-Host "Done"
+            }
+            $runners = (gh api /repos/$repo/actions/runners | ConvertFrom-Json).runners
+            $runners | Where-Object { $_.status -eq "offline" } | ForEach-Object {
+              Write-host "Unregistering runner $($_.name)"
+              $id = $_.id
+              gh api -X DELETE /repos/$repo/actions/runners/$id
+              Write-Host "Done"
+            }
