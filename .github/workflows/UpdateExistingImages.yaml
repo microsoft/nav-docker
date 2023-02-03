@@ -87,7 +87,7 @@ jobs:
   Server2019:
     runs-on: ${{ fromJson(github.event.inputs.AgentPool) }}
     needs: [ AnalyzeImages ]
-    if: needs.AnalyzeImages.outputs.server2019 != "[]"
+    if: ${{ needs.AnalyzeImages.outputs.server2019 != '[]' }}
     strategy:
       matrix:
         version: ${{fromJson(needs.AnalyzeImages.outputs.server2019)}}
@@ -170,7 +170,7 @@ jobs:
   Server2022:
     runs-on: ${{ fromJson(github.event.inputs.AgentPool) }}
     needs: [ AnalyzeImages ]
-    if: needs.AnalyzeImages.outputs.server2022 != "[]"
+    if: ${{ needs.AnalyzeImages.outputs.server2019 != '[]' }}
     strategy:
       matrix:
         version: ${{fromJson(needs.AnalyzeImages.outputs.server2022)}}
