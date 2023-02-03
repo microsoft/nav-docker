@@ -57,6 +57,7 @@ jobs:
         run: |
           $erroractionpreference = "STOP"
           try {
+            $unsupportedWindowsVersions = @("10.0.18363.*","10.0.18362.*")
             $windowsVersions = $env:WindowsVersions
             if ("$windowsVersions" -eq "") { $windowsVersions = '*' }
             Write-Host "Locate all images matching '$windowsVersions'"
@@ -65,10 +66,10 @@ jobs:
             $url = "https://mcr.microsoft.com/v2/businesscentral/tags/list"
             $version = [System.Version]"0.0.0.0"
             $alltags = (($webclient.DownloadString("$url") | ConvertFrom-Json)).tags
-            $versions = $alltags | Where-Object { [System.Version]::TryParse($_, [ref] $version) } | Where-Object { $_ -like $windowsVersions } | ForEach-Object { $version }
+            $versions = $alltags | Where-Object { [System.Version]::TryParse($_, [ref] $version) } | Where-Object { "$version" -like $windowsVersions } | Where-Object { -not ($UnsupportedWindowsVersions | Where-Object { "$version" -like $_ }) } | ForEach-Object { $version }
             $server2019 = @($versions | Where-Object { $_ -lt [System.Version]"10.0.17764.0" } | Sort-Object -Descending | ForEach-Object { "$_" } ) | ConvertTo-Json -compress
             $server2022 = @($versions | Where-Object { $_ -ge [System.Version]"10.0.17764.0" } | Sort-Object -Descending | ForEach-Object { "$_" } ) | ConvertTo-Json -compress
-            $filesOnlyVersions = $alltags | Where-Object { $_ -like '*-filesonly' } | Where-Object { [System.Version]::TryParse($_.SubString(0,$_.Length-10), [ref] $version) } | Where-Object { $_ -like "$windowsVersions-filesonly" } | ForEach-Object { $version }
+            $filesOnlyVersions = $alltags | Where-Object { $_ -like '*-filesonly' } | Where-Object { [System.Version]::TryParse($_.SubString(0,$_.Length-10), [ref] $version) } | Where-Object { "$version" -like $windowsVersions } | Where-Object { -not ($UnsupportedWindowsVersions | Where-Object { "$version" -like $_ }) } | ForEach-Object { $version }
             $server2019filesOnly = @($filesOnlyVersions | Where-Object { $_ -lt [System.Version]"10.0.17764.0" } | Sort-Object -Descending | ForEach-Object { "$_" } ) | ConvertTo-Json -compress
             $server2022filesOnly = @($filesOnlyVersions | Where-Object { $_ -ge [System.Version]"10.0.17764.0" } | Sort-Object -Descending | ForEach-Object { "$_" } ) | ConvertTo-Json -compress
             Add-Content -Path $ENV:GITHUB_OUTPUT -Value "server2019=[$("$server2019".Trim('[]'))]"
