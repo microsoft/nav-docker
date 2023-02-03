@@ -1,4 +1,4 @@
-name: Create Self-Hosted Agents
+name: Remove Self-Hosted Agents
 
 on:
   workflow_dispatch:
