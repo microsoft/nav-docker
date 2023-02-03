@@ -87,7 +87,6 @@ jobs:
     strategy:
       matrix: ${{fromJson(needs.Preparation.outputs.matrix)}}
       fail-fast: true
-    matrix: 
     steps:
       - uses: azure/login@v1
         with:
