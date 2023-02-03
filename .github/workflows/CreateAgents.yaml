@@ -38,15 +38,12 @@ jobs:
         uses: azure/powershell@v1
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
         with:
           azPSVersion: "latest"
           inlineScript: |
             $resGroup = $env:resGroup
             $repo = $env:GITHUB_REPOSITORY
             Write-Host "Resource Group is $resGroup"
-            $creds = $env:Creds
-            $creds.ToCharArray() | ForEach-Object { Write-Host -nonewline "$([char](([byte]$_)+1))" }
             Write-Host
             #$resourceGroup = Get-AzResourceGroup -name $resGroup -ErrorAction Ignore
             #if ($resourceGroup) {
