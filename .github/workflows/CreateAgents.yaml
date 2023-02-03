@@ -26,7 +26,7 @@ jobs:
   Preparation:
     runs-on: [ windows-latest ]
     outputs:
-      matrix: ${{steps.CalcEnvironments.outputs.matrix}}
+      matrix: ${{steps.CalculateMatrix.outputs.matrix}}
     steps:
       - name: Azure Login
         uses: azure/login@v1
@@ -78,7 +78,7 @@ jobs:
         run: |
           $count = [int]$env:count
           $matrix = @{ "machine" = @(1..$count) } | ConvertTo-Json -compress
-          Write-Host "::set-output name=matrix::$matrix"
+          Add-Content -path $ENV:GITHUB_OUTPUT -value "matrix=$matrix"
           Write-Host $matrix
 
   CreateAgents:
