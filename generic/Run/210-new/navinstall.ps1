@@ -351,10 +351,21 @@ if (!$skipDb -and ($multitenant -or $installOnly -or $licenseFilePath -ne "" -or
 
     if ($installApps) {
         $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName
+        $moduleImported = $false
         if (Test-Path "$serviceTierFolder\Microsoft.Dynamics.Nav.Apps.Management.psd1") {
             Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Apps.Management.psd1"
+            $moduleImported = $true
+        }
+        elseif (Test-Path "$serviceTierFolder\Management\Microsoft.Dynamics.Nav.Apps.Management.psd1") {
+            Import-Module "$serviceTierFolder\Management\Microsoft.Dynamics.Nav.Apps.Management.psd1"
+            $moduleImported = $true
+        }
+        else {
+            Write-Host "WARNING: Could not find Microsoft.Dynamics.Nav.Apps.Management.psd1"
+        }
 
-            $installApps | % {
+        if ($moduleImported) {
+            $installApps | ForEach-Object {
                 $appFile = $_
     
                 $navAppInfo = Get-NAVAppInfo -Path $appFile

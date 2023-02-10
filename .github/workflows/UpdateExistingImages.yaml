@@ -251,7 +251,7 @@ jobs:
           }
           catch {
             Write-Host "::Error::Error building images. Error was $($_.Exception.Message)"
-            $host.SetShouldExit(1)            
+            $host.SetShouldExit(1)
           }
 
   Server2019filesOnly:
