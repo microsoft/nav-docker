@@ -9,12 +9,7 @@ $hostOs = (Get-CimInstance Win32_OperatingSystem)
 . (Join-Path $RootPath "settings.ps1")
 
 function Head($text) {
-    try {
-        $s = (New-Object System.Net.WebClient).DownloadString("http://artii.herokuapp.com/make?text=$text")
-    } catch {
-        $s = $text
-    }
-    Write-Host -ForegroundColor Yellow $s
+    Write-Host -ForegroundColor Yellow $text
 }
 
 $push = $true
