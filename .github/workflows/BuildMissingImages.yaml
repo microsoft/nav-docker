@@ -63,21 +63,23 @@ jobs:
             $missingFilesOnlyImages = @{}
             $alldotnetFrameworkTags = (($webclient.DownloadString("https://mcr.microsoft.com/v2/dotnet/framework/runtime/tags/list") | ConvertFrom-Json)).tags
             $alldotnetFrameworkTags | Where-Object { $_.startswith("4.8-w") -or $_.startswith("4.8-20") } | ForEach-Object {
-                Write-Host -NoNewline "Test $_ ($OSVersion)"
                 $osVersion = [System.Version](($webclient.DownloadString("https://mcr.microsoft.com/v2/dotnet/framework/runtime/manifests/$_") | ConvertFrom-Json).history[0].v1Compatibility | ConvertFrom-Json)."os.version"
-                if ($versions.Contains($osversion)) {
-                    Write-Host -NoNewline " - OK"
-                }
-                else {
-                    $missingImages."$osversion" = $_
-                    Write-Host -NoNewline " - Missing"
-                }
-                if ($filesOnlyVersions.Contains($osversion)) {
-                    Write-Host " - OK"
-                }
-                else {
-                    $missingFilesOnlyImages."$osversion" = $_
-                    Write-Host " - Missing"
+                if (-not ($UnsupportedWindowsVersions | Where-Object { "$osVersion" -like $_ })) {
+                    Write-Host -NoNewline "Test $_ ($OSVersion)"
+                    if ($versions.Contains($osversion)) {
+                        Write-Host -NoNewline " - OK"
+                    }
+                    else {
+                        $missingImages."$osversion" = $_
+                        Write-Host -NoNewline " - Missing"
+                    }
+                    if ($filesOnlyVersions.Contains($osversion)) {
+                        Write-Host " - OK"
+                    }
+                    else {
+                        $missingFilesOnlyImages."$osversion" = $_
+                        Write-Host " - Missing"
+                    }
                 }
             }
             $server2022array = @($missingImages.GetEnumerator() | Where-Object { $_ } | ForEach-Object { "$($_.name)|$($_.value)" })
