@@ -1,5 +1,5 @@
 Write-Host "Initializing..."
-$startTime = [DateTime]::Now
+$startTime = [DateTime]::UtcNow
 
 $runPath = "c:\Run"
 $myPath = Join-Path $runPath "my"
@@ -302,6 +302,6 @@ Write-Host "Container Total Physical Memory is $(($cimInstance.TotalVisibleMemor
 Write-Host "Container Free Physical Memory is $(($cimInstance.FreePhysicalMemory/1024/1024).ToString('F1',[CultureInfo]::InvariantCulture))Gb"
 Write-Host
 
-$timespend = [Math]::Round([DateTime]::Now.Subtract($startTime).Totalseconds)
+$timespend = [Math]::Round([DateTime]::UtcNow.Subtract($startTime).Totalseconds)
 Write-Host "Initialization took $timespend seconds"
 Write-Host "Ready for connections!"
