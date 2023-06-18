@@ -667,122 +667,198 @@ function Download-Artifacts {
         [switch] $includePlatform,
         [switch] $force,
         [switch] $forceRedirection,
-        [string] $basePath = 'c:\dl'
+        [string] $basePath = 'c:\dl',
+        [int]    $timeout = 300
     )
-
     if (-not (Test-Path $basePath)) {
         New-Item $basePath -ItemType Directory | Out-Null
     }
-
-    do {
-        $redir = $false
-        $appUri = [Uri]::new($artifactUrl)
-
-        $appArtifactPath = Join-Path $basePath $appUri.AbsolutePath
-        $exists = Test-Path $appArtifactPath
-        if ($exists -and $force) {
-            Remove-Item $appArtifactPath -Recurse -Force
-            $exists = $false
-        }
-        if ($exists -and $forceRedirection) {
-            $appManifestPath = Join-Path $appArtifactPath "manifest.json"
-            $appManifest = Get-Content $appManifestPath | ConvertFrom-Json
-            if ($appManifest.PSObject.Properties.name -eq "applicationUrl") {
+    try {
+        $wipFileInitialized = $false;
+        $wipPlatformFileInitialized = $false;
+        do {
+            $redir = $false
+            $appUri = [Uri]::new($artifactUrl)
+            $appArtifactPath = Join-Path $basePath $appUri.AbsolutePath
+            
+            $wipFile = Join-Path $appArtifactPath '_inprocess.txt'
+            $readyFile = Join-Path $appArtifactPath '_ready.txt'
+            Test-RunningArtifactPreparationWithWait -InProcessFile $wipFile -Timeout $timeout
+            if (-not $wipFileInitialized) {
+                $lockFile = New-Item $wipFile -ItemType File -Force
+                $lockFileStream = $lockFile.OpenWrite()
+                $wipFileInitialized = $true
+            }
+            $exists = Test-Path $readyFile
+            if ($exists -and $force) {
                 Remove-Item $appArtifactPath -Recurse -Force
                 $exists = $false
             }
-        }
-        if (-not $exists) {
-            Write-Host "Downloading application artifact $($appUri.AbsolutePath)"
-            $appZip = Join-Path ([System.IO.Path]::GetTempPath()) "$([Guid]::NewGuid().ToString()).zip"
-            try {
-                Download-File -sourceUrl $artifactUrl -destinationFile $appZip
+            if ($exists -and $forceRedirection) {
+                $appManifestPath = Join-Path $appArtifactPath "manifest.json"
+                $appManifest = Get-Content $appManifestPath | ConvertFrom-Json
+                if ($appManifest.PSObject.Properties.name -eq "applicationUrl") {
+                    Remove-Item $appArtifactPath -Recurse -Force
+                    $exists = $false
+                }
             }
-            catch {
-                if ($artifactUrl.Contains('.azureedge.net/')) {
-                    $artifactUrl = $artifactUrl.Replace('.azureedge.net/','.blob.core.windows.net/')
-                    Write-Host "Retrying download..."
+            if (-not $exists) {
+                Write-Host "Downloading application artifact $($appUri.AbsolutePath)"
+                $appZip = Join-Path ([System.IO.Path]::GetTempPath()) "$([Guid]::NewGuid().ToString()).zip"
+                try {
                     Download-File -sourceUrl $artifactUrl -destinationFile $appZip
                 }
-            }
-            Write-Host "Unpacking application artifact"
-            Expand-Archive -Path $appZip -DestinationPath $appArtifactPath -Force
-            Remove-Item -path $appZip -force
-        }
-        try { [System.IO.File]::WriteAllText((Join-Path $appArtifactPath 'lastused'), "$([datetime]::UtcNow.Ticks)") } catch {}
-
-        $appManifestPath = Join-Path $appArtifactPath "manifest.json"
-        $appManifest = Get-Content $appManifestPath | ConvertFrom-Json
-
-        if ($appManifest.PSObject.Properties.name -eq "applicationUrl") {
-            $redir = $true
-            $artifactUrl = $appManifest.ApplicationUrl
-            if ($artifactUrl -notlike 'https://*') {
-                $artifactUrl = "https://$($appUri.Host)/$artifactUrl$($appUri.Query)"
-            }
-        }
-
-    } while ($redir)
-
-    $appArtifactPath
-
-    if ($includePlatform) {
-        if ($appManifest.PSObject.Properties.name -eq "platformUrl") {
-            $platformUrl = $appManifest.platformUrl
-        }
-        else {
-            $platformUrl = "$($appUri.AbsolutePath.Substring(0,$appUri.AbsolutePath.LastIndexOf('/')))/platform".TrimStart('/')
-        }
-    
-        if ($platformUrl -notlike 'https://*') {
-            $platformUrl = "https://$($appUri.Host.TrimEnd('/'))/$platformUrl$($appUri.Query)"
-        }
-        $platformUri = [Uri]::new($platformUrl)
-         
-        $platformArtifactPath = Join-Path $basePath $platformUri.AbsolutePath
-        $exists = Test-Path $platformArtifactPath
-        if ($exists -and $force) {
-            Remove-Item $platformArtifactPath -Recurse -Force
-            $exists = $false
-        }
-        if (-not $exists) {
-            Write-Host "Downloading platform artifact $($platformUri.AbsolutePath)"
-            $platformZip = Join-Path ([System.IO.Path]::GetTempPath()) "$([Guid]::NewGuid().ToString()).zip"
-            try {
-                Download-File -sourceUrl $platformUrl -destinationFile $platformZip
-            }
-            catch {
-                if ($platformUrl.Contains('.azureedge.net/')) {
-                    $platformUrl = $platformUrl.Replace('.azureedge.net/','.blob.core.windows.net/')
-                    Write-Host "Retrying download..."
-                    Download-File -sourceUrl $platformUrl -destinationFile $platformZip
-                }
-            }
-            Write-Host "Unpacking platform artifact"
-            Expand-Archive -Path $platformZip -DestinationPath $platformArtifactPath -Force
-            Remove-Item -path $platformZip -force
-    
-            $prerequisiteComponentsFile = Join-Path $platformArtifactPath "Prerequisite Components.json"
-            if (Test-Path $prerequisiteComponentsFile) {
-                $prerequisiteComponents = Get-Content $prerequisiteComponentsFile | ConvertFrom-Json
-                Write-Host "Downloading Prerequisite Components"
-                $prerequisiteComponents.PSObject.Properties | % {
-                    $path = Join-Path $platformArtifactPath $_.Name
-                    if (-not (Test-Path $path)) {
-                        $dirName = [System.IO.Path]::GetDirectoryName($path)
-                        $filename = [System.IO.Path]::GetFileName($path)
-                        if (-not (Test-Path $dirName)) {
-                            New-Item -Path $dirName -ItemType Directory | Out-Null
-                        }
-                        $url = $_.Value
-                        Download-File -sourceUrl $url -destinationFile $path
+                catch {
+                    if ($artifactUrl.Contains('.azureedge.net/')) {
+                        $artifactUrl = $artifactUrl.Replace('.azureedge.net/','.blob.core.windows.net/')
+                        Write-Host "Retrying download..."
+                        Download-File -sourceUrl $artifactUrl -destinationFile $appZip
                     }
                 }
+                Write-Host "Unpacking application artifact"
+                Expand-Archive -Path $appZip -DestinationPath $appArtifactPath -Force
+                Remove-Item -path $appZip -force
+            } else {
+                Write-Host "Reusing existing artifact cache."
             }
-        }
-        try { [System.IO.File]::WriteAllText((Join-Path $platformArtifactPath 'lastused'), "$([datetime]::UtcNow.Ticks)") } catch {}
+            try { [System.IO.File]::WriteAllText((Join-Path $appArtifactPath 'lastused'), "$([datetime]::UtcNow.Ticks)") } catch {}
+            $appManifestPath = Join-Path $appArtifactPath "manifest.json"
+            $appManifest = Get-Content $appManifestPath | ConvertFrom-Json
+            if ($appManifest.PSObject.Properties.name -eq "applicationUrl") {
+                $redir = $true
+                $artifactUrl = $appManifest.ApplicationUrl
+                if ($artifactUrl -notlike 'https://*') {
+                    $artifactUrl = "https://$($appUri.Host)/$artifactUrl$($appUri.Query)"
+                }
+            }
 
-        $platformArtifactPath
+        } while ($redir)
+
+        $appArtifactPath
+
+        if ($includePlatform) {
+            if ($appManifest.PSObject.Properties.name -eq "platformUrl") {
+                $platformUrl = $appManifest.platformUrl
+            }
+            else {
+                $platformUrl = "$($appUri.AbsolutePath.Substring(0,$appUri.AbsolutePath.LastIndexOf('/')))/platform".TrimStart('/')
+            }
+
+            if ($platformUrl -notlike 'https://*') {
+                $platformUrl = "https://$($appUri.Host.TrimEnd('/'))/$platformUrl$($appUri.Query)"
+            }
+            $platformUri = [Uri]::new($platformUrl)
+
+            $platformArtifactPath = Join-Path $basePath $platformUri.AbsolutePath
+            $wipPlatformFile = Join-Path $platformArtifactPath '_inprocess.txt'
+            $readyPlatformFile = Join-Path $platformArtifactPath '_ready.txt'
+            Test-RunningArtifactPreparationWithWait -InProcessFile $wipPlatformFile -Timeout $timeout
+            if (-not $wipPlatformFileInitialized) {
+                $lockPlatformFile = New-Item $wipPlatformFile -ItemType File -Force
+                $lockPlatformFileStream = $lockPlatformFile.OpenWrite()
+                $wipPlatformFileInitialized = $true
+            }
+            $exists = Test-Path $readyPlatformFile
+            if ($exists -and $force) {
+                Remove-Item $platformArtifactPath -Recurse -Force
+                $exists = $false
+            }
+            if (-not $exists) {
+                Write-Host "Downloading platform artifact $($platformUri.AbsolutePath)"
+                $platformZip = Join-Path ([System.IO.Path]::GetTempPath()) "$([Guid]::NewGuid().ToString()).zip"
+                try {
+                    Download-File -sourceUrl $platformUrl -destinationFile $platformZip
+                }
+                catch {
+                    if ($platformUrl.Contains('.azureedge.net/')) {
+                        $platformUrl = $platformUrl.Replace('.azureedge.net/','.blob.core.windows.net/')
+                        Write-Host "Retrying download..."
+                        Download-File -sourceUrl $platformUrl -destinationFile $platformZip
+                    }
+                }
+                Write-Host "Unpacking platform artifact"
+                Expand-Archive -Path $platformZip -DestinationPath $platformArtifactPath -Force
+                Remove-Item -path $platformZip -force
+
+                $prerequisiteComponentsFile = Join-Path $platformArtifactPath "Prerequisite Components.json"
+                if (Test-Path $prerequisiteComponentsFile) {
+                    $prerequisiteComponents = Get-Content $prerequisiteComponentsFile | ConvertFrom-Json
+                    Write-Host "Downloading Prerequisite Components"
+                    $prerequisiteComponents.PSObject.Properties | % {
+                        $path = Join-Path $platformArtifactPath $_.Name
+                        if (-not (Test-Path $path)) {
+                            $dirName = [System.IO.Path]::GetDirectoryName($path)
+                            $filename = [System.IO.Path]::GetFileName($path)
+                            if (-not (Test-Path $dirName)) {
+                                New-Item -Path $dirName -ItemType Directory | Out-Null
+                            }
+                            $url = $_.Value
+                            Download-File -sourceUrl $url -destinationFile $path
+                        }
+                    }
+                }
+            } else {
+                Write-Host "Reusing existing platform artifact cache."
+            }
+            try { [System.IO.File]::WriteAllText((Join-Path $platformArtifactPath 'lastused'), "$([datetime]::UtcNow.Ticks)") } catch {}
+
+            if ($wipPlatformFileInitialized) {
+                New-Item $readyPlatformFile -ItemType File -Force | Out-Null
+            }
+
+            $platformArtifactPath
+        }
+
+        if ($wipFileInitialized) {
+            New-Item $readyFile -ItemType File -Force | Out-Null
+        }
+
+    } finally {
+
+        if ($wipFileInitialized) {
+            $lockFileStream.Close()
+            Remove-Item $lockFile -Force | Out-Null
+            $wipFileInitialized = $false
+        }
+
+        if ($wipPlatformFileInitialized) {
+            $lockPlatformFileStream.Close()
+            Remove-Item $lockPlatformFile -Force | Out-Null
+            $wipPlatformFileInitialized = $false
+        }
+
+    }
+}
+function Test-RunningArtifactPreparationWithWait {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $InProcessFile,
+        [Parameter(Mandatory = $true)]
+        [int] $Timeout
+    )
+    if (Test-Path $InProcessFile) {
+        $fileLocked = $false
+        $waitingAnotherProcessMsgIssued = $false
+        $lockCheckStartDT = Get-Date
+        
+        do {
+            try { 
+                (Get-Date | Out-File -FilePath $InProcessFile -Append)
+                $fileLocked = $false
+            } catch { 
+                $fileLocked = $true
+            }
+            if ($fileLocked) {
+                if (-not $waitingAnotherProcessMsgIssued) {
+                    Write-Host "Waiting for another process running artifact download and extraction ..."
+                    $waitingAnotherProcessMsgIssued = $true
+                }
+                Start-Sleep -Seconds 5
+            }
+        } while (($fileLocked) -or (((Get-Date) - $lockCheckStartDT).Second > $Timeout))
+        if ($fileLocked) {
+            Write-Error "Artifacts are being downloaded and extracted somewhere else and timeout=$Timeout seconds has passed."
+        }
     }
 }
 
