@@ -829,6 +829,7 @@ function Download-Artifacts {
 
     }
 }
+
 function Test-RunningArtifactPreparationWithWait {
     param (
         [Parameter(Mandatory = $true)]
