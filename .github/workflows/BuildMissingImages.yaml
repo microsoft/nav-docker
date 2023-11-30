@@ -31,7 +31,7 @@ defaults:
 
 jobs:
   AnalyzeImages:
-    runs-on: [ windows-latest ]
+    runs-on: [ windows-latest-l ]
     outputs:
       server2022: ${{ steps.Analyze.outputs.server2022 }}
       server2022count: ${{ steps.Analyze.outputs.server2022count }}
