@@ -36,7 +36,7 @@ jobs:
       server2022: ${{ steps.Analyze.outputs.server2022 }}
       server2022count: ${{ steps.Analyze.outputs.server2022count }}
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@v4
 
       - name: Analyze
         id: Analyze
@@ -101,7 +101,7 @@ jobs:
     needs: [ AnalyzeImages ]
     if: ${{ needs.AnalyzeImages.outputs.server2022count > 0 }}
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@v4
 
       - uses: azure/login@v1
         with:
@@ -190,7 +190,7 @@ jobs:
       max-parallel: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Build Image
         run: |
@@ -273,7 +273,7 @@ jobs:
     runs-on: [ windows-latest ]
     needs: [ AnalyzeImages, CreateAgents, Server2022 ]
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@v4
 
       - uses: azure/login@v1
         with:
