@@ -41,7 +41,9 @@ if ($restartingInstance) {
 
 $startCount = 0
 if (Test-Path $startCountFile -PathType Leaf) {
-    $startCount = [int](Get-Content -Path $startCountFile)
+    if (![int]::TryParse((Get-Content -Path $startCountFile), [ref]$startCount)) {
+        $startCount = 0
+    }
 }
 $startCount++
 if ($startCount -gt 1) {
