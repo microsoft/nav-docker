@@ -2,7 +2,7 @@ Param(
     [switch] $installOnly
 )
 
-Write-Host "Installing Business Central"
+Write-Host "Installing Business Central: InstallOnly=$($installOnly.IsPresent)"
 $startTime = [DateTime]::Now
 
 $runPath = "c:\Run"
