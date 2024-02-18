@@ -790,27 +790,37 @@ function GetTestToolkitApps {
     Param(
         [switch] $includeTestLibrariesOnly,
         [switch] $includeTestFrameworkOnly,
+        [switch] $includeTestRunnerOnly,
         [switch] $includePerformanceToolkit
     )
 
+    $version = [Version](Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service\Microsoft.Dynamics.Nav.Server.exe").VersionInfo.FileVersion
+
     # Add Test Framework
-    $apps = @(get-childitem -Path "C:\Applications\TestFramework\TestLibraries\*.*" -recurse -filter "*.app")
+    $apps = @()
+    if (($version -ge [Version]"19.0.0.0") -and (Test-Path 'C:\Applications\TestFramework\TestLibraries\permissions mock')) {
+        $apps += @(get-childitem -Path "C:\Applications\TestFramework\TestLibraries\permissions mock\*.*" -recurse -filter "*.app")
+    }
     $apps += @(get-childitem -Path "C:\Applications\TestFramework\TestRunner\*.*" -recurse -filter "*.app")
 
+    if (!$includeTestRunnerOnly) {
+        $apps += @(get-childitem -Path "C:\Applications\TestFramework\TestLibraries\*.*" -recurse -filter "*.app")
 
-    if (!$includeTestFrameworkOnly) {
-        
-        $version = [Version](Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service\Microsoft.Dynamics.Nav.Server.exe").VersionInfo.FileVersion
+        if (!$includeTestFrameworkOnly) {
+            # Add Test Libraries
+            $apps += "Microsoft_System Application Test Library.app", "Microsoft_Business Foundation Test Libraries.app", "Microsoft_Tests-TestLibraries.app" | ForEach-Object {
+                @(get-childitem -Path "C:\Applications\*.*" -recurse -filter $_)
+            }
 
-        # Add Test Libraries
-        $apps += "Microsoft_System Application Test Library.app", "Microsoft_Tests-TestLibraries.app" | % {
-            @(get-childitem -Path "C:\Applications\*.*" -recurse -filter $_)
-        }
-
-        if (!$includeTestLibrariesOnly) {
-
-            # Add Tests
-            $apps += @(get-childitem -Path "C:\Applications\*.*" -recurse -filter "Microsoft_Tests-*.app") | Where-Object { $_ -notlike "*\Microsoft_Tests-TestLibraries.app" -and ($version.Major -ge 17 -or ($_ -notlike "*\Microsoft_Tests-Marketing.app")) -and $_ -notlike "*\Microsoft_Tests-SINGLESERVER.app" }
+            if (!$includeTestLibrariesOnly) {
+                # Add Tests
+                if ($version -ge [Version]"18.0.0.0") {
+                    $apps += "Microsoft_System Application Test.app", "Microsoft_Business Foundation Tests.app" | ForEach-Object {
+                        @(get-childitem -Path "C:\Applications\*.*" -recurse -filter $_)
+                    }
+                }
+                $apps += @(get-childitem -Path "C:\Applications\*.*" -recurse -filter "Microsoft_Tests-*.app") | Where-Object { $_ -notlike "*\Microsoft_Tests-TestLibraries.app" -and ($version.Major -ge 17 -or ($_ -notlike "*\Microsoft_Tests-Marketing.app")) -and $_ -notlike "*\Microsoft_Tests-SINGLESERVER.app" }
+            }
         }
     }
 
@@ -821,12 +831,12 @@ function GetTestToolkitApps {
         }
     }
 
-    $apps | % {
-        $appFile = Get-ChildItem -path "c:\applications.*\*.*" -recurse -filter ($_.Name).Replace(".app","_*.app")
+    $apps | ForEach-Object {
+        $appFile = Get-ChildItem -path "c:\applications.*\*.*" -recurse -filter ($_.Name).Replace(".app", "_*.app")
         if (!($appFile)) {
             $appFile = $_
         }
-        $appFile
+        $appFile.FullName
     }
 }
 

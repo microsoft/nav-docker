@@ -68,8 +68,13 @@ if (!$skipDb) {
     $databaseFolder = "c:\databases"
     New-Item -Path $databaseFolder -itemtype Directory -ErrorAction Ignore | Out-Null
 
-    Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql15.SQLEXPRESS\mssqlserver' -name DefaultData -value $databaseFolder
-    Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql15.SQLEXPRESS\mssqlserver' -name DefaultLog -value $databaseFolder
+    # SQL Express 2019
+    Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql15.SQLEXPRESS\mssqlserver' -name DefaultData -value $databaseFolder -ErrorAction SilentlyContinue
+    Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql15.SQLEXPRESS\mssqlserver' -name DefaultLog -value $databaseFolder -ErrorAction SilentlyContinue
+
+    # SQL Express 2022
+    Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql16.SQLEXPRESS\mssqlserver' -name DefaultData -value $databaseFolder -ErrorAction SilentlyContinue
+    Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql16.SQLEXPRESS\mssqlserver' -name DefaultLog -value $databaseFolder -ErrorAction SilentlyContinue
 
     # start the SQL Server
     Write-Host "Starting Local SQL Server"
@@ -157,23 +162,7 @@ if ($installersFolder) {
 
 Write-Host "Copying dependencies"
 $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName
-# Due to dependencies from finsql.exe, we have to copy hlink.dll and ReportBuilder in place inside the container
-Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path $serviceTierFolder 'hlink.dll')
 Copy-Item -Path (Join-Path $runPath 'Install\t2embed.dll') -Destination "c:\windows\system32\t2embed.dll"
-Copy-Item -Path (Join-Path $runPath 'Install\Microsoft.IdentityModel.dll') -Destination (Join-Path $serviceTierFolder 'Microsoft.IdentityModel.dll')
-
-Write-Host "Copying ReportBuilder"
-$reportBuilderPath = "C:\Program Files (x86)\ReportBuilder"
-$reportBuilderSrc = Join-Path $runPath 'Install\ReportBuilder2016'
-if (Test-Path $reportBuilderSrc) {
-    Move-Item -Path $reportBuilderSrc -Destination $reportBuilderPath -Force
-    New-PSDrive -Name HKCR -PSProvider Registry -Root HKEY_CLASSES_ROOT -ErrorAction Ignore | Out-null
-    New-Item "HKCR:\MSReportBuilder_ReportFile_32" -itemtype Directory -ErrorAction Ignore | Out-null
-    New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell" -itemtype Directory -ErrorAction Ignore | Out-null
-    New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open" -itemtype Directory -ErrorAction Ignore | Out-null
-    New-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -itemtype Directory -ErrorAction Ignore | Out-null
-    Set-Item "HKCR:\MSReportBuilder_ReportFile_32\shell\Open\command" -value "$reportBuilderPath\MSReportBuilder.exe ""%1"""
-}
 
 Write-Host "Importing PowerShell Modules"
 try {
@@ -321,6 +310,8 @@ $installApps = @()
 if ($includeTestToolkit) {
     $installApps += GetTestToolkitApps -includeTestLibrariesOnly:$includeTestLibrariesOnly -includeTestFrameworkOnly:$includeTestFrameworkOnly -includePerformanceToolkit:$includePerformanceToolkit
 }
+
+$installApps | Out-Host
 
 if (!$skipDb -and ($multitenant -or $installOnly -or $licenseFilePath -ne "" -or ($installApps) -or (Test-Path "$navDvdPath\SQLDemoDatabase\CommonAppData\Microsoft\Microsoft Dynamics NAV\*\Database\cronus.flf"))) {
     Write-Host "Starting Business Central Service Tier"

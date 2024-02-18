@@ -37,26 +37,31 @@ RUN Invoke-WebRequest -Uri 'https://bcdocker.blob.core.windows.net/public/nav-do
     [System.IO.Compression.ZipFile]::ExtractToDirectory('.\nav-docker-install.zip', 'c:\run') ; \
     Remove-Item -Force 'nav-docker-install.zip' ; \
     . C:\Run\UpdatePowerShellExeConfig.ps1 ; \
-    Start-Service -Name `$SqlBrowserServiceName -ErrorAction Ignore -WarningAction Ignore ; \
-    Start-Service -Name `$SqlWriterServiceName -ErrorAction Ignore -WarningAction Ignore ; \
-    Start-Service -Name `$SqlServiceName -ErrorAction Ignore -WarningAction Ignore ; \
-    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/rewrite_2.0_rtw_x64.msi' -OutFile rewrite_amd64.msi ; \
+    . C:\Run\helperfunctions.ps1 ; \
+    Start-Service -Name $SqlBrowserServiceName -ErrorAction Ignore -WarningAction Ignore ; \
+    Start-Service -Name $SqlWriterServiceName -ErrorAction Ignore -WarningAction Ignore ; \
+    Start-Service -Name $SqlServiceName -ErrorAction Ignore -WarningAction Ignore ; \
+    Invoke-WebRequest -Uri 'https://download.microsoft.com/download/1/2/8/128E2E22-C1B9-44A4-BE2A-5859ED1D4592/rewrite_amd64_en-US.msi' -OutFile rewrite_amd64.msi ; \
     start-process -Wait -FilePath .\rewrite_amd64.msi -ArgumentList /quiet, /qn, /passive ; \
     Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/OpenXMLSDKv25.msi' -OutFile OpenXMLSDKV25.msi ; \
     start-process -Wait -FilePath .\OpenXMLSDKV25.msi -ArgumentList /quiet, /qn, /passive ; \
-    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/DotNetCore.1.0.4_1.1.1-WindowsHosting.exe' -OutFile DotNetCore-WindowsHosting.exe ; \
-    start-process -Wait -FilePath .\DotNetCore-WindowsHosting.exe -ArgumentList /quiet ; \
-    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/dotnet-hosting-5.0.4-win.exe' -OutFile DotNet-Win.exe ; \
-    start-process -Wait -FilePath .\DotNet-Win.exe -ArgumentList /quiet ; \
-    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/dotnet-hosting-6.0.13-win.exe' -OutFile DotNet6-Win.exe ; \
+    Invoke-WebRequest -Uri 'https://download.visualstudio.microsoft.com/download/pr/05726c49-3a3d-4862-9ff8-0660d9dc3c52/71c295f9287faad89e2d3233a38b44fb/dotnet-hosting-5.0.17-win.exe' -OutFile DotNet-Win5.exe ; \
+    start-process -Wait -FilePath .\DotNet-Win5.exe -ArgumentList /quiet ; \
+    Invoke-WebRequest -Uri 'https://download.visualstudio.microsoft.com/download/pr/04389c24-12a9-4e0e-8498-31989f30bb22/141aef28265938153eefad0f2398a73b/dotnet-hosting-6.0.27-win.exe' -OutFile DotNet6-Win.exe ; \
     start-process -Wait -FilePath .\DotNet6-Win.exe -ArgumentList /quiet ; \
-    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/sqlncli.msi' -OutFile sqlncli.msi ; \
+    Invoke-WebRequest -Uri 'https://download.visualstudio.microsoft.com/download/pr/98ff0a08-a283-428f-8e54-19841d97154c/8c7d5f9600eadf264f04c82c813b7aab/dotnet-hosting-8.0.2-win.exe' -OutFile DotNet8-Win.exe ; \
+    start-process -Wait -FilePath .\DotNet8-Win.exe -ArgumentList /quiet ; \
+    Invoke-WebRequest -Uri 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.1/PowerShell-7.4.1-win-x64.msi' -OutFile powershell-7.4.1-win-x64.msi ; \
+    start-process -Wait -FilePath .\powershell-7.4.1-win-x64.msi -ArgumentList /quiet ; \
+    Invoke-WebRequest -Uri 'https://download.microsoft.com/download/B/E/D/BED73AAC-3C8A-43F5-AF4F-EB4FEA6C8F3A/ENU/x64/sqlncli.msi' -OutFile sqlncli.msi ; \
     start-process -Wait -FilePath .\sqlncli.msi -ArgumentList /quiet, /qn, /passive ; \
-    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/vcredist_x86.exe' -OutFile vcredist_x86.exe ; \
+    Invoke-WebRequest -Uri 'https://aka.ms/highdpimfc2013x86enu' -OutFile vcredist_x86.exe ; \
     start-process -Wait -FilePath .\vcredist_x86.exe -ArgumentList /q, /norestart ; \
-    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/vcredist_x64.exe' -OutFile vcredist_x64.exe ; \
+    Invoke-WebRequest -Uri 'https://aka.ms/highdpimfc2013x64enu' -OutFile vcredist_x64.exe ; \
     start-process -Wait -FilePath .\vcredist_x64.exe -ArgumentList /q, /norestart ; \
-    Remove-Item -Recurse -Force rewrite_amd64.msi, OpenXMLSDKV25.msi, DotNetCore-WindowsHosting.exe, DotNet-Win.exe, DotNet6-Win.exe, sqlncli.msi, vcredist_x86.exe, vcredist_x64.exe
+    Invoke-WebRequest -Uri 'https://aka.ms/vs/17/release/vc_redist.x64.exe' -OutFile vcredist_x64_140.exe ; \
+    start-process -Wait -FilePath .\vcredist_x64_140.exe -ArgumentList /q, /norestart ; \
+    Remove-Item -Recurse -Force rewrite_amd64.msi, OpenXMLSDKV25.msi, DotNet-Win5.exe, DotNet6-Win.exe, DotNet8-Win.exe, powershell-7.4.1-win-x64.msi, sqlncli.msi, vcredist_x86.exe, vcredist_x64.exe, vcredist_x64_140.exe
 
 HEALTHCHECK --interval=30s --timeout=10s CMD [ "powershell", ".\\Run\\HealthCheck.ps1" ]
 

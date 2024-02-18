@@ -2,7 +2,7 @@ Param(
     [switch] $installOnly
 )
 
-Write-Host "Installing NAV"
+Write-Host "Installing NAV: InstallOnly=$($installOnly.IsPresent)"
 $startTime = [DateTime]::Now
 
 $runPath = "c:\Run"
