@@ -9,6 +9,10 @@ on:
         description: Generic Tag (leave empty to use value in generic/tag.txt)
         required: false
         default: ''
+      Machines:
+        description: Number of machines to create
+        required: false
+        default: '2'
       PushToProd:
         description: Push to production (Y/N)
         required: false
@@ -16,8 +20,7 @@ on:
 
 env:
   resGroup: "buildgeneric"
-  resLocation: "West Europe"
-  machines: "2"
+  resLocation: "Sweden Central"
   ARMbranch: "master"
   ARMtemplate: "buildagent"
 
@@ -120,6 +123,7 @@ jobs:
         uses: azure/powershell@v1
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          machines: ${{ github.event.inputs.Machines }}
         with:
           azPSVersion: "latest"
           inlineScript: |
