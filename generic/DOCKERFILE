@@ -16,7 +16,7 @@ RUN Add-WindowsFeature Web-Server,web-AppInit,web-Asp-Net45,web-Windows-Auth,web
     Set-Service 'W3SVC' -startuptype manual ; \
     Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\Dnscache\Parameters' -Name ServerPriorityTimeLimit -Value 0 -Type DWord; \
     Set-ItemProperty -Path "HKLM:\system\CurrentControlSet\control" -name ServicesPipeTimeout -Value 300000 -Type DWORD -Force; \
-    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/SQLEXPR_x64_ENU.exe' -OutFile sqlexpress.exe ; \
+    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/SQLEXPR2019_X64_ENU.EXE' -OutFile sqlexpress.exe ; \
     Start-Process -Wait -FilePath .\sqlexpress.exe -ArgumentList /qs, /x:setup ; \
     .\setup\setup.exe /q /ACTION=Install /INSTANCENAME=SQLEXPRESS /FEATURES=SQLEngine /UPDATEENABLED=0 /SQLSVCACCOUNT='NT AUTHORITY\System' /SQLSYSADMINACCOUNTS='BUILTIN\Administrators' /TCPENABLED=1 /NPENABLED=0 /IACCEPTSQLSERVERLICENSETERMS ; \
     While (!(get-service 'MSSQL$SQLEXPRESS' -ErrorAction SilentlyContinue)) { Start-Sleep -Seconds 5 } ; \
