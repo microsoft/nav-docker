@@ -168,8 +168,9 @@ try {
                         }
 
                         if ($env:doNotUseNewFolder -ne "Y") {
-                            if ($versionNo -ge 150) {
+                            if ($versionNo -ge 240) {
                                 $useNewFolder = $true
+                                $rebootContainer = $true
                             }
                             if (($versionFolder) -and (Test-Path "$versionFolder-new")) {
                                 $versionFolder = "$versionFolder-new"
@@ -329,16 +330,18 @@ try {
                 $useNewFolder = $false
                 $mtParam = @{}
                 if ($env:doNotUseNewFolder -ne "Y") {
+                    if ($versionNo -ge 240) {
+                        $useNewFolder = $true
+                    }
                     if (($versionFolder) -and (Test-Path "$versionFolder-new")) {
                         $versionFolder = "$versionFolder-new"
                         $useNewFolder = $true
-                        if ($multitenant) {
-                            $mtParam = @{ "multitenant" = $true }
-                        }
+                    }
+                    if ($multitenant) {
+                        $mtParam = @{ "multitenant" = $true }
                     }
                 }
-
-                Write-Host "Using installer from $versionFolder"
+                Write-Host "Using DVD installer from $versionFolder"
                 if ($versionFolder -ne "") {
                     if (Test-Path "c:\run\navinstall.ps1") {
                         Write-Host "navinstall was overridden"
