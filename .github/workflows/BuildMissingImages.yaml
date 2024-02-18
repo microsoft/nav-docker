@@ -158,7 +158,9 @@ jobs:
               $registrationToken = (gh api -X POST /repos/$repo/actions/runners/registration-token | ConvertFrom-Json).token
               $headers = @{ 
                 "Accept"        = "application/json"
+                "Authorization" = "token $env:GH_TOKEN"
               }
+        
               $uri = "https://api.github.com/repos/actions/runner/releases"
               $result = Invoke-WebRequest -UseBasicParsing -Headers $headers -Uri $uri
               $releases = $result.Content | ConvertFrom-Json
