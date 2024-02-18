@@ -13,7 +13,7 @@ Param(
     [switch] $rebootContainer
 )
 
-Write-Host "Installing Business Central, multitenant=$($multitenant.IsPresent), installOnly=$($installOnly.IsPresent), filesOnly=$($filesOnly.IsPresent), includeTestToolkit=$($includeTestToolkit.IsPresent), includeTestLibrariesOnly=$($includeTestLibrariesOnly.IsPresent), includeTestFrameworkOnly=$($includeTestFrameworkOnly.IsPresent), includePerformanceToolkit=$($includePerformanceToolkit.IsPresent), appArtifactPath=$appArtifactPath, platformArtifactPath=$platformArtifactPath, databasePath=$databasePath, licenseFilePath=$licenseFilePath, rebootContainer=$($rebootContainer.IsPresent)"
+Write-Host "Installing Business Central: multitenant=$($multitenant.IsPresent), installOnly=$($installOnly.IsPresent), filesOnly=$($filesOnly.IsPresent), includeTestToolkit=$($includeTestToolkit.IsPresent), includeTestLibrariesOnly=$($includeTestLibrariesOnly.IsPresent), includeTestFrameworkOnly=$($includeTestFrameworkOnly.IsPresent), includePerformanceToolkit=$($includePerformanceToolkit.IsPresent), appArtifactPath=$appArtifactPath, platformArtifactPath=$platformArtifactPath, databasePath=$databasePath, licenseFilePath=$licenseFilePath, rebootContainer=$($rebootContainer.IsPresent)"
 $startTime = [DateTime]::Now
 
 $runPath = "c:\Run"
