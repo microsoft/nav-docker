@@ -10,7 +10,8 @@ SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPref
 
 COPY Run /Run/
 
-RUN Invoke-WebRequest -Uri 'https://bcdocker.blob.core.windows.net/public/nav-docker-install.zip' -OutFile 'nav-docker-install.zip' ; \
+RUN [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 ; \
+    Invoke-WebRequest -Uri 'https://bcdocker.blob.core.windows.net/public/nav-docker-install.zip' -OutFile 'nav-docker-install.zip' ; \
     [Reflection.Assembly]::LoadWithPartialName('System.IO.Compression.Filesystem') | Out-Null ; \
     [System.IO.Compression.ZipFile]::ExtractToDirectory('.\nav-docker-install.zip', 'c:\run') ; \
     Remove-Item -Force 'nav-docker-install.zip' ; \
