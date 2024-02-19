@@ -162,6 +162,7 @@ jobs:
               }
         
               $uri = "https://api.github.com/repos/actions/runner/releases"
+              [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
               $result = Invoke-WebRequest -UseBasicParsing -Headers $headers -Uri $uri
               $releases = $result.Content | ConvertFrom-Json
               $asset = $releases[0].assets | Where-Object {  $_.name -like "actions-runner-win-x64-*.*.?.zip" }
