@@ -1,16 +1,14 @@
 name: Build missing images (after new windows updates)
 
 on:
-  schedule:
-  - cron: '0 5 * * *'
   workflow_dispatch:
     inputs:
       GenericTag:
         description: Generic Tag (leave empty to use value in generic/tag.txt)
         required: false
         default: ''
-      Machines:
-        description: Number of machines to create
+      Agents:
+        description: Number of agents to create (0 = use existing)
         required: false
         default: '2'
       PushToProd:
@@ -48,7 +46,7 @@ jobs:
         run: |
           $erroractionpreference = "STOP"
           try {
-            $unsupportedWindowsVersions = @("10.0.18363.*","10.0.18362.*")
+            $unsupportedWindowsVersions = @("10.0.14300.*","10.0.16299.*","10.0.18363.*","10.0.18362.*","10.0.14393.*","10.0.17134.*")
             Set-Location "generic"
             $genericTag = ''
             if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
@@ -123,77 +121,77 @@ jobs:
         uses: azure/powershell@v1
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          machines: ${{ github.event.inputs.Machines }}
+          agents: ${{ github.event.inputs.Agents }}
         with:
           azPSVersion: "latest"
           inlineScript: |
-            $resGroup = $env:resGroup
-            $resLocation = $env:resLocation
-            $repo = $env:GITHUB_REPOSITORY
-            $machines = [int]$env:machines
-            Write-Host "Resource Group is $resGroup"
-            $resourceGroup = Get-AzResourceGroup -name $resGroup -ErrorAction Ignore
-            if ($resourceGroup) {
-              Write-Host "Removing Resource Group $resGroup"
-              Remove-AzResourceGroup -Name $resGroup -Force | Out-Host
-              Write-Host "Done"
+            if ($env:agents -eq "0") {
+              Write-Host "Using existing agents
             }
-            $runners = (gh api /repos/$repo/actions/runners | ConvertFrom-Json).runners
-            $runners | Where-Object { $_.status -eq "offline" } | ForEach-Object {
-              Write-host "Unregistering runner $($_.name)"
-              $id = $_.id
-              gh api -X DELETE /repos/$repo/actions/runners/$id
+            else {
+              $resGroup = $env:resGroup
+              $resLocation = $env:resLocation
+              $repo = $env:GITHUB_REPOSITORY
+              $agents = [int]$env:agents
+              Write-Host "Resource Group is $resGroup"
+              $resourceGroup = Get-AzResourceGroup -name $resGroup -ErrorAction Ignore
+              if ($resourceGroup) {
+                Write-Host "Removing Resource Group $resGroup"
+                Remove-AzResourceGroup -Name $resGroup -Force | Out-Host
+                Write-Host "Done"
+              }
+              $runners = (gh api /repos/$repo/actions/runners | ConvertFrom-Json).runners
+              $runners | Where-Object { $_.status -eq "offline" } | ForEach-Object {
+                Write-host "Unregistering runner $($_.name)"
+                $id = $_.id
+                gh api -X DELETE /repos/$repo/actions/runners/$id
+                Write-Host "Done"
+              }
+              Write-Host "Creating resource group $resGroup in $resLocation"
+              $resourceGroup = New-AzResourceGroup -Name $resGroup -Location $resLocation -Force
               Write-Host "Done"
-            }
-            Write-Host "Creating resource group $resGroup in $resLocation"
-            $resourceGroup = New-AzResourceGroup -Name $resGroup -Location $resLocation -Force
-            Write-Host "Done"
-            1..$machines | ForEach-Object {
-              # Deployment
-              $no                       = $_
-
-              # ARM template
-              $templateUri = "https://raw.githubusercontent.com/microsoft/nav-arm-templates/$($env:ARMbranch)/$($env:ARMtemplate).json"
-
-              $registrationToken = (gh api -X POST /repos/$repo/actions/runners/registration-token | ConvertFrom-Json).token
-              $headers = @{ 
-                "Accept"        = "application/json"
-                "Authorization" = "token $env:GH_TOKEN"
+              1..$agents | ForEach-Object {
+                # Deployment
+                $no                       = $_
+                # ARM template
+                $templateUri = "https://raw.githubusercontent.com/microsoft/nav-arm-templates/$($env:ARMbranch)/$($env:ARMtemplate).json"
+                $registrationToken = (gh api -X POST /repos/$repo/actions/runners/registration-token | ConvertFrom-Json).token
+                $headers = @{ 
+                  "Accept"        = "application/json"
+                  "Authorization" = "token $env:GH_TOKEN"
+                }
+                $uri = "https://api.github.com/repos/actions/runner/releases"
+                [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+                $result = Invoke-WebRequest -UseBasicParsing -Headers $headers -Uri $uri
+                $releases = $result.Content | ConvertFrom-Json
+                $asset = $releases[0].assets | Where-Object {  $_.name -like "actions-runner-win-x64-*.*.?.zip" }
+                $Parameters = @{
+                  "VmName"              = "$resgroup$no"
+                  "Remotedesktopaccess" = "-"
+                  "OperatingSystem"     = "Windows Server 2022"
+                  "VmSize"              = "Standard_D4as_v5"
+                  "OSDiskSize"          = 128
+                  "StorageAccountType"  = "Premium_LRS"
+                  "AdminPassword"       = [SecureString](ConvertTo-SecureString -String $env:GH_TOKEN -AsPlainText -Force)
+                  "Count"               = 1
+                  "Token"               = $registrationToken
+                  "Organization"        = "https://github.com/$repo"
+                  "LabelsOrPool"        = "buildgeneric"
+                  "AgentUrl"            = $asset.browser_download_url
+                  "InstallHyperV"       = "Yes"
+                  "RunInsideDocker"     = "No"
+                  "FinalSetupScriptUrl" = "additional-installforbuildagent.ps1"
+                }
+                $err = $resourceGroup | Test-AzResourceGroupDeployment -TemplateUri $templateUri -TemplateParameterObject $Parameters
+                if ($err) {
+                  $err
+                  throw "stop"
+                }
+                Write-Host "Creating Azure VM $($parameters.VmName)"
+                $resourceGroup | New-AzResourceGroupDeployment -TemplateUri $templateUri -TemplateParameterObject $Parameters -Name $Parameters.vmName -ErrorAction Ignore -AsJob
+                Start-Sleep -Seconds 60
+                Write-Host "VM creation started"
               }
-        
-              $uri = "https://api.github.com/repos/actions/runner/releases"
-              [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-              $result = Invoke-WebRequest -UseBasicParsing -Headers $headers -Uri $uri
-              $releases = $result.Content | ConvertFrom-Json
-              $asset = $releases[0].assets | Where-Object {  $_.name -like "actions-runner-win-x64-*.*.?.zip" }
-
-              $Parameters = @{
-                "VmName"              = "$resgroup$no"
-                "Remotedesktopaccess" = "-"
-                "OperatingSystem"     = "Windows Server 2022"
-                "VmSize"              = "Standard_D4as_v5"
-                "OSDiskSize"          = 128
-                "StorageAccountType"  = "Premium_LRS"
-                "AdminPassword"       = [SecureString](ConvertTo-SecureString -String $env:GH_TOKEN -AsPlainText -Force)
-                "Count"               = 1
-                "Token"               = $registrationToken
-                "Organization"        = "https://github.com/$repo"
-                "LabelsOrPool"        = "buildgeneric"
-                "AgentUrl"            = $asset.browser_download_url
-                "InstallHyperV"       = "Yes"
-                "RunInsideDocker"     = "No"
-                "FinalSetupScriptUrl" = "additional-installforbuildagent.ps1"
-              }
-
-              $err = $resourceGroup | Test-AzResourceGroupDeployment -TemplateUri $templateUri -TemplateParameterObject $Parameters
-              if ($err) {
-                $err
-                throw "stop"
-              }
-              Write-Host "Creating Azure VM $($parameters.VmName)"
-              $resourceGroup | New-AzResourceGroupDeployment -TemplateUri $templateUri -TemplateParameterObject $Parameters -Name $Parameters.vmName -ErrorAction Ignore -AsJob
-              Start-Sleep -Seconds 60
-              Write-Host "VM creation started"
             }
 
   Generic:
@@ -389,23 +387,29 @@ jobs:
         uses: azure/powershell@v1
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          agents: ${{ github.event.inputs.Agents }}
         with:
           azPSVersion: "latest"
           inlineScript: |
-            $resGroup = $env:resGroup
-            $resLocation = $env:resLocation
-            $repo = $env:GITHUB_REPOSITORY
-            Write-Host "Resource Group is $resGroup"
-            $resourceGroup = Get-AzResourceGroup -name $resGroup -ErrorAction Ignore
-            if ($resourceGroup) {
-              Write-Host "Removing Resource Group $resGroup"
-              Remove-AzResourceGroup -Name $resGroup -Force | Out-Host
-              Write-Host "Done"
+            if ($env:agents -eq "0") {
+              Write-Host "Used existing agents
             }
-            $runners = (gh api /repos/$repo/actions/runners | ConvertFrom-Json).runners
-            $runners | Where-Object { $_.status -eq "offline" } | ForEach-Object {
-              Write-host "Unregistering runner $($_.name)"
-              $id = $_.id
-              gh api -X DELETE /repos/$repo/actions/runners/$id
-              Write-Host "Done"
+            else {
+              $resGroup = $env:resGroup
+              $resLocation = $env:resLocation
+              $repo = $env:GITHUB_REPOSITORY
+              Write-Host "Resource Group is $resGroup"
+              $resourceGroup = Get-AzResourceGroup -name $resGroup -ErrorAction Ignore
+              if ($resourceGroup) {
+                Write-Host "Removing Resource Group $resGroup"
+                Remove-AzResourceGroup -Name $resGroup -Force | Out-Host
+                Write-Host "Done"
+              }
+              $runners = (gh api /repos/$repo/actions/runners | ConvertFrom-Json).runners
+              $runners | Where-Object { $_.status -eq "offline" } | ForEach-Object {
+                Write-host "Unregistering runner $($_.name)"
+                $id = $_.id
+                gh api -X DELETE /repos/$repo/actions/runners/$id
+                Write-Host "Done"
+              }
             }
