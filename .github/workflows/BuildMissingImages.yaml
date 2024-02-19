@@ -45,7 +45,7 @@ jobs:
         run: |
           $erroractionpreference = "STOP"
           try {
-            $unsupportedWindowsVersions = @("10.0.14300.*","10.0.16299.*","10.0.18363.*","10.0.18362.*","10.0.14393.*","10.0.17134.*")
+            $unsupportedWindowsVersions = @("10.0.14300.*","10.0.16299.*","10.0.18363.*","10.0.18362.*","10.0.17134.*")    # "10.0.14393.*","10.0.19041.*","10.0.19042.*"
             Set-Location "generic"
             $genericTag = ''
             if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
