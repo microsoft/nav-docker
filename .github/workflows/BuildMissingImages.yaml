@@ -276,6 +276,12 @@ jobs:
               docker tag $image $_
               docker push $_
             }
+            $newtags | ForEach-Object {
+              docker rmi $_
+            }
+            docker rmi $image
+            docker rmi $baseimage
+            docker system prune --force
           }
           catch {
             Write-Host "::Error::Error building images. Error was $($_.Exception.Message)"
@@ -365,6 +371,12 @@ jobs:
               docker tag $image $_
               docker push $_
             }
+            $newtags | ForEach-Object {
+              docker rmi $_
+            }
+            docker rmi $image
+            docker rmi $baseimage
+            docker system prune --force
           }
           catch {
             Write-Host "::Error::Error building images. Error was $($_.Exception.Message)"
