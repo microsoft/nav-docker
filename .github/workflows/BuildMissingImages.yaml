@@ -33,71 +33,50 @@ jobs:
   AnalyzeImages:
     runs-on: [ windows-latest ]
     outputs:
-      generic: ${{ steps.Analyze.outputs.generic }}
-      genericcount: ${{ steps.Analyze.outputs.genericcount }}
-      filesonly: ${{ steps.Analyze.outputs.filesonly }}
-      filesonlycount: ${{ steps.Analyze.outputs.filesonlycount }}
+      missing: ${{ steps.Analyze.outputs.missing }}
+      missingcount: ${{ steps.Analyze.outputs.missingcount }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Analyze
         id: Analyze
+        env:
+          genericTag: ${{ github.event.inputs.GenericTag }}
         run: |
           $erroractionpreference = "STOP"
           try {
-            $unsupportedWindowsVersions = @("10.0.14300.*","10.0.16299.*","10.0.18363.*","10.0.18362.*","10.0.17134.*")    # "10.0.14393.*","10.0.19041.*","10.0.19042.*"
+            $servercoretags = @('ltsc2016','ltsc2019','ltsc2022')
             Set-Location "generic"
-            $genericTag = ''
-            if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
-              $genericTag = '${{ github.event.inputs.GenericTag }}'
-            }
+            $genericTag = "$env:genericTag"
             if ($genericTag -eq '') { $genericTag = Get-Content -path 'tag.txt' }
             [System.Version]$genericTag | Out-Null
             Write-Host "Using generic Tag $genericTag"
-            $genericTag = "-$genericTag"
             $webclient = New-Object System.Net.WebClient
             $webclient.Headers.Add('Accept', "application/json")
-            $alltags = (($webclient.DownloadString("https://mcr.microsoft.com/v2/businesscentral/tags/list") | ConvertFrom-Json)).tags
-            $version = [System.Version]"0.0.0.0"
-            $versions = @($alltags | Where-Object { $_ -like "*$generictag" } | Where-Object { [System.Version]::TryParse($_.SubString(0,$_.Length-$generictag.Length), [ref] $version) } | Where-Object { -not ($UnsupportedWindowsVersions | Where-Object { "$version" -like $_ }) } | ForEach-Object { $version })
-            $filesOnlyVersions = @($alltags | Where-Object { $_ -like "*$generictag-filesonly" } | Where-Object { [System.Version]::TryParse($_.SubString(0,$_.Length-$generictag.Length-10), [ref] $version) } | Where-Object { -not ($UnsupportedWindowsVersions | Where-Object { "$version" -like $_ }) } | ForEach-Object { $version })
-            $missingImages = @{}
-            $missingFilesOnlyImages = @{}
-            $alldotnetFrameworkTags = (($webclient.DownloadString("https://mcr.microsoft.com/v2/dotnet/framework/runtime/tags/list") | ConvertFrom-Json)).tags
-            $alldotnetFrameworkTags | Where-Object { $_.startswith("4.8-w") -or $_.startswith("4.8-20") } | ForEach-Object {
-                $osVersion = [System.Version](($webclient.DownloadString("https://mcr.microsoft.com/v2/dotnet/framework/runtime/manifests/$_") | ConvertFrom-Json).history[0].v1Compatibility | ConvertFrom-Json)."os.version"
-                if (-not ($UnsupportedWindowsVersions | Where-Object { "$osVersion" -like $_ })) {
-                    Write-Host -NoNewline "Test $_ ($OSVersion)"
-                    if ($versions.Contains($osversion)) {
-                        Write-Host -NoNewline " - OK"
-                    }
-                    else {
-                        $missingImages."$osversion" = $_
-                        Write-Host -NoNewline " - Missing"
-                    }
-                    if ($filesOnlyVersions.Contains($osversion)) {
-                        Write-Host " - OK"
-                    }
-                    else {
-                        $missingFilesOnlyImages."$osversion" = $_
-                        Write-Host " - Missing"
-                    }
-                }
+            $neededBcTags = $serverCoreTags | ForEach-Object {
+                $osVersion = [System.Version](($webclient.DownloadString("https://mcr.microsoft.com/v2/dotnet/framework/runtime/manifests/4.8-windowsservercore-$_") | ConvertFrom-Json).history[0].v1Compatibility | ConvertFrom-Json)."os.version"
+                "$osVersion-$genericTag|mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-$_"
+                "$osVersion-$genericTag-24|mcr.microsoft.com/windows/servercore:$_"
+                "$osVersion-$genericTag-filesonly|mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-$_"
+                "$osVersion-$genericTag-24-filesonly|mcr.microsoft.com/windows/servercore:$_"
             }
-            $genericarray = @($missingImages.GetEnumerator() | Where-Object { $_ } | ForEach-Object { "$($_.name)|$($_.value)" })
-            $genericcount = $genericarray.Count
-            $generic = $genericarray | ConvertTo-Json -Compress
-            Add-Content -Path $ENV:GITHUB_OUTPUT -Value "generic=[$("$generic".Trim('[]'))]"
-            Write-Host "generic=[$("$generic".Trim('[]'))]"
-            Add-Content -Path $ENV:GITHUB_OUTPUT -Value "genericcount=$genericcount"
-            Write-Host "genericcount=$genericcount"
-            $filesonlyarray = @($missingFilesOnlyImages.GetEnumerator() | Where-Object { $_ } | ForEach-Object { "$($_.name)-filesonly|$($_.value)" })
-            $filesonlycount = $filesonlyarray.Count
-            $filesonly = $filesonlyarray | ConvertTo-Json -Compress
-            Add-Content -Path $ENV:GITHUB_OUTPUT -Value "filesonly=[$("$filesonly".Trim('[]'))]"
-            Write-Host "filesonly=[$("$filesonly".Trim('[]'))]"
-            Add-Content -Path $ENV:GITHUB_OUTPUT -Value "filesonlycount=$filesonlycount"
-            Write-Host "filesonlycount=$filesonlycount"
+            Write-Host "Needed Tags ($($neededBcTags.Count))"
+            $neededBcTags | ForEach-Object { Write-Host "- $_" }
+            $alltags = (($webclient.DownloadString("https://mcr.microsoft.com/v2/businesscentral/tags/list") | ConvertFrom-Json)).tags
+            $missingBcTags = @($neededBcTags | Where-Object { $alltags -notcontains $_ })
+            Write-Host "Missing Tags ($($missingBcTags.Count))"
+            if ($missingBcTags) {
+                $missingBcTags | ForEach-Object { Write-Host "- $_" }
+            }
+            else {
+                Write-Host '- none'
+            }
+            $json = ConvertTo-Json -InputObject $missingBcTags -Compress
+            $json | Out-Host
+            Add-Content -encoding utf8 -Path $ENV:GITHUB_OUTPUT -Value "missing=$json"
+            Write-Host "missing=$json"
+            Add-Content -encoding utf8 -Path $ENV:GITHUB_OUTPUT -Value "missingcount=$($missingBcTags.Count)"
+            Write-Host "missingcount=$($missingBcTags.Count)"
           }
           catch {
             Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
@@ -107,7 +86,7 @@ jobs:
   CreateAgents:
     runs-on: [ windows-latest ]
     needs: [ AnalyzeImages ]
-    if: ${{ needs.AnalyzeImages.outputs.genericcount > 0 || needs.AnalyzeImages.outputs.filesonlycount > 0 }}
+    if: false
     steps:
       - uses: actions/checkout@v4
 
@@ -193,14 +172,14 @@ jobs:
               }
             }
 
-  Generic:
-    runs-on: [ buildgeneric ]
-    needs: [ AnalyzeImages, CreateAgents ]
+  Missing:
+    runs-on: [ Windows-Latest ]
+    needs: [ AnalyzeImages ]
+    if: ${{ needs.AnalyzeImages.outputs.missingcount > 0 }}
     strategy:
       matrix:
-        version: ${{fromJson(needs.AnalyzeImages.outputs.generic)}}
+        tag: ${{fromJson(needs.AnalyzeImages.outputs.missing)}}
       fail-fast: false
-      max-parallel: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -229,26 +208,41 @@ jobs:
             if ($genericTag -eq '') { $genericTag = Get-Content -path 'tag.txt' }
             [System.Version]$genericTag | Out-Null
             $osversion = '${{ matrix.version }}'.split('|')[0].split('-')[0]
-            $filesonly = ''
-            if ('${{ matrix.version }}' -like '*-filesonly|*') {
-              $filesonly = '-filesonly'
-            }
-            $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[1]
-            $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
-            
+            $filesonly = ('${{ matrix.version }}' -like '*-filesonly|*')
+            $only24 = ('${{ matrix.version }}' -like '*-24|*' -or '${{ matrix.version }}' -like '*-24-filesonly|*')
+            $baseImage = '${{ matrix.version }}'.split('|')[1]
             $rootPath = Get-Location
-            $dockerfile = Join-Path $rootPath "DOCKERFILE$filesonly"
-
-            $image = "my:$osversion-$genericTag$filesonly"
+            $dockerfile = Join-Path $rootPath "DOCKERFILE"
+            $strFilesOnly = ''
+            $str24 = ''
+            if ($only24) {
+              $str24 = "-24"
+            }
+            if ($filesOnly) {
+              $strFilesOnly = "-filesonly"
+              $dockerfile += '-filesonly'
+            }
+            $image = "my:$osversion-$genericTag$str24$strFilesOnly"
+            $newtags = @(
+              "$pushRegistry/public/businesscentral:$osversion$str24$strFilesonly-dev"
+            )
+            if ($pushToProd) {
+              $newtags += @(
+                  "$pushRegistry/public/businesscentral:$osversion$str24$strFilesonly"
+                  "$pushRegistry/public/businesscentral:$osversion-$genericTag$str24$strFilesonly"
+              )
+            }
+            $newTags | out-host
             $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
             docker pull $baseimage
             $inspect = docker inspect $baseimage | ConvertFrom-Json
-
             $success = $false
             docker build --build-arg baseimage=$baseimage `
                          --build-arg created=$created `
                          --build-arg tag="$genericTag" `
                          --build-arg osversion="$osversion" `
+                         --build-arg filesonly="$filesonly" `
+                         --build-arg only24="$only24" `
                          --isolation=hyperv `
                          --memory 8G `
                          --tag $image `
@@ -262,121 +256,17 @@ jobs:
             if (!$success) {
               throw "Error building image"
             }
-            $newtags = @(
-              "$pushRegistry/public/businesscentral:$osversion$filesonly-dev"
-            )
-            if ($pushToProd) {
-              $newtags += @(
-                  "$pushRegistry/public/businesscentral:$osversion$filesonly"
-                  "$pushRegistry/public/businesscentral:$osversion-$genericTag$filesonly"
-              )
-            }
-            $newtags | ForEach-Object {
-              Write-Host "Push $_"
-              docker tag $image $_
-              docker push $_
-            }
-            $newtags | ForEach-Object {
-              docker rmi $_
-            }
-            docker rmi $image
-            docker rmi $baseimage
-            docker system prune --force
-          }
-          catch {
-            Write-Host "::Error::Error building images. Error was $($_.Exception.Message)"
-            $host.SetShouldExit(1)            
-          }
-
-  FilesOnly:
-    runs-on: [ buildgeneric ]
-    needs: [ AnalyzeImages, CreateAgents ]
-    strategy:
-      matrix:
-        version: ${{fromJson(needs.AnalyzeImages.outputs.filesonly)}}
-      fail-fast: false
-      max-parallel: 5
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Build Image
-        run: |
-          $erroractionpreference = "STOP"
-          Set-StrictMode -version 2.0
-          try {
-            $pushRegistry = "mcrbusinesscentral.azurecr.io"
-            $job = start-job -ScriptBlock { Param($username, $token, $registry)
-              Write-Output $token | docker login --username $username --password-stdin $registry
-            } -ArgumentList '${{ secrets.PushUsername }}', '${{ secrets.PushToken }}', $pushRegistry
-            $job | Wait-Job -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null
-            $result = Receive-Job -ErrorAction SilentlyContinue -WarningAction SilentlyContinue $job 2> $NULL
-            if ($result -ne 'Login Succeeded') {
-              throw "docker login failed"
-            }
-            Set-Location "generic"
-            $genericTag = ''
-            $pushToProd = $true
-            if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
-              $genericTag = '${{ github.event.inputs.GenericTag }}'
-              $pushToProd = '${{ github.event.inputs.PushToProd }}' -eq 'Y'
-            }
-            if ($genericTag -eq '') { $genericTag = Get-Content -path 'tag.txt' }
-            [System.Version]$genericTag | Out-Null
-            $osversion = '${{ matrix.version }}'.split('|')[0].split('-')[0]
-            $filesonly = ''
-            if ('${{ matrix.version }}' -like '*-filesonly|*') {
-              $filesonly = '-filesonly'
-            }
-            $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[1]
-            $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
-            
-            $rootPath = Get-Location
-            $dockerfile = Join-Path $rootPath "DOCKERFILE$filesonly"
-
-            $image = "my:$osversion-$genericTag$filesonly"
-            $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
-            docker pull $baseimage
-            $inspect = docker inspect $baseimage | ConvertFrom-Json
-
-            $success = $false
-            docker build --build-arg baseimage=$baseimage `
-                         --build-arg created=$created `
-                         --build-arg tag="$genericTag" `
-                         --build-arg osversion="$osversion" `
-                         --isolation=hyperv `
-                         --memory 8G `
-                         --tag $image `
-                         --file $dockerfile `
-                         $RootPath | % {
-              $_ | Out-Host
-              if ($_ -like "Successfully built*") {
-                $success = $true
-              }
-            }
-            if (!$success) {
-              throw "Error building image"
-            }
-            $newtags = @(
-              "$pushRegistry/public/businesscentral:$osversion$filesonly-dev"
-            )
-            if ($pushToProd) {
-              $newtags += @(
-                  "$pushRegistry/public/businesscentral:$osversion$filesonly"
-                  "$pushRegistry/public/businesscentral:$osversion-$genericTag$filesonly"
-              )
-            }
-            $newtags | ForEach-Object {
-              Write-Host "Push $_"
-              docker tag $image $_
-              docker push $_
-            }
-            $newtags | ForEach-Object {
-              docker rmi $_
-            }
-            docker rmi $image
-            docker rmi $baseimage
-            docker system prune --force
+            #$newtags | ForEach-Object {
+            #  Write-Host "Push $_"
+            #  docker tag $image $_
+            #  docker push $_
+            #}
+            #$newtags | ForEach-Object {
+            #  docker rmi $_
+            #}
+            #docker rmi $image
+            #docker rmi $baseimage
+            #docker system prune --force
           }
           catch {
             Write-Host "::Error::Error building images. Error was $($_.Exception.Message)"
@@ -385,7 +275,7 @@ jobs:
 
   RemoveAgents:
     runs-on: [ windows-latest ]
-    needs: [ AnalyzeImages, CreateAgents, Generic, FilesOnly ]
+    needs: [ AnalyzeImages, CreateAgents, Missing ]
     steps:
       - uses: actions/checkout@v4
 

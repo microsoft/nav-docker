@@ -183,8 +183,8 @@ try {
                         }
                     }
                     
-                    Write-Host "Using installer from $versionFolder"
-                    if ($versionFolder -ne "") {
+                    if ($versionFolder) {
+                        Write-Host "Using installer from $versionFolder"
                         if (Test-Path "c:\run\navinstall.ps1") {
                             Write-Host "navinstall was overridden"
                             Remove-Item "$versionFolder\navinstall.ps1"
@@ -198,6 +198,9 @@ try {
                             Remove-Item "$versionFolder\SetupWebClient.ps1"
                         }
                         Copy-Item -Path "$versionFolder\*" -Destination "C:\Run" -Recurse -Force
+                    }
+                    elseif (!(Test-Path 'c:\run\navinstall.ps1')) {
+                        throw "No installer found to use for version $versionNo"
                     }
         
                     # Remove version specific folders

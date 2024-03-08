@@ -1,13 +1,21 @@
 ﻿$RootPath = $PSScriptRoot
+$ErrorActionPreference = "stop"
+Set-StrictMode -Version 2.0
 
-. (Join-Path $RootPath "settings.ps1")
-$filesOnly = $false
+0..3 | % {
+$filesOnly = $_ -gt 1
+$only24 = $_ -eq 0 -or $_ -eq 2
+$genericTag = '1.0.2.16'
+$created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
+$image = "mygeneric"
+
 $os = (Get-CimInstance Win32_OperatingSystem)
 if ($os.OSType -ne 18 -or !$os.Version.StartsWith("10.0.")) {
     throw "Unknown Host Operating System"
 }
 $UBR = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name UBR).UBR
 $hostOsVersion = [System.Version]::Parse("$($os.Version).$UBR")
+$hostOsVersion = [System.Version]'10.0.20348.2322'
 
 Write-Host "Host OS Version is $hostOsVersion"
 
@@ -17,6 +25,7 @@ $basetags = (Get-NavContainerImageTags -imageName "mcr.microsoft.com/dotnet/fram
 $basetags | ForEach-Object {
     if (!($baseImage)) {
         $manifest = (($webclient.DownloadString("https://mcr.microsoft.com/v2/dotnet/framework/runtime/manifests/$_") | ConvertFrom-Json).history[0].v1Compatibility | ConvertFrom-Json)
+        Write-Host "$hostOsVersion == $($manifest.'os.version')"
         if ($hostOsVersion -eq $manifest.'os.version') {
             $baseImage = "mcr.microsoft.com/dotnet/framework/runtime:$_"
             Write-Host "$baseImage matches the host OS version"
@@ -28,25 +37,19 @@ if (!($baseImage)) {
 }
 else {
 
+    $dockerfile = Join-Path $RootPath "DOCKERFILE"
+    if ($only24) {
+        $image += "-24"
+        $baseimage = 'mcr.microsoft.com/windows/servercore:ltsc2022'
+    }
     if ($filesOnly) {
-        $dockerfile = Join-Path $RootPath "DOCKERFILE-filesonly"
+        $dockerfile += '-filesonly'
+        $image += '-filesonly'
     }
-    else {
-        $dockerfile = Join-Path $RootPath "DOCKERFILE"
-    }
-
-    $image = "mygeneric"
- 
     docker pull $baseimage
     $osversion = docker inspect --format "{{.OsVersion}}" $baseImage
+    $isolation = "hyperv"
 
-    if ($hostOsVersion.Build -ge 20348 -or $osversion.Build -eq $hostOsVersion.Build) {
-        $isolation = "process"
-    }
-    else {
-        $isolation = "hyperv"
-    }
-    
     docker images --format "{{.Repository}}:{{.Tag}}" | % { 
         if ($_ -eq $image) 
         {
@@ -58,7 +61,10 @@ else {
                  --build-arg created=$created `
                  --build-arg tag="$genericTag" `
                  --build-arg osversion="$osversion" `
+                 --build-arg filesonly="$filesonly" `
+                 --build-arg only24="$only24" `
                  --isolation=$isolation `
+                 --memory 64G `
                  --tag $image `
                  --file $dockerfile `
                  $RootPath
@@ -69,4 +75,5 @@ else {
     else {
         Write-Host "SUCCESS"
     }
+}
 }
