@@ -207,10 +207,10 @@ jobs:
             }
             if ($genericTag -eq '') { $genericTag = Get-Content -path 'tag.txt' }
             [System.Version]$genericTag | Out-Null
-            $osversion = '${{ matrix.version }}'.split('|')[0].split('-')[0]
-            $filesonly = ('${{ matrix.version }}' -like '*-filesonly|*')
-            $only24 = ('${{ matrix.version }}' -like '*-24|*' -or '${{ matrix.version }}' -like '*-24-filesonly|*')
-            $baseImage = '${{ matrix.version }}'.split('|')[1]
+            $osversion = '${{ matrix.tag }}'.split('|')[0].split('-')[0]
+            $filesonly = ('${{ matrix.tag }}' -like '*-filesonly|*')
+            $only24 = ('${{ matrix.tag }}' -like '*-24|*' -or '${{ matrix.tag }}' -like '*-24-filesonly|*')
+            $baseImage = '${{ matrix.tag }}'.split('|')[1]
             $rootPath = Get-Location
             $dockerfile = Join-Path $rootPath "DOCKERFILE"
             $strFilesOnly = ''
