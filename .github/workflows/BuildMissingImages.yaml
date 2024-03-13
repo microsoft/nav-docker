@@ -44,10 +44,10 @@ jobs:
             $webclient.Headers.Add('Accept', "application/json")
             $neededBcTags = $serverCoreTags | ForEach-Object {
                 $osVersion = [System.Version](($webclient.DownloadString("https://mcr.microsoft.com/v2/dotnet/framework/runtime/manifests/4.8-windowsservercore-$_") | ConvertFrom-Json).history[0].v1Compatibility | ConvertFrom-Json)."os.version"
-                "$osVersion-$genericTag|mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-$_"
-                "$osVersion-$genericTag-24|mcr.microsoft.com/windows/servercore:$_"
-                "$osVersion-$genericTag-filesonly|mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-$_"
-                "$osVersion-$genericTag-24-filesonly|mcr.microsoft.com/windows/servercore:$_"
+                "$osVersion-$genericTag|mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-$_|$_"
+                "$osVersion-$genericTag-24|mcr.microsoft.com/windows/servercore:$_|$_"
+                "$osVersion-$genericTag-filesonly|mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-$_|$_"
+                "$osVersion-$genericTag-24-filesonly|mcr.microsoft.com/windows/servercore:$_|$_"
             }
             Write-Host "Needed Tags ($($neededBcTags.Count))"
             $neededBcTags | ForEach-Object { Write-Host "- $_" }
@@ -114,6 +114,7 @@ jobs:
             $filesonly = ('${{ matrix.tag }}' -like '*-filesonly|*')
             $only24 = ('${{ matrix.tag }}' -like '*-24|*' -or '${{ matrix.tag }}' -like '*-24-filesonly|*')
             $baseImage = '${{ matrix.tag }}'.split('|')[1]
+            $ltscTag = '${{ matrix.tag }}'.split('|')[2]
             $rootPath = Get-Location
             $dockerfile = Join-Path $rootPath "DOCKERFILE"
             $strFilesOnly = ''
@@ -128,11 +129,13 @@ jobs:
             $image = "my:$osversion-$genericTag$str24$strFilesOnly"
             $newtags = @(
               "$pushRegistry/public/businesscentral:$osversion$str24$strFilesonly-dev"
+              "$pushRegistry/public/businesscentral:$ltscTag$str24$strFilesonly-dev"
             )
             if ($pushToProd) {
               $newtags += @(
-                  "$pushRegistry/public/businesscentral:$osversion$str24$strFilesonly"
-                  "$pushRegistry/public/businesscentral:$osversion-$genericTag$str24$strFilesonly"
+                "$pushRegistry/public/businesscentral:$osversion$str24$strFilesonly"
+                "$pushRegistry/public/businesscentral:$osversion-$genericTag$str24$strFilesonly"
+                "$pushRegistry/public/businesscentral:$ltscTag$str24$strFilesonly"
               )
             }
             $newTags | out-host
