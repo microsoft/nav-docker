@@ -5,7 +5,7 @@ Set-StrictMode -Version 2.0
 0..3 | % {
 $filesOnly = $_ -gt 1
 $only24 = $_ -eq 0 -or $_ -eq 2
-$genericTag = '1.0.2.16'
+$genericTag = '1.0.2.17'
 $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
 $image = "mygeneric"
 
@@ -15,7 +15,7 @@ if ($os.OSType -ne 18 -or !$os.Version.StartsWith("10.0.")) {
 }
 $UBR = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name UBR).UBR
 $hostOsVersion = [System.Version]::Parse("$($os.Version).$UBR")
-$hostOsVersion = [System.Version]'10.0.20348.2322'
+$hostOsVersion = [System.Version]'10.0.20348.2340'
 
 Write-Host "Host OS Version is $hostOsVersion"
 

@@ -125,7 +125,8 @@ else {
     $roleTailoredClientFolder = ""
 }
 $WebClientFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Web Client")[0]
-$NAVAdministrationScriptsFolder = (Get-Item "$runPath\NAVAdministration").FullName
+$NAVAdministrationScriptsFolder = "$runPath\NAVAdministration"
+if (!(Test-Path "$runPath\NAVAdministration")) { $NAVAdministrationScriptsFolder = '' }
 $CustomConfigFile = Join-Path $serviceTierFolder "CustomSettings.config"
 $CustomConfig = [xml](Get-Content $CustomConfigFile)
 $serverInstance = $CustomConfig.SelectSingleNode("//appSettings/add[@key='ServerInstance']").Value
