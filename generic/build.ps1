@@ -2,7 +2,9 @@
 $ErrorActionPreference = "stop"
 Set-StrictMode -Version 2.0
 
-$osVersion = [System.Version]'10.0.19042.1889'
+$osVersion = [System.Version]'10.0.19042.1889'   # 20H2
+$osVersion = [System.Version]'10.0.19041.1415'   # 2004
+
 $isolation = "hyperv"
 $filesOnly = $false
 $only24 = $false
@@ -51,7 +53,7 @@ docker images --format "{{.Repository}}:{{.Tag}}" | % {
         docker rmi $image -f
     }
 }
-    
+
 docker build --build-arg baseimage=$baseimage `
              --build-arg created=$created `
              --build-arg tag="$genericTag" `
