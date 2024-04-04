@@ -34,10 +34,10 @@ Start-Service -Name $SqlWriterServiceName -ErrorAction Ignore
 Start-Service -Name $SqlServiceName -ErrorAction Ignore
 
 # Prerequisites
-InstallPrerequisite -Name "Url Rewrite" -MsiPath "$NavDvdPath\Prerequisite Components\IIS URL Rewrite Module\rewrite_2.0_rtw_x64.msi" -MsiUrl "https://bcartifacts.azureedge.net/prerequisites/rewrite_2.0_rtw_x64.msi"
-InstallPrerequisite -Name "SQL Clr Types" -MsiPath "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2015\SQLSysClrTypes.msi" -MsiUrl "https://bcartifacts.azureedge.net/prerequisites/SQLSysClrTypes.msi"
-InstallPrerequisite -Name "Report Viewer" -MsiPath "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2015\ReportViewer.msi" -MsiUrl "https://bcartifacts.azureedge.net/prerequisites/ReportViewer.msi"
-InstallPrerequisite -Name "OpenXML" -MsiPath "$NavDvdPath\Prerequisite Components\Open XML SDK 2.5 for Microsoft Office\OpenXMLSDKv25.msi" -MsiUrl "https://bcartifacts.azureedge.net/prerequisites/OpenXMLSDKv25.msi"
+InstallPrerequisite -Name "Url Rewrite" -MsiPath "$NavDvdPath\Prerequisite Components\IIS URL Rewrite Module\rewrite_2.0_rtw_x64.msi" -MsiUrl "https://bcartifacts.blob.core.windows.net/prerequisites/rewrite_2.0_rtw_x64.msi"
+InstallPrerequisite -Name "SQL Clr Types" -MsiPath "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2015\SQLSysClrTypes.msi" -MsiUrl "https://bcartifacts.blob.core.windows.net/prerequisites/SQLSysClrTypes.msi"
+InstallPrerequisite -Name "Report Viewer" -MsiPath "$NavDvdPath\Prerequisite Components\Microsoft Report Viewer 2015\ReportViewer.msi" -MsiUrl "https://bcartifacts.blob.core.windows.net/prerequisites/ReportViewer.msi"
+InstallPrerequisite -Name "OpenXML" -MsiPath "$NavDvdPath\Prerequisite Components\Open XML SDK 2.5 for Microsoft Office\OpenXMLSDKv25.msi" -MsiUrl "https://bcartifacts.blob.core.windows.net/prerequisites/OpenXMLSDKv25.msi"
 
 # start IIS services
 Write-Host "Starting Internet Information Server"
