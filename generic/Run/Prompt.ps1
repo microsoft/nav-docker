@@ -21,6 +21,12 @@ else {
         ImportModule "$serviceTierFolder\Admin\Microsoft.Dynamics.Nav.Management.psm1"
         ImportModule "$serviceTierFolder\Admin\Microsoft.BusinessCentral.Management.psd1"
         ImportModule "$serviceTierFolder\Admin\Microsoft.BusinessCentral.Apps.Management.dll"
+        if (Test-Path 'c:\run\my\pscoreoverrides.ps1') {
+            . 'c:\run\my\pscoreoverrides.ps1'
+        }
+        else {
+            . 'c:\run\pscoreoverrides.ps1'
+        }
     }
     else {
         if (Test-Path "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1") {

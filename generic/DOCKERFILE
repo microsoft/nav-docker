@@ -131,6 +131,10 @@ RUN Write-Host ('FilesOnly='+$env:filesOnly); \
     Write-Host 'Remove x86 dotnet files'; \
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue 'C:\Program Files (x86)\dotnet'
 
+RUN Write-Host 'Installing SqlServer Module in PowerShell 7'; \
+    pwsh -Command 'Get-Date | Out-Host; Write-Host ''Installing''; Install-Module -Name SqlServer -RequiredVersion 22.2.0 -Scope AllUsers -Force; Write-Host ''SqlServer Module Installed''; Get-Date | Out-Host'; \
+    Write-Host 'Installed'
+
 HEALTHCHECK --interval=30s --timeout=10s CMD [ "powershell", ".\\Run\\HealthCheck.ps1" ]
 
 EXPOSE 1433 80 8080 443 7045-7049 7083
