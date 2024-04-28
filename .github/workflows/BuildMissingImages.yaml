@@ -45,9 +45,7 @@ jobs:
             $neededBcTags = $serverCoreTags | ForEach-Object {
                 $osVersion = [System.Version](($webclient.DownloadString("https://mcr.microsoft.com/v2/dotnet/framework/runtime/manifests/4.8-windowsservercore-$_") | ConvertFrom-Json).history[0].v1Compatibility | ConvertFrom-Json)."os.version"
                 "$osVersion-$genericTag|mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-$_|$_"
-                "$osVersion-$genericTag-24|mcr.microsoft.com/windows/servercore:$_|$_"
                 "$osVersion-$genericTag-filesonly|mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-$_|$_"
-                "$osVersion-$genericTag-24-filesonly|mcr.microsoft.com/windows/servercore:$_|$_"
             }
             Write-Host "Needed Tags ($($neededBcTags.Count))"
             $neededBcTags | ForEach-Object { Write-Host "- $_" }

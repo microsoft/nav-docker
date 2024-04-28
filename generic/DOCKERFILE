@@ -45,7 +45,7 @@ RUN Write-Host ('FilesOnly='+$env:filesOnly); \
         $process = Start-Process -FilePath 'temp\SQL2019-SSEI-Expr.exe' -ArgumentList /Action=Install, /ConfigurationFile=$configFileLocation, /IAcceptSQLServerLicenseTerms, /Quiet -NoNewWindow -Wait -PassThru; \
         if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }; \
         Write-Host 'Downloading SQL Server 2019 Cumulative Update'; \
-        Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://download.microsoft.com/download/6/e/7/6e72dddf-dfa4-4889-bc3d-e5d3a0fd11ce/SQLServer2019-KB5033688-x64.exe' -OutFile 'temp\SQL2019CU.exe'; \
+        Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://download.microsoft.com/download/6/e/7/6e72dddf-dfa4-4889-bc3d-e5d3a0fd11ce/SQLServer2019-KB5035123-x64.exe' -OutFile 'temp\SQL2019CU.exe'; \
         Write-Host 'Installing SQL Server 2019 Cumulative Update'; \
         $process = Start-Process -FilePath 'temp\SQL2019CU.exe' -ArgumentList /Action=Patch, /Quiet, /IAcceptSQLServerLicenseTerms, /AllInstances, /SuppressPrivacyStatementNotice -NoNewWindow -Wait -PassThru; \
         if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }; \
@@ -93,12 +93,12 @@ RUN Write-Host ('FilesOnly='+$env:filesOnly); \
     $process = start-process -Wait -FilePath 'temp\OpenXMLSDKV25.msi' -ArgumentList /quiet, /qn, /passive ; \
     if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }; \
     Write-Host 'Downloading dotnet 6'; \
-    Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://download.visualstudio.microsoft.com/download/pr/04389c24-12a9-4e0e-8498-31989f30bb22/141aef28265938153eefad0f2398a73b/dotnet-hosting-6.0.27-win.exe' -OutFile 'temp\DotNet6-Win.exe' ; \
+    Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://download.visualstudio.microsoft.com/download/pr/b54e1bdd-2525-4414-a93a-27c62b329e47/c34cf7303786e74a20f7125475ffa511/dotnet-hosting-6.0.29-win.exe' -OutFile 'temp\DotNet6-Win.exe' ; \
     Write-Host 'Installing dotnet 6'; \
     $process = start-process -Wait -FilePath 'temp\DotNet6-Win.exe' -ArgumentList /quiet ; \
     if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }; \
     Write-Host 'Downloading dotnet 8'; \
-    Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://download.visualstudio.microsoft.com/download/pr/98ff0a08-a283-428f-8e54-19841d97154c/8c7d5f9600eadf264f04c82c813b7aab/dotnet-hosting-8.0.2-win.exe' -OutFile 'temp\DotNet8-Win.exe' ; \
+    Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://download.visualstudio.microsoft.com/download/pr/00397fee-1bd9-44ef-899b-4504b26e6e96/ab9c73409659f3238d33faee304a8b7c/dotnet-hosting-8.0.4-win.exe' -OutFile 'temp\DotNet8-Win.exe' ; \
     Write-Host 'Installing dotnet 8'; \
     $process = start-process -Wait -FilePath 'temp\DotNet8-Win.exe' -ArgumentList /quiet ; \
     if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }; \
@@ -130,6 +130,10 @@ RUN Write-Host ('FilesOnly='+$env:filesOnly); \
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $env:TEMP\*; \
     Write-Host 'Remove x86 dotnet files'; \
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue 'C:\Program Files (x86)\dotnet'
+
+RUN Write-Host 'Installing SqlServer Module in PowerShell 7'; \
+    pwsh -Command 'Install-Module -Name SqlServer -RequiredVersion 22.2.0 -Scope AllUsers -Force'; \
+    Write-Host 'Done'
 
 HEALTHCHECK --interval=30s --timeout=10s CMD [ "powershell", ".\\Run\\HealthCheck.ps1" ]
 

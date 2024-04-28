@@ -27,14 +27,14 @@ You must map a folder on the host with the NAVDVD content to $navDvdPath"
     exit 1
 }
 
-InstallPrerequisite -Name "Url Rewrite" -MsiPath "$NavDvdPath\Prerequisite Components\IIS URL Rewrite Module\rewrite_2.0_rtw_x64.msi" -MsiUrl "https://bcartifacts.azureedge.net/prerequisites/rewrite_2.0_rtw_x64.msi"
-InstallPrerequisite -Name "OpenXML" -MsiPath "$NavDvdPath\Prerequisite Components\Open XML SDK 2.5 for Microsoft Office\OpenXMLSDKv25.msi" -MsiUrl "https://bcartifacts.azureedge.net/prerequisites/OpenXMLSDKv25.msi"
+InstallPrerequisite -Name "Url Rewrite" -MsiPath "$NavDvdPath\Prerequisite Components\IIS URL Rewrite Module\rewrite_2.0_rtw_x64.msi" -MsiUrl "https://bcartifacts.blob.core.windows.net/prerequisites/rewrite_2.0_rtw_x64.msi"
+InstallPrerequisite -Name "OpenXML" -MsiPath "$NavDvdPath\Prerequisite Components\Open XML SDK 2.5 for Microsoft Office\OpenXMLSDKv25.msi" -MsiUrl "https://bcartifacts.blob.core.windows.net/prerequisites/OpenXMLSDKv25.msi"
 
 if (Test-Path "$NavDvdPath\Prerequisite Components\DotNetCore") {
     $dotnetCoreExe = (Get-ChildItem -Path "$NavDvdPath\Prerequisite Components\DotNetCore" -Filter "*.exe").FullName
 } else {
     Write-Host "Downloading DotNetCore"
-    $dotnetCoreDownloadUrl = "https://bcartifacts.azureedge.net/prerequisites/DotNetCore.1.0.4_1.1.1-WindowsHosting.exe"
+    $dotnetCoreDownloadUrl = "https://bcartifacts.blob.core.windows.net/prerequisites/DotNetCore.1.0.4_1.1.1-WindowsHosting.exe"
     $dotnetCoreExe = "$NavDvdPath\Prerequisite Components\DotNetCore\DotNetCore.1.0.4_1.1.1-WindowsHosting.exe"
     $dotnetCoreFolder = [System.IO.Path]::GetDirectoryName($dotnetCoreExe)
     if (!(Test-Path $dotnetCoreFolder)) {
