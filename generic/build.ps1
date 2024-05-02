@@ -8,7 +8,7 @@ $osVersion = [System.Version]'10.0.19041.1415'   # 2004
 $isolation = "hyperv"
 $filesOnly = $false
 $only24 = $false
-$image = "mygeneric"
+$image = "bcsql16"
 $genericTag = (Get-Content -Raw -Path (Join-Path $RootPath 'tag.txt')).Trim(@(13,10,32))
 $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
 

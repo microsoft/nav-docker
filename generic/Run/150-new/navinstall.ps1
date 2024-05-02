@@ -68,8 +68,8 @@ if (!$skipDb) {
     $databaseFolder = "c:\databases"
     New-Item -Path $databaseFolder -itemtype Directory -ErrorAction Ignore | Out-Null
 
-    Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql15.SQLEXPRESS\mssqlserver' -name DefaultData -value $databaseFolder
-    Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql15.SQLEXPRESS\mssqlserver' -name DefaultLog -value $databaseFolder
+    Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql16.SQLEXPRESS\mssqlserver' -name DefaultData -value $databaseFolder
+    Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql16.SQLEXPRESS\mssqlserver' -name DefaultLog -value $databaseFolder
 
     # start the SQL Server
     Write-Host "Starting Local SQL Server"

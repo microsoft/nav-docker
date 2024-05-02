@@ -38,31 +38,31 @@ RUN Write-Host ('FilesOnly='+$env:filesOnly); \
             Stop-Service 'W3SVC' ; \
             Set-Service 'W3SVC' -startuptype manual ; \
         } \
-        Write-Host 'Downloading SQL Server 2019 Express'; \
-        Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://go.microsoft.com/fwlink/p/?linkid=866658' -OutFile 'temp\SQL2019-SSEI-Expr.exe'; \
+        Write-Host 'Downloading SQL Server 2022 Dev Edition'; \
+        Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://go.microsoft.com/fwlink/p/?linkid=2215158' -OutFile 'temp\SQL2022-SSEI-Dev.exe'; \
         $configFileLocation = 'c:\run\SQLConf.ini'; \
-        Write-Host 'Installing SQL Server 2019 Express'; \
-        $process = Start-Process -FilePath 'temp\SQL2019-SSEI-Expr.exe' -ArgumentList /Action=Install, /ConfigurationFile=$configFileLocation, /IAcceptSQLServerLicenseTerms, /Quiet -NoNewWindow -Wait -PassThru; \
+        Write-Host 'Installing SQL Server 2022 Dev Edition'; \
+        $process = Start-Process -FilePath 'temp\SQL2022-SSEI-Dev.exe' -ArgumentList /Action=Install, /ConfigurationFile=$configFileLocation, /IAcceptSQLServerLicenseTerms, /Quiet -NoNewWindow -Wait -PassThru; \
         if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }; \
-        Write-Host 'Downloading SQL Server 2019 Cumulative Update'; \
-        Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://download.microsoft.com/download/6/e/7/6e72dddf-dfa4-4889-bc3d-e5d3a0fd11ce/SQLServer2019-KB5035123-x64.exe' -OutFile 'temp\SQL2019CU.exe'; \
-        Write-Host 'Installing SQL Server 2019 Cumulative Update'; \
-        $process = Start-Process -FilePath 'temp\SQL2019CU.exe' -ArgumentList /Action=Patch, /Quiet, /IAcceptSQLServerLicenseTerms, /AllInstances, /SuppressPrivacyStatementNotice -NoNewWindow -Wait -PassThru; \
-        if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }; \
-        Write-Host 'Configuring SQL Server 2019 Express'; \
-        Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql15.SQLEXPRESS\mssqlserver\supersocketnetlib\tcp\ipall' -name tcpdynamicports -value '' ; \
-        Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql15.SQLEXPRESS\mssqlserver\supersocketnetlib\tcp\ipall' -name tcpport -value 1433 ; \
-        Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql15.SQLEXPRESS\mssqlserver\' -name LoginMode -value 2 ; \
+        # Write-Host 'Downloading SQL Server 2019 Cumulative Update'; \
+        # Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://download.microsoft.com/download/6/e/7/6e72dddf-dfa4-4889-bc3d-e5d3a0fd11ce/SQLServer2019-KB5033688-x64.exe' -OutFile 'tempSQL2019CU.exe'; \
+        # Write-Host 'Installing SQL Server 2019 Cumulative Update'; \
+        # $process = Start-Process -FilePath 'tempSQL2019CU.exe' -ArgumentList /Action=Patch, /Quiet, /IAcceptSQLServerLicenseTerms, /AllInstances, /SuppressPrivacyStatementNotice -NoNewWindow -Wait -PassThru; \
+        # if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }; \
+        Write-Host 'Configuring SQL Server 2022 Express'; \
+        Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\MSSQL16.SQLEXPRESS\mssqlserver\supersocketnetlib\tcp\ipall' -name tcpdynamicports -value '' ; \
+        Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\MSSQL16.SQLEXPRESS\mssqlserver\supersocketnetlib\tcp\ipall' -name tcpport -value 1433 ; \
+        Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\MSSQL16.SQLEXPRESS\mssqlserver\' -name LoginMode -value 2 ; \
         Set-Service 'MSSQL$SQLEXPRESS' -startuptype manual ; \
         Set-Service 'SQLTELEMETRY$SQLEXPRESS' -startuptype manual ; \
         Set-Service 'SQLWriter' -startuptype manual ; \
         Set-Service 'SQLBrowser' -startuptype manual ; \
-        Write-Host 'Removing SQL Server 2019 Express Install Files'; \
-        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue 'SQL2019'; \
-        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue 'C:\Program Files\Microsoft SQL Server\150\Setup Bootstrap'; \
-        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue 'C:\Program Files\Microsoft SQL Server\150\SSEI'; \
-        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue 'C:\Program Files\Microsoft SQL Server\MSSQL15.SQLEXPRESS\MSSQL\Template Data'; \
-        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue 'C:\Program Files\Microsoft SQL Server\MSSQL15.SQLEXPRESS\MSSQL\Log\*'; \
+        Write-Host 'Removing SQL Server 2022 Express Install Files'; \
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue 'SQL2022'; \
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue 'C:\Program Files\Microsoft SQL Server\160\Setup Bootstrap'; \
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue 'C:\Program Files\Microsoft SQL Server\160\SSEI'; \
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue 'C:\Program Files\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQL\Template Data'; \
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue 'C:\Program Files\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQL\Log\*'; \
     } \
     Write-Host 'Downloading NAV/BC Docker Install Files'; \
     Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://bcdocker.blob.core.windows.net/public/nav-docker-install.zip' -OutFile 'temp\nav-docker-install.zip' ; \
