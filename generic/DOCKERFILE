@@ -38,7 +38,7 @@ RUN Write-Host ('FilesOnly='+$env:filesOnly); \
             whoami | Out-Host; \
             $rule = New-Object System.Security.AccessControl.FileSystemAccessRule((whoami),'Modify', 'Allow'); \
             $acl = Get-Acl -Path $psarchiveModule; $acl.AddAccessRule($rule); Set-Acl -Path $psarchiveModule -AclObject $acl; \
-            if (Test-Path $psarchiveModule) { Write-Host 'Updating PowerShell Archive module'; Set-Content -path $psarchiveModule -value (Get-Content -encoding utf8 -raw -path $psarchiveModule).Replace('Import-LocalizedData  LocalizedData -filename ArchiveResources','Import-LocalizedData LocalizedData -filename ArchiveResources -UICulture ''en-US''') }; Write-Host 'Success'; \
+            if (Test-Path $psarchiveModule) { Write-Host 'Updating PowerShell Archive module'; Set-Content -path $psarchiveModule -value (Get-Content -encoding utf8 -raw -path $psarchiveModule).Replace('Import-LocalizedData  LocalizedData -filename ArchiveResources','Import-LocalizedData LocalizedData -filename ArchiveResources -UICulture ''en-US'''); Write-Host 'Success' }; \
             Write-Host 'Adding Windows Features for BC'; \
             Add-WindowsFeature Web-Server,web-AppInit,web-Asp-Net45,web-Windows-Auth,web-Dyn-Compression,web-WebSockets; \
             Stop-Service 'W3SVC' ; \
