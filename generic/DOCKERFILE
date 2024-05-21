@@ -17,6 +17,7 @@ COPY Run /Run/
 
 RUN Write-Host ('FilesOnly='+$env:filesOnly); \
     Write-Host ('only24='+$env:only24); \
+    $ErrorActionPreference = 'Stop'; \
     $filesonly = $env:filesonly -eq 'true'; \
     $only24 = $env:only24 -eq 'true'; \
     if ($only24) { Remove-Item -Recurse -Force Run/70,Run/71,Run/80,Run/90,Run/100,Run/110,Run/130,Run/150,Run/150-new,Run/210,Run/210-new }; \
@@ -24,15 +25,13 @@ RUN Write-Host ('FilesOnly='+$env:filesOnly); \
     if (Test-Path $psarchiveModule) { \
         Write-Host 'Updating PowerShell Archive module'; \
         $rule = New-Object System.Security.AccessControl.FileSystemAccessRule('user manager\containeradministrator','Modify','Allow'); \
-        $acl = Get-Acl -Path $psarchiveModule; \
-        $acl.AddAccessRule($rule); \
-        Set-Acl -Path $psarchiveModule -AclObject $acl; \
-        $psam1 = Get-Content -raw -path $psarchiveModule; \
-        $psam2 = $psam1.Replace('Import-LocalizedData  LocalizedData -filename ArchiveResources','Import-LocalizedData LocalizedData -filename ArchiveResources -UICulture en-US'); \
-        $psam1 -eq $psam2 | Out-Host; \
+        $acl = Get-Acl -Path $psarchiveModule; $acl.AddAccessRule($rule); Set-Acl -Path $psarchiveModule -AclObject $acl; \
+        $psam1 = Get-Content -path $psarchiveModule; \
+        $psam2 = $psam1 -replace 'Import-LocalizedData  LocalizedData -filename ArchiveResources', 'Import-LocalizedData LocalizedData -filename ArchiveResources -UICulture en-US'; \
+        Compare-Object $psam1 $psam2 | Out-Host; \
         Set-Content -path $psarchiveModule -value $psam2; \
-        $psam1 = Get-Content -encoding utf8 -raw -path $psarchiveModule; \
-        $psam1 -eq $psam2 | Out-Host; \
+        $psam1 = Get-Content -path $psarchiveModule; \
+        Compare-Object $psam1 $psam2 | Out-Host; \
         Write-Host 'Success'; \
     }; \
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 ; \
