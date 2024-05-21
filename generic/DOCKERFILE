@@ -19,15 +19,17 @@ RUN Write-Host ('FilesOnly='+$env:filesOnly); \
     Write-Host ('only24='+$env:only24); \
     $filesonly = $env:filesonly -eq 'true'; \
     $only24 = $env:only24 -eq 'true'; \
-    if ($only24) { \
-        Remove-Item -Recurse -Force Run/70,Run/71,Run/80,Run/90,Run/100,Run/110,Run/130,Run/150,Run/150-new,Run/210,Run/210-new; \
-    } \
-    else { \
-        $psarchiveModule = 'C:\Windows\System32\WindowsPowerShell\v1.0\Modules\Microsoft.PowerShell.Archive\Microsoft.PowerShell.Archive.psm1'; \
-        whoami | Out-Host; \
-        $rule = New-Object System.Security.AccessControl.FileSystemAccessRule((whoami),'Modify', 'Allow'); \
+    if ($only24) { Remove-Item -Recurse -Force Run/70,Run/71,Run/80,Run/90,Run/100,Run/110,Run/130,Run/150,Run/150-new,Run/210,Run/210-new }; \
+    $psarchiveModule = 'C:\Windows\System32\WindowsPowerShell\v1.0\Modules\Microsoft.PowerShell.Archive\Microsoft.PowerShell.Archive.psm1'; \
+    if (Test-Path $psarchiveModule) { \
+        $rule = New-Object System.Security.AccessControl.FileSystemAccessRule('user manager\containeradministrator','Modify', 'Allow'); \
         $acl = Get-Acl -Path $psarchiveModule; $acl.AddAccessRule($rule); Set-Acl -Path $psarchiveModule -AclObject $acl; \
-        if (Test-Path $psarchiveModule) { Write-Host 'Updating PowerShell Archive module'; Set-Content -path $psarchiveModule -value (Get-Content -encoding utf8 -raw -path $psarchiveModule).Replace('Import-LocalizedData  LocalizedData -filename ArchiveResources','Import-LocalizedData LocalizedData -filename ArchiveResources -UICulture ''en-US'''); Write-Host 'Success' }; \
+        Write-Host 'Updating PowerShell Archive module'; \
+        $psam1 = Get-Content -encoding utf8 -raw -path $psarchiveModule; \
+        $psam2 = $psam1.Replace('Import-LocalizedData  LocalizedData -filename ArchiveResources','Import-LocalizedData LocalizedData -filename ArchiveResources -UICulture ''en-US'''); \
+        $psam1 -eq $psam2 | Out-Host; \
+        Set-Content -path $psarchiveModule -encoding utf8 -value $psam2; \
+        Write-Host 'Success'; \
     }; \
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 ; \
     [Reflection.Assembly]::LoadWithPartialName('System.IO.Compression.Filesystem') | Out-Null ; \
