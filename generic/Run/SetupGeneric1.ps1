@@ -1,5 +1,5 @@
-Write-Host ('FilesOnly='+$env:filesOnly)
-Write-Host ('only24='+$env:only24)
+Write-Host "FilesOnly=$env:filesOnly"
+Write-Host "only24=$env:only24"
 $filesonly = $env:filesonly -eq 'true'
 $only24 = $env:only24 -eq 'true'
 if ($only24) {
@@ -11,10 +11,7 @@ if (Test-Path $psarchiveModule) {
     $rule = New-Object System.Security.AccessControl.FileSystemAccessRule('user manager\containeradministrator','Modify','Allow')
     $acl = Get-Acl -Path $psarchiveModule; $acl.AddAccessRule($rule); Set-Acl -Path $psarchiveModule -AclObject $acl
     $psam1 = Get-Content -path $psarchiveModule
-    $psam1.Count | Out-Host
-    $psam1 -contains 'Import-LocalizedData  LocalizedData -filename ArchiveResources' | Out-Host
-    $psam2 = $psam1 -replace 'Import-LocalizedData  LocalizedData -filename ArchiveResources', 'Import-LocalizedData LocalizedData -filename ArchiveResources -UICulture en-US'
-    $psam2 | Out-Host
+    $psam2 = $psam1 -replace "Import-LocalizedData  LocalizedData -filename ArchiveResources", "Import-LocalizedData LocalizedData -filename ArchiveResources -UICulture 'en-US'"
     Compare-Object $psam1 $psam2 | Out-Host
     Set-Content -path $psarchiveModule -value $psam2
     $psam1 = Get-Content -path $psarchiveModule
