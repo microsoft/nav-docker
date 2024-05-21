@@ -1,3 +1,8 @@
+$Sql2019LatestCuUrl = 'https://download.microsoft.com/download/6/e/7/6e72dddf-dfa4-4889-bc3d-e5d3a0fd11ce/SQLServer2019-KB5035123-x64.exe'
+$dotNet6url = 'https://download.visualstudio.microsoft.com/download/pr/41643a5c-1ed5-41c8-abd0-473112282a79/644e14ace834d476fe3fa6797e472c55/dotnet-hosting-6.0.30-win.exe'
+$dotNet8url = 'https://download.visualstudio.microsoft.com/download/pr/70f96ebd-54ce-4bb2-a90f-2fbfc8fd90c0/aa542f2f158cc6c9e63b4287e4618f0a/dotnet-hosting-8.0.5-win.exe'
+$powerShell7url = 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.msi'
+
 Write-Host "FilesOnly=$env:filesOnly"
 Write-Host "only24=$env:only24"
 $filesonly = $env:filesonly -eq 'true'
@@ -8,14 +13,9 @@ if ($only24) {
 $psarchiveModule = 'C:\Windows\System32\WindowsPowerShell\v1.0\Modules\Microsoft.PowerShell.Archive\Microsoft.PowerShell.Archive.psm1'
 if (Test-Path $psarchiveModule) {
     Write-Host 'Updating PowerShell Archive module'
-    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule('user manager\containeradministrator','Modify','Allow')
+    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule((whoami),'Modify','Allow')
     $acl = Get-Acl -Path $psarchiveModule; $acl.AddAccessRule($rule); Set-Acl -Path $psarchiveModule -AclObject $acl
-    $psam1 = Get-Content -path $psarchiveModule
-    $psam2 = $psam1 -replace "Import-LocalizedData  LocalizedData -filename ArchiveResources", "Import-LocalizedData LocalizedData -filename ArchiveResources -UICulture 'en-US'"
-    Compare-Object $psam1 $psam2 | Out-Host
-    Set-Content -path $psarchiveModule -value $psam2
-    $psam1 = Get-Content -path $psarchiveModule
-    Compare-Object $psam1 $psam2 | Out-Host
+    Set-Content -path $psarchiveModule -value ((Get-Content -path $psarchiveModule) -replace "Import-LocalizedData  LocalizedData -filename ArchiveResources", "Import-LocalizedData LocalizedData -filename ArchiveResources -UICulture 'en-US'")
     Write-Host 'Success'
 }
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
@@ -44,7 +44,7 @@ if (-not $filesonly) {
     $process = Start-Process -FilePath 'temp\SQL2019-SSEI-Expr.exe' -ArgumentList /Action=Install, /ConfigurationFile=$configFileLocation, /IAcceptSQLServerLicenseTerms, /Quiet -NoNewWindow -Wait -PassThru
     if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
     Write-Host 'Downloading SQL Server 2019 Cumulative Update'
-    Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://download.microsoft.com/download/6/e/7/6e72dddf-dfa4-4889-bc3d-e5d3a0fd11ce/SQLServer2019-KB5035123-x64.exe' -OutFile 'temp\SQL2019CU.exe'
+    Invoke-RestMethod -Method Get -UseBasicParsing -Uri $Sql2019LatestCuUrl -OutFile 'temp\SQL2019CU.exe'
     Write-Host 'Installing SQL Server 2019 Cumulative Update'
     $process = Start-Process -FilePath 'temp\SQL2019CU.exe' -ArgumentList /Action=Patch, /Quiet, /IAcceptSQLServerLicenseTerms, /AllInstances, /SuppressPrivacyStatementNotice -NoNewWindow -Wait -PassThru
     if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
@@ -92,17 +92,17 @@ Write-Host 'Installing OpenXMLSDKV25'
 $process = start-process -Wait -FilePath 'temp\OpenXMLSDKV25.msi' -ArgumentList /quiet, /qn, /passive
 if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
 Write-Host 'Downloading dotnet 6'
-Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://download.visualstudio.microsoft.com/download/pr/41643a5c-1ed5-41c8-abd0-473112282a79/644e14ace834d476fe3fa6797e472c55/dotnet-hosting-6.0.30-win.exe' -OutFile 'temp\DotNet6-Win.exe'
+Invoke-RestMethod -Method Get -UseBasicParsing -Uri $dotNet6url -OutFile 'temp\DotNet6-Win.exe'
 Write-Host 'Installing dotnet 6'
 $process = start-process -Wait -FilePath 'temp\DotNet6-Win.exe' -ArgumentList /quiet
 if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
 Write-Host 'Downloading dotnet 8'
-Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://download.visualstudio.microsoft.com/download/pr/70f96ebd-54ce-4bb2-a90f-2fbfc8fd90c0/aa542f2f158cc6c9e63b4287e4618f0a/dotnet-hosting-8.0.5-win.exe' -OutFile 'temp\DotNet8-Win.exe'
+Invoke-RestMethod -Method Get -UseBasicParsing -Uri $dotNet8url -OutFile 'temp\DotNet8-Win.exe'
 Write-Host 'Installing dotnet 8'
 $process = start-process -Wait -FilePath 'temp\DotNet8-Win.exe' -ArgumentList /quiet
 if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
 Write-Host 'Downloading PowerShell 7'
-Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.msi' -OutFile 'temp\powershell-7-win-x64.msi'
+Invoke-RestMethod -Method Get -UseBasicParsing -Uri $powerShell7url -OutFile 'temp\powershell-7-win-x64.msi'
 Write-Host 'Installing PowerShell 7'
 $process = start-process -Wait -FilePath 'temp\powershell-7-win-x64.msi' -ArgumentList /quiet
 if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
