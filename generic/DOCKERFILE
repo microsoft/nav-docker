@@ -103,10 +103,10 @@ RUN Write-Host ('FilesOnly='+$env:filesOnly); \
     Write-Host 'Installing dotnet 8'; \
     $process = start-process -Wait -FilePath 'temp\DotNet8-Win.exe' -ArgumentList /quiet ; \
     if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }; \
-    Write-Host 'Downloading PowerShell 7.4.1'; \
-    Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.1/PowerShell-7.4.1-win-x64.msi' -OutFile 'temp\powershell-7.4.1-win-x64.msi' ; \
-    Write-Host 'Installing PowerShell 7.4.1'; \
-    $process = start-process -Wait -FilePath 'temp\powershell-7.4.1-win-x64.msi' -ArgumentList /quiet ; \
+    Write-Host 'Downloading PowerShell 7'; \
+    Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.msi' -OutFile 'temp\powershell-7-win-x64.msi' ; \
+    Write-Host 'Installing PowerShell 7'; \
+    $process = start-process -Wait -FilePath 'temp\powershell-7-win-x64.msi' -ArgumentList /quiet ; \
     if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }; \
     if (-not $only24) { \
         Write-Host 'Downloading vcredist_x86'; \
