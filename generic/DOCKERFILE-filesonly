@@ -29,6 +29,8 @@ RUN Write-Host ('FilesOnly='+$env:filesOnly); \
         $psam2 = $psam1.Replace('Import-LocalizedData  LocalizedData -filename ArchiveResources','Import-LocalizedData LocalizedData -filename ArchiveResources -UICulture ''en-US'''); \
         $psam1 -eq $psam2 | Out-Host; \
         Set-Content -path $psarchiveModule -encoding utf8 -value $psam2; \
+        $psam1 = Get-Content -encoding utf8 -raw -path $psarchiveModule; \
+        $psam1 -eq $psam2 | Out-Host; \
         Write-Host 'Success'; \
     }; \
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 ; \
