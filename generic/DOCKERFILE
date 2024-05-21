@@ -15,11 +15,9 @@ SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPref
 
 COPY Run /Run/
 
-RUN . C:\Run\SetupGeneric.ps1
+RUN . .\Run\SetupGeneric1.ps1
 
-RUN Write-Host 'Installing SqlServer Module in PowerShell 7'; \
-    pwsh -Command 'Install-Module -Name SqlServer -RequiredVersion 22.2.0 -Scope AllUsers -Force'; \
-    Write-Host 'Done'
+RUN . .\Run\SetupGeneric2.ps1
 
 HEALTHCHECK --interval=30s --timeout=10s CMD [ "powershell", ".\\Run\\HealthCheck.ps1" ]
 
