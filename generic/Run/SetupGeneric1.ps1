@@ -1,7 +1,28 @@
-$Sql2019LatestCuUrl = 'https://download.microsoft.com/download/6/e/7/6e72dddf-dfa4-4889-bc3d-e5d3a0fd11ce/SQLServer2019-KB5035123-x64.exe'
+
+$sql2019url = 'https://go.microsoft.com/fwlink/p/?linkid=866658'
+
+# https://learn.microsoft.com/en-us/troubleshoot/sql/releases/sqlserver-2019/build-versions
+$sql2019LatestCuUrl = 'https://download.microsoft.com/download/6/e/7/6e72dddf-dfa4-4889-bc3d-e5d3a0fd11ce/SQLServer2019-KB5035123-x64.exe'
+
+# https://dotnet.microsoft.com/en-us/download/dotnet/6.0 - grab the direct link behind ASP.NET Core Runtime Windows -> Hosting Bundle
 $dotNet6url = 'https://download.visualstudio.microsoft.com/download/pr/41643a5c-1ed5-41c8-abd0-473112282a79/644e14ace834d476fe3fa6797e472c55/dotnet-hosting-6.0.30-win.exe'
+
+# https://dotnet.microsoft.com/en-us/download/dotnet/8.0 - grab the direct link behind ASP.NET Core Runtime Windows -> Hosting Bundle
 $dotNet8url = 'https://download.visualstudio.microsoft.com/download/pr/70f96ebd-54ce-4bb2-a90f-2fbfc8fd90c0/aa542f2f158cc6c9e63b4287e4618f0a/dotnet-hosting-8.0.5-win.exe'
+
+# https://github.com/PowerShell/PowerShell/releases - grab the latest PowerShell-7.4.x-win-x64.msi link
 $powerShell7url = 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.msi'
+
+# Misc URLs
+$rewriteUrl = 'https://download.microsoft.com/download/1/2/8/128E2E22-C1B9-44A4-BE2A-5859ED1D4592/rewrite_amd64_en-US.msi'
+$sqlncliUrl = 'https://download.microsoft.com/download/B/E/D/BED73AAC-3C8A-43F5-AF4F-EB4FEA6C8F3A/ENU/x64/sqlncli.msi'
+$vcredist_x86url = 'https://aka.ms/highdpimfc2013x86enu'
+$vcredist_x64url = 'https://aka.ms/highdpimfc2013x64enu'
+$vsredist_x64_140url = 'https://aka.ms/vs/17/release/vc_redist.x64.exe'
+
+# NAV/BC Docker Install Files
+$navDockerInstallUrl = 'https://bcartifacts.blob.core.windows.net/prerequisites/nav-docker-install.zip'
+$openXmlSdkV25url = 'https://bcartifacts.blob.core.windows.net/prerequisites/OpenXMLSDKv25.msi'
 
 Write-Host "FilesOnly=$env:filesOnly"
 Write-Host "only24=$env:only24"
@@ -38,13 +59,13 @@ if (-not $filesonly) {
         Set-Service 'W3SVC' -startuptype manual
     }
     Write-Host 'Downloading SQL Server 2019 Express'
-    Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://go.microsoft.com/fwlink/p/?linkid=866658' -OutFile 'temp\SQL2019-SSEI-Expr.exe'
+    Invoke-RestMethod -Method Get -UseBasicParsing -Uri $sql2019url -OutFile 'temp\SQL2019-SSEI-Expr.exe'
     $configFileLocation = 'c:\run\SQLConf.ini'
     Write-Host 'Installing SQL Server 2019 Express'
     $process = Start-Process -FilePath 'temp\SQL2019-SSEI-Expr.exe' -ArgumentList /Action=Install, /ConfigurationFile=$configFileLocation, /IAcceptSQLServerLicenseTerms, /Quiet -NoNewWindow -Wait -PassThru
     if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
     Write-Host 'Downloading SQL Server 2019 Cumulative Update'
-    Invoke-RestMethod -Method Get -UseBasicParsing -Uri $Sql2019LatestCuUrl -OutFile 'temp\SQL2019CU.exe'
+    Invoke-RestMethod -Method Get -UseBasicParsing -Uri $sql2019LatestCuUrl -OutFile 'temp\SQL2019CU.exe'
     Write-Host 'Installing SQL Server 2019 Cumulative Update'
     $process = Start-Process -FilePath 'temp\SQL2019CU.exe' -ArgumentList /Action=Patch, /Quiet, /IAcceptSQLServerLicenseTerms, /AllInstances, /SuppressPrivacyStatementNotice -NoNewWindow -Wait -PassThru
     if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
@@ -64,7 +85,7 @@ if (-not $filesonly) {
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue 'C:\Program Files\Microsoft SQL Server\MSSQL15.SQLEXPRESS\MSSQL\Log\*'
 }
 Write-Host 'Downloading NAV/BC Docker Install Files'
-Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://bcdocker.blob.core.windows.net/public/nav-docker-install.zip' -OutFile 'temp\nav-docker-install.zip'
+Invoke-RestMethod -Method Get -UseBasicParsing -Uri $navDockerInstallUrl -OutFile 'temp\nav-docker-install.zip'
 Write-Host 'Extracting NAV/BC Docker Install Files'
 [System.IO.Compression.ZipFile]::ExtractToDirectory('temp\nav-docker-install.zip', 'c:\run')
 Write-Host 'Updating PowerShell Execution Policy to Unrestricted'
@@ -76,18 +97,18 @@ if (-not $filesonly) {
     Start-Service -Name $SqlWriterServiceName -ErrorAction Ignore -WarningAction Ignore
     Start-Service -Name $SqlServiceName -ErrorAction Ignore -WarningAction Ignore
     Write-Host 'Downloading rewrite_amd64'
-    Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://download.microsoft.com/download/1/2/8/128E2E22-C1B9-44A4-BE2A-5859ED1D4592/rewrite_amd64_en-US.msi' -OutFile 'temp\rewrite_amd64.msi'
+    Invoke-RestMethod -Method Get -UseBasicParsing -Uri $rewriteUrl -OutFile 'temp\rewrite_amd64.msi'
     Write-Host 'Installing rewrite_amd64'
     $process = start-process -Wait -FilePath 'temp\rewrite_amd64.msi' -ArgumentList /quiet, /qn, /passive
     if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
     Write-Host 'Downloading SQL Server Native Client'
-    Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://download.microsoft.com/download/B/E/D/BED73AAC-3C8A-43F5-AF4F-EB4FEA6C8F3A/ENU/x64/sqlncli.msi' -OutFile 'temp\sqlncli.msi'
+    Invoke-RestMethod -Method Get -UseBasicParsing -Uri $sqlncliUrl -OutFile 'temp\sqlncli.msi'
     Write-Host 'Installing SQL Server Native Client'
     $process = start-process -Wait -FilePath 'temp\sqlncli.msi' -ArgumentList /quiet, /qn, /passive
     if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
 }
 Write-Host 'Downloading OpenXMLSDKV25'
-Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/OpenXMLSDKv25.msi' -OutFile 'temp\OpenXMLSDKV25.msi'
+Invoke-RestMethod -Method Get -UseBasicParsing -Uri $openXmlSdkV25url -OutFile 'temp\OpenXMLSDKV25.msi'
 Write-Host 'Installing OpenXMLSDKV25'
 $process = start-process -Wait -FilePath 'temp\OpenXMLSDKV25.msi' -ArgumentList /quiet, /qn, /passive
 if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
@@ -108,18 +129,18 @@ $process = start-process -Wait -FilePath 'temp\powershell-7-win-x64.msi' -Argume
 if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
 if (-not $only24) {
     Write-Host 'Downloading vcredist_x86'
-    Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://aka.ms/highdpimfc2013x86enu' -OutFile 'temp\vcredist_x86.exe'
+    Invoke-RestMethod -Method Get -UseBasicParsing -Uri $vcredist_x86url -OutFile 'temp\vcredist_x86.exe'
     Write-Host 'Installing vcredist_x86'
     $process = start-process -Wait -FilePath 'temp\vcredist_x86.exe' -ArgumentList /q, /norestart
     if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
     Write-Host 'Downloading vcredist_x64'
-    Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://aka.ms/highdpimfc2013x64enu' -OutFile 'temp\vcredist_x64.exe'
+    Invoke-RestMethod -Method Get -UseBasicParsing -Uri $vcredist_x64url -OutFile 'temp\vcredist_x64.exe'
     Write-Host 'Installing vcredist_x64'
     $process = start-process -Wait -FilePath 'temp\vcredist_x64.exe' -ArgumentList /q, /norestart
     if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
 }
 Write-Host 'Downloading vcredist_x64_140'
-Invoke-RestMethod -Method Get -UseBasicParsing -Uri 'https://aka.ms/vs/17/release/vc_redist.x64.exe' -OutFile 'temp\vcredist_x64_140.exe'
+Invoke-RestMethod -Method Get -UseBasicParsing -Uri $vsredist_x64_140url -OutFile 'temp\vcredist_x64_140.exe'
 Write-Host 'Installing vcredist_x64_140'
 $process = start-process -Wait -FilePath 'temp\vcredist_x64_140.exe' -ArgumentList /q, /norestart
 if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
