@@ -168,8 +168,9 @@ try {
                         }
 
                         if ($env:doNotUseNewFolder -ne "Y") {
-                            if ($versionNo -ge 150) {
+                            if ($versionNo -ge 240) {
                                 $useNewFolder = $true
+                                $rebootContainer = $true
                             }
                             if (($versionFolder) -and (Test-Path "$versionFolder-new")) {
                                 $versionFolder = "$versionFolder-new"
@@ -182,8 +183,8 @@ try {
                         }
                     }
                     
-                    Write-Host "Using installer from $versionFolder"
-                    if ($versionFolder -ne "") {
+                    if ($versionFolder) {
+                        Write-Host "Using installer from $versionFolder"
                         if (Test-Path "c:\run\navinstall.ps1") {
                             Write-Host "navinstall was overridden"
                             Remove-Item "$versionFolder\navinstall.ps1"
@@ -197,6 +198,9 @@ try {
                             Remove-Item "$versionFolder\SetupWebClient.ps1"
                         }
                         Copy-Item -Path "$versionFolder\*" -Destination "C:\Run" -Recurse -Force
+                    }
+                    elseif (!(Test-Path 'c:\run\navinstall.ps1')) {
+                        throw "No installer found to use for version $versionNo"
                     }
         
                     # Remove version specific folders
@@ -329,16 +333,18 @@ try {
                 $useNewFolder = $false
                 $mtParam = @{}
                 if ($env:doNotUseNewFolder -ne "Y") {
+                    if ($versionNo -ge 240) {
+                        $useNewFolder = $true
+                    }
                     if (($versionFolder) -and (Test-Path "$versionFolder-new")) {
                         $versionFolder = "$versionFolder-new"
                         $useNewFolder = $true
-                        if ($multitenant) {
-                            $mtParam = @{ "multitenant" = $true }
-                        }
+                    }
+                    if ($multitenant) {
+                        $mtParam = @{ "multitenant" = $true }
                     }
                 }
-
-                Write-Host "Using installer from $versionFolder"
+                Write-Host "Using DVD installer from $versionFolder"
                 if ($versionFolder -ne "") {
                     if (Test-Path "c:\run\navinstall.ps1") {
                         Write-Host "navinstall was overridden"

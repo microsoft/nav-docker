@@ -41,7 +41,9 @@ if ($restartingInstance) {
 
 $startCount = 0
 if (Test-Path $startCountFile -PathType Leaf) {
-    $startCount = [int](Get-Content -Path $startCountFile)
+    if (![int]::TryParse((Get-Content -Path $startCountFile), [ref]$startCount)) {
+        $startCount = 0
+    }
 }
 $startCount++
 if ($startCount -gt 1) {
@@ -123,7 +125,8 @@ else {
     $roleTailoredClientFolder = ""
 }
 $WebClientFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Web Client")[0]
-$NAVAdministrationScriptsFolder = (Get-Item "$runPath\NAVAdministration").FullName
+$NAVAdministrationScriptsFolder = "$runPath\NAVAdministration"
+if (!(Test-Path $NAVAdministrationScriptsFolder)) { $NAVAdministrationScriptsFolder = '' }
 $CustomConfigFile = Join-Path $serviceTierFolder "CustomSettings.config"
 $CustomConfig = [xml](Get-Content $CustomConfigFile)
 $serverInstance = $CustomConfig.SelectSingleNode("//appSettings/add[@key='ServerInstance']").Value

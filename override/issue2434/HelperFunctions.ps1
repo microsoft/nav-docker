@@ -634,11 +634,13 @@ function Download-File {
     )
 
     $replaceUrls = @{
-        "https://go.microsoft.com/fwlink/?LinkID=844461" = "https://bcartifacts.azureedge.net/prerequisites/DotNetCore.1.0.4_1.1.1-WindowsHosting.exe"
-        "https://download.microsoft.com/download/C/9/E/C9E8180D-4E51-40A6-A9BF-776990D8BCA9/rewrite_amd64.msi" = "https://bcartifacts.azureedge.net/prerequisites/rewrite_2.0_rtw_x64.msi"
-        "https://download.microsoft.com/download/5/5/3/553C731E-9333-40FB-ADE3-E02DC9643B31/OpenXMLSDKV25.msi" = "https://bcartifacts.azureedge.net/prerequisites/OpenXMLSDKv25.msi"
-        "https://download.microsoft.com/download/A/1/2/A129F694-233C-4C7C-860F-F73139CF2E01/ENU/x86/ReportViewer.msi" = "https://bcartifacts.azureedge.net/prerequisites/ReportViewer.msi"
-        "https://download.microsoft.com/download/1/3/0/13089488-91FC-4E22-AD68-5BE58BD5C014/ENU/x86/SQLSysClrTypes.msi" = "https://bcartifacts.azureedge.net/prerequisites/SQLSysClrTypes.msi"
+        "https://go.microsoft.com/fwlink/?LinkID=844461" = "https://bcartifacts.blob.core.windows.net/prerequisites/DotNetCore.1.0.4_1.1.1-WindowsHosting.exe"
+        "https://download.microsoft.com/download/C/9/E/C9E8180D-4E51-40A6-A9BF-776990D8BCA9/rewrite_amd64.msi" = "https://bcartifacts.blob.core.windows.net/prerequisites/rewrite_2.0_rtw_x64.msi"
+        "https://download.microsoft.com/download/5/5/3/553C731E-9333-40FB-ADE3-E02DC9643B31/OpenXMLSDKV25.msi" = "https://bcartifacts.blob.core.windows.net/prerequisites/OpenXMLSDKv25.msi"
+        "https://download.microsoft.com/download/A/1/2/A129F694-233C-4C7C-860F-F73139CF2E01/ENU/x86/ReportViewer.msi" = "https://bcartifacts.blob.core.windows.net/prerequisites/ReportViewer.msi"
+        "https://download.microsoft.com/download/1/3/0/13089488-91FC-4E22-AD68-5BE58BD5C014/ENU/x86/SQLSysClrTypes.msi" = "https://bcartifacts.blob.core.windows.net/prerequisites/SQLSysClrTypes.msi"
+        "https://download.microsoft.com/download/3/A/6/3A632674-A016-4E31-A675-94BE390EA739/ENU/x64/sqlncli.msi" = "https://bcartifacts.blob.core.windows.net/prerequisites/sqlncli.msi"
+        "https://download.microsoft.com/download/2/E/6/2E61CFA4-993B-4DD4-91DA-3737CD5CD6E3/vcredist_x86.exe" = "https://bcartifacts.blob.core.windows.net/prerequisites/vcredist_x86.exe"
     }
 
     if ($replaceUrls.ContainsKey($sourceUrl)) {
@@ -695,16 +697,10 @@ function Download-Artifacts {
         if (-not $exists) {
             Write-Host "Downloading application artifact $($appUri.AbsolutePath)"
             $appZip = Join-Path ([System.IO.Path]::GetTempPath()) "$([Guid]::NewGuid().ToString()).zip"
-            try {
-                Download-File -sourceUrl $artifactUrl -destinationFile $appZip
+            if ($artifactUrl.Contains('.azureedge.net/')) {
+                $artifactUrl = $artifactUrl.Replace('.azureedge.net/','.blob.core.windows.net/')
             }
-            catch {
-                if ($artifactUrl.Contains('.azureedge.net/')) {
-                    $artifactUrl = $artifactUrl.Replace('.azureedge.net/','.blob.core.windows.net/')
-                    Write-Host "Retrying download..."
-                    Download-File -sourceUrl $artifactUrl -destinationFile $appZip
-                }
-            }
+            Download-File -sourceUrl $artifactUrl -destinationFile $appZip
             Write-Host "Unpacking application artifact"
             Expand-Archive -Path $appZip -DestinationPath $appArtifactPath -Force
             Remove-Item -path $appZip -force
@@ -748,16 +744,10 @@ function Download-Artifacts {
         if (-not $exists) {
             Write-Host "Downloading platform artifact $($platformUri.AbsolutePath)"
             $platformZip = Join-Path ([System.IO.Path]::GetTempPath()) "$([Guid]::NewGuid().ToString()).zip"
-            try {
-                Download-File -sourceUrl $platformUrl -destinationFile $platformZip
+            if ($platformUrl.Contains('.azureedge.net/')) {
+                $platformUrl = $platformUrl.Replace('.azureedge.net/','.blob.core.windows.net/')
             }
-            catch {
-                if ($platformUrl.Contains('.azureedge.net/')) {
-                    $platformUrl = $platformUrl.Replace('.azureedge.net/','.blob.core.windows.net/')
-                    Write-Host "Retrying download..."
-                    Download-File -sourceUrl $platformUrl -destinationFile $platformZip
-                }
-            }
+            Download-File -sourceUrl $platformUrl -destinationFile $platformZip
             Write-Host "Unpacking platform artifact"
             Expand-Archive -Path $platformZip -DestinationPath $platformArtifactPath -Force
             Remove-Item -path $platformZip -force

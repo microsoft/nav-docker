@@ -2,61 +2,22 @@ ARG baseimage
 
 FROM $baseimage
 
-ARG created
-ARG tag
-ARG osversion
+ARG created \
+    tag \
+    osversion \
+    filesonly \
+    only24
+
+ENV only24=$only24 \
+    filesonly=$filesonly
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
-# Install the prerequisites first to be able reuse the cache when changing only the scripts.
-# Temporary workaround for Windows DNS client weirdness (need to check if the issue is still present or not).
-
-RUN Add-WindowsFeature Web-Server,web-AppInit,web-Asp-Net45,web-Windows-Auth,web-Dyn-Compression,web-WebSockets; \
-    Stop-Service 'W3SVC' ; \
-    Set-Service 'W3SVC' -startuptype manual ; \
-    Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\Dnscache\Parameters' -Name ServerPriorityTimeLimit -Value 0 -Type DWord; \
-    Set-ItemProperty -Path "HKLM:\system\CurrentControlSet\control" -name ServicesPipeTimeout -Value 300000 -Type DWORD -Force; \
-    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/SQLEXPR2019_X64_ENU.EXE' -OutFile sqlexpress.exe ; \
-    Start-Process -Wait -FilePath .\sqlexpress.exe -ArgumentList /qs, /x:setup ; \
-    .\setup\setup.exe /q /ACTION=Install /INSTANCENAME=SQLEXPRESS /FEATURES=SQLEngine /UPDATEENABLED=0 /SQLSVCACCOUNT='NT AUTHORITY\System' /SQLSYSADMINACCOUNTS='BUILTIN\Administrators' /TCPENABLED=1 /NPENABLED=0 /IACCEPTSQLSERVERLICENSETERMS ; \
-    While (!(get-service 'MSSQL$SQLEXPRESS' -ErrorAction SilentlyContinue)) { Start-Sleep -Seconds 5 } ; \
-    Stop-Service 'MSSQL$SQLEXPRESS' ; \
-    Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql15.SQLEXPRESS\mssqlserver\supersocketnetlib\tcp\ipall' -name tcpdynamicports -value '' ; \
-    Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql15.SQLEXPRESS\mssqlserver\supersocketnetlib\tcp\ipall' -name tcpport -value 1433 ; \
-    Set-itemproperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql15.SQLEXPRESS\mssqlserver\' -name LoginMode -value 2 ; \
-    Set-Service 'MSSQL$SQLEXPRESS' -startuptype manual ; \
-    Set-Service 'SQLTELEMETRY$SQLEXPRESS' -startuptype manual ; \
-    Set-Service 'SQLWriter' -startuptype manual ; \
-    Set-Service 'SQLBrowser' -startuptype manual ; \
-    Remove-Item -Recurse -Force sqlexpress.exe, setup
-
 COPY Run /Run/
 
-RUN Invoke-WebRequest -Uri 'https://bcdocker.blob.core.windows.net/public/nav-docker-install.zip' -OutFile 'nav-docker-install.zip' ; \
-    [Reflection.Assembly]::LoadWithPartialName('System.IO.Compression.Filesystem') | Out-Null ; \
-    [System.IO.Compression.ZipFile]::ExtractToDirectory('.\nav-docker-install.zip', 'c:\run') ; \
-    Remove-Item -Force 'nav-docker-install.zip' ; \
-    . C:\Run\UpdatePowerShellExeConfig.ps1 ; \
-    Start-Service -Name `$SqlBrowserServiceName -ErrorAction Ignore -WarningAction Ignore ; \
-    Start-Service -Name `$SqlWriterServiceName -ErrorAction Ignore -WarningAction Ignore ; \
-    Start-Service -Name `$SqlServiceName -ErrorAction Ignore -WarningAction Ignore ; \
-    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/rewrite_2.0_rtw_x64.msi' -OutFile rewrite_amd64.msi ; \
-    start-process -Wait -FilePath .\rewrite_amd64.msi -ArgumentList /quiet, /qn, /passive ; \
-    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/OpenXMLSDKv25.msi' -OutFile OpenXMLSDKV25.msi ; \
-    start-process -Wait -FilePath .\OpenXMLSDKV25.msi -ArgumentList /quiet, /qn, /passive ; \
-    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/DotNetCore.1.0.4_1.1.1-WindowsHosting.exe' -OutFile DotNetCore-WindowsHosting.exe ; \
-    start-process -Wait -FilePath .\DotNetCore-WindowsHosting.exe -ArgumentList /quiet ; \
-    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/dotnet-hosting-5.0.4-win.exe' -OutFile DotNet-Win.exe ; \
-    start-process -Wait -FilePath .\DotNet-Win.exe -ArgumentList /quiet ; \
-    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/dotnet-hosting-6.0.13-win.exe' -OutFile DotNet6-Win.exe ; \
-    start-process -Wait -FilePath .\DotNet6-Win.exe -ArgumentList /quiet ; \
-    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/sqlncli.msi' -OutFile sqlncli.msi ; \
-    start-process -Wait -FilePath .\sqlncli.msi -ArgumentList /quiet, /qn, /passive ; \
-    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/vcredist_x86.exe' -OutFile vcredist_x86.exe ; \
-    start-process -Wait -FilePath .\vcredist_x86.exe -ArgumentList /q, /norestart ; \
-    Invoke-WebRequest -Uri 'https://bcartifacts.blob.core.windows.net/prerequisites/vcredist_x64.exe' -OutFile vcredist_x64.exe ; \
-    start-process -Wait -FilePath .\vcredist_x64.exe -ArgumentList /q, /norestart ; \
-    Remove-Item -Recurse -Force rewrite_amd64.msi, OpenXMLSDKV25.msi, DotNetCore-WindowsHosting.exe, DotNet-Win.exe, DotNet6-Win.exe, sqlncli.msi, vcredist_x86.exe, vcredist_x64.exe
+RUN . .\Run\SetupGeneric1.ps1
+
+RUN . .\Run\SetupGeneric2.ps1
 
 HEALTHCHECK --interval=30s --timeout=10s CMD [ "powershell", ".\\Run\\HealthCheck.ps1" ]
 

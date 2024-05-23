@@ -1,8 +1,6 @@
 name: Build missing images (after new windows updates)
 
 on:
-  schedule:
-  - cron: '0 5 * * *'
   workflow_dispatch:
     inputs:
       GenericTag:
@@ -11,16 +9,7 @@ on:
         default: ''
       PushToProd:
         description: Push to production (Y/N)
-        required: false
-        default: 'Y'
-
-env:
-  resGroup: "buildgeneric"
-  resLocation: "West Europe"
-  machines: "2"
-  ARMbranch: "dev"
-  ARMtemplate: "buildagent"
-
+        type: boolean
 
 permissions:
   contents: read
@@ -33,166 +22,70 @@ jobs:
   AnalyzeImages:
     runs-on: [ windows-latest ]
     outputs:
-      server2022: ${{ steps.Analyze.outputs.server2022 }}
-      server2022count: ${{ steps.Analyze.outputs.server2022count }}
+      missing: ${{ steps.Analyze.outputs.missing }}
+      missingcount: ${{ steps.Analyze.outputs.missingcount }}
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@v4
 
       - name: Analyze
         id: Analyze
+        env:
+          genericTag: ${{ github.event.inputs.GenericTag }}
         run: |
           $erroractionpreference = "STOP"
           try {
-            $unsupportedWindowsVersions = @("10.0.18363.*","10.0.18362.*")
+            $servercoretags = @('ltsc2016','ltsc2019','ltsc2022')
             Set-Location "generic"
-            $genericTag = ''
-            if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
-              $genericTag = '${{ github.event.inputs.GenericTag }}'
-            }
+            $genericTag = "$env:genericTag"
             if ($genericTag -eq '') { $genericTag = Get-Content -path 'tag.txt' }
             [System.Version]$genericTag | Out-Null
             Write-Host "Using generic Tag $genericTag"
-            $genericTag = "-$genericTag"
             $webclient = New-Object System.Net.WebClient
             $webclient.Headers.Add('Accept', "application/json")
-            $alltags = (($webclient.DownloadString("https://mcr.microsoft.com/v2/businesscentral/tags/list") | ConvertFrom-Json)).tags
-            $version = [System.Version]"0.0.0.0"
-            $versions = @($alltags | Where-Object { $_ -like "*$generictag" } | Where-Object { [System.Version]::TryParse($_.SubString(0,$_.Length-$generictag.Length), [ref] $version) } | Where-Object { -not ($UnsupportedWindowsVersions | Where-Object { "$version" -like $_ }) } | ForEach-Object { $version })
-            $filesOnlyVersions = @($alltags | Where-Object { $_ -like "*$generictag-filesonly" } | Where-Object { [System.Version]::TryParse($_.SubString(0,$_.Length-$generictag.Length-10), [ref] $version) } | Where-Object { -not ($UnsupportedWindowsVersions | Where-Object { "$version" -like $_ }) } | ForEach-Object { $version })
-            $missingImages = @{}
-            $missingFilesOnlyImages = @{}
-            $alldotnetFrameworkTags = (($webclient.DownloadString("https://mcr.microsoft.com/v2/dotnet/framework/runtime/tags/list") | ConvertFrom-Json)).tags
-            $alldotnetFrameworkTags | Where-Object { $_.startswith("4.8-w") -or $_.startswith("4.8-20") } | ForEach-Object {
-                $osVersion = [System.Version](($webclient.DownloadString("https://mcr.microsoft.com/v2/dotnet/framework/runtime/manifests/$_") | ConvertFrom-Json).history[0].v1Compatibility | ConvertFrom-Json)."os.version"
-                if (-not ($UnsupportedWindowsVersions | Where-Object { "$osVersion" -like $_ })) {
-                    Write-Host -NoNewline "Test $_ ($OSVersion)"
-                    if ($versions.Contains($osversion)) {
-                        Write-Host -NoNewline " - OK"
-                    }
-                    else {
-                        $missingImages."$osversion" = $_
-                        Write-Host -NoNewline " - Missing"
-                    }
-                    if ($filesOnlyVersions.Contains($osversion)) {
-                        Write-Host " - OK"
-                    }
-                    else {
-                        $missingFilesOnlyImages."$osversion" = $_
-                        Write-Host " - Missing"
-                    }
-                }
+            $neededBcTags = $serverCoreTags | ForEach-Object {
+                $osVersion = [System.Version](($webclient.DownloadString("https://mcr.microsoft.com/v2/dotnet/framework/runtime/manifests/4.8-windowsservercore-$_") | ConvertFrom-Json).history[0].v1Compatibility | ConvertFrom-Json)."os.version"
+                "$osVersion-$genericTag|mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-$_|$_"
+                "$osVersion-$genericTag-filesonly|mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-$_|$_"
             }
-            $server2022array = @($missingImages.GetEnumerator() | Where-Object { $_ } | ForEach-Object { "$($_.name)|$($_.value)" })
-            $server2022array += @($missingFilesOnlyImages.GetEnumerator() | Where-Object { $_ } | ForEach-Object { "$($_.name)-filesonly|$($_.value)" })
-            $server2022count = $server2022array.Count
-            $server2022 = $server2022array | ConvertTo-Json -Compress
-            Add-Content -Path $ENV:GITHUB_OUTPUT -Value "server2022=[$("$server2022".Trim('[]'))]"
-            Write-Host "server2022=[$("$server2022".Trim('[]'))]"
-            Add-Content -Path $ENV:GITHUB_OUTPUT -Value "server2022count=$server2022count"
-            Write-Host "server2022count=$server2022count"
+            Write-Host "Needed Tags ($($neededBcTags.Count))"
+            $neededBcTags | ForEach-Object { Write-Host "- $_" }
+            $alltags = (($webclient.DownloadString("https://mcr.microsoft.com/v2/businesscentral/tags/list") | ConvertFrom-Json)).tags
+            $missingBcTags = @($neededBcTags | Where-Object { $alltags -notcontains $_ })
+            Write-Host "Missing Tags ($($missingBcTags.Count))"
+            if ($missingBcTags) {
+                $missingBcTags | ForEach-Object { Write-Host "- $_" }
+            }
+            else {
+                Write-Host '- none'
+            }
+            $json = ConvertTo-Json -InputObject $missingBcTags -Compress
+            $json | Out-Host
+            Add-Content -encoding utf8 -Path $ENV:GITHUB_OUTPUT -Value "missing=$json"
+            Write-Host "missing=$json"
+            Add-Content -encoding utf8 -Path $ENV:GITHUB_OUTPUT -Value "missingcount=$($missingBcTags.Count)"
+            Write-Host "missingcount=$($missingBcTags.Count)"
           }
           catch {
             Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
             $host.SetShouldExit(1)            
           }
 
-  CreateAgents:
-    runs-on: [ windows-latest ]
+  Missing:
+    runs-on: [ Windows-Latest ]
     needs: [ AnalyzeImages ]
-    if: ${{ needs.AnalyzeImages.outputs.server2022count > 0 }}
-    steps:
-      - uses: actions/checkout@main
-
-      - uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-          enable-AzPSSession: true 
-
-      - name: Run Azure PowerShell script
-        uses: azure/powershell@v1
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          azPSVersion: "latest"
-          inlineScript: |
-            $resGroup = $env:resGroup
-            $resLocation = $env:resLocation
-            $repo = $env:GITHUB_REPOSITORY
-            $machines = [int]$env:machines
-            Write-Host "Resource Group is $resGroup"
-            $resourceGroup = Get-AzResourceGroup -name $resGroup -ErrorAction Ignore
-            if ($resourceGroup) {
-              Write-Host "Removing Resource Group $resGroup"
-              Remove-AzResourceGroup -Name $resGroup -Force | Out-Host
-              Write-Host "Done"
-            }
-            $runners = (gh api /repos/$repo/actions/runners | ConvertFrom-Json).runners
-            $runners | Where-Object { $_.status -eq "offline" } | ForEach-Object {
-              Write-host "Unregistering runner $($_.name)"
-              $id = $_.id
-              gh api -X DELETE /repos/$repo/actions/runners/$id
-              Write-Host "Done"
-            }
-            Write-Host "Creating resource group $resGroup in $resLocation"
-            $resourceGroup = New-AzResourceGroup -Name $resGroup -Location $resLocation -Force
-            Write-Host "Done"
-            1..$machines | ForEach-Object {
-              # Deployment
-              $no                       = $_
-
-              # ARM template
-              $templateUri = "https://raw.githubusercontent.com/microsoft/nav-arm-templates/$($env:ARMbranch)/$($env:ARMtemplate).json"
-
-              $registrationToken = (gh api -X POST /repos/$repo/actions/runners/registration-token | ConvertFrom-Json).token
-              $headers = @{ 
-                "Accept"        = "application/json"
-              }
-              $uri = "https://api.github.com/repos/actions/runner/releases"
-              $result = Invoke-WebRequest -UseBasicParsing -Headers $headers -Uri $uri
-              $releases = $result.Content | ConvertFrom-Json
-              $asset = $releases[0].assets | Where-Object {  $_.name -like "actions-runner-win-x64-*.*.?.zip" }
-
-              $Parameters = @{
-                "VmName"              = "$resgroup$no"
-                "Remotedesktopaccess" = "-"
-                "OperatingSystem"     = "Windows Server 2022"
-                "VmSize"              = "Standard_D4as_v5"
-                "OSDiskSize"          = 128
-                "StorageAccountType"  = "Premium_LRS"
-                "AdminPassword"       = [SecureString](ConvertTo-SecureString -String $env:GH_TOKEN -AsPlainText -Force)
-                "Count"               = 1
-                "Token"               = $registrationToken
-                "Organization"        = "https://github.com/$repo"
-                "LabelsOrPool"        = "buildgeneric"
-                "AgentUrl"            = $asset.browser_download_url
-                "InstallHyperV"       = "Yes"
-                "RunInsideDocker"     = "No"
-                "FinalSetupScriptUrl" = "additional-installforbuildagent.ps1"
-              }
-
-              $err = $resourceGroup | Test-AzResourceGroupDeployment -TemplateUri $templateUri -TemplateParameterObject $Parameters
-              if ($err) {
-                $err
-                throw "stop"
-              }
-              Write-Host "Creating Azure VM $($parameters.VmName)"
-              $resourceGroup | New-AzResourceGroupDeployment -TemplateUri $templateUri -TemplateParameterObject $Parameters -Name $Parameters.vmName -ErrorAction Ignore
-              Write-Host "Done"
-            }
-
-  Server2022:
-    runs-on: [ buildgeneric ]
-    needs: [ AnalyzeImages, CreateAgents ]
+    if: ${{ needs.AnalyzeImages.outputs.missingcount > 0 }}
     strategy:
       matrix:
-        version: ${{fromJson(needs.AnalyzeImages.outputs.server2022)}}
+        tag: ${{fromJson(needs.AnalyzeImages.outputs.missing)}}
       fail-fast: false
-      max-parallel: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Build Image
+        env:
+          PushToProd: ${{ github.event.inputs.PushToProd }}
+          GenericTag: ${{ github.event.inputs.GenericTag }}
         run: |
           $erroractionpreference = "STOP"
           Set-StrictMode -version 2.0
@@ -210,32 +103,50 @@ jobs:
             $genericTag = ''
             $pushToProd = $true
             if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
-              $genericTag = '${{ github.event.inputs.GenericTag }}'
-              $pushToProd = '${{ github.event.inputs.PushToProd }}' -eq 'Y'
+              $genericTag = $env:GenericTag
+              $pushToProd = $env:PushToProd -eq 'True'
             }
             if ($genericTag -eq '') { $genericTag = Get-Content -path 'tag.txt' }
             [System.Version]$genericTag | Out-Null
-            $osversion = '${{ matrix.version }}'.split('|')[0].split('-')[0]
-            $filesonly = ''
-            if ('${{ matrix.version }}' -like '*-filesonly|*') {
-              $filesonly = '-filesonly'
-            }
-            $dotnetFrameworkTag = '${{ matrix.version }}'.split('|')[1]
-            $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:$dotnetFrameworkTag"
-            
+            $osversion = '${{ matrix.tag }}'.split('|')[0].split('-')[0]
+            $filesonly = ('${{ matrix.tag }}' -like '*-filesonly|*')
+            $only24 = ('${{ matrix.tag }}' -like '*-24|*' -or '${{ matrix.tag }}' -like '*-24-filesonly|*')
+            $baseImage = '${{ matrix.tag }}'.split('|')[1]
+            $ltscTag = '${{ matrix.tag }}'.split('|')[2]
             $rootPath = Get-Location
-            $dockerfile = Join-Path $rootPath "DOCKERFILE$filesonly"
-
-            $image = "my:$osversion-$genericTag$filesonly"
+            $dockerfile = Join-Path $rootPath "DOCKERFILE"
+            $strFilesOnly = ''
+            $str24 = ''
+            if ($only24) {
+              $str24 = "-24"
+            }
+            if ($filesOnly) {
+              $strFilesOnly = "-filesonly"
+              $dockerfile += '-filesonly'
+            }
+            $image = "my:$osversion-$genericTag$str24$strFilesOnly"
+            $newtags = @(
+              "$pushRegistry/public/businesscentral:$osversion$str24$strFilesonly-dev"
+              "$pushRegistry/public/businesscentral:$ltscTag$str24$strFilesonly-dev"
+            )
+            if ($pushToProd) {
+              $newtags += @(
+                "$pushRegistry/public/businesscentral:$osversion$str24$strFilesonly"
+                "$pushRegistry/public/businesscentral:$osversion-$genericTag$str24$strFilesonly"
+                "$pushRegistry/public/businesscentral:$ltscTag$str24$strFilesonly"
+              )
+            }
+            $newTags | out-host
             $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
             docker pull $baseimage
             $inspect = docker inspect $baseimage | ConvertFrom-Json
-
             $success = $false
             docker build --build-arg baseimage=$baseimage `
                          --build-arg created=$created `
                          --build-arg tag="$genericTag" `
                          --build-arg osversion="$osversion" `
+                         --build-arg filesonly="$filesonly" `
+                         --build-arg only24="$only24" `
                          --isolation=hyperv `
                          --memory 8G `
                          --tag $image `
@@ -249,15 +160,6 @@ jobs:
             if (!$success) {
               throw "Error building image"
             }
-            $newtags = @(
-              "$pushRegistry/public/businesscentral:$osversion$filesonly-dev"
-            )
-            if ($pushToProd) {
-              $newtags += @(
-                  "$pushRegistry/public/businesscentral:$osversion$filesonly"
-                  "$pushRegistry/public/businesscentral:$osversion-$genericTag$filesonly"
-              )
-            }
             $newtags | ForEach-Object {
               Write-Host "Push $_"
               docker tag $image $_
@@ -268,39 +170,3 @@ jobs:
             Write-Host "::Error::Error building images. Error was $($_.Exception.Message)"
             $host.SetShouldExit(1)            
           }
-
-  RemoveAgents:
-    runs-on: [ windows-latest ]
-    needs: [ AnalyzeImages, CreateAgents, Server2022 ]
-    steps:
-      - uses: actions/checkout@main
-
-      - uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-          enable-AzPSSession: true 
-
-      - name: Run Azure PowerShell script
-        uses: azure/powershell@v1
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          azPSVersion: "latest"
-          inlineScript: |
-            $resGroup = $env:resGroup
-            $resLocation = $env:resLocation
-            $repo = $env:GITHUB_REPOSITORY
-            Write-Host "Resource Group is $resGroup"
-            $resourceGroup = Get-AzResourceGroup -name $resGroup -ErrorAction Ignore
-            if ($resourceGroup) {
-              Write-Host "Removing Resource Group $resGroup"
-              Remove-AzResourceGroup -Name $resGroup -Force | Out-Host
-              Write-Host "Done"
-            }
-            $runners = (gh api /repos/$repo/actions/runners | ConvertFrom-Json).runners
-            $runners | Where-Object { $_.status -eq "offline" } | ForEach-Object {
-              Write-host "Unregistering runner $($_.name)"
-              $id = $_.id
-              gh api -X DELETE /repos/$repo/actions/runners/$id
-              Write-Host "Done"
-            }

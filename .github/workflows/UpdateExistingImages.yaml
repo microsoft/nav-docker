@@ -37,7 +37,7 @@ env:
   resGroup: "buildgeneric"
   resLocation: "West Europe"
   machines: "5"
-  ARMbranch: "dev"
+  ARMbranch: "master"
   ARMtemplate: "buildagent"
 
 jobs:
@@ -99,7 +99,7 @@ jobs:
       max-parallel: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build Image
         run: |
@@ -182,7 +182,7 @@ jobs:
       max-parallel: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build Image
         run: |
@@ -265,7 +265,7 @@ jobs:
       max-parallel: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build Image
         run: |
@@ -344,7 +344,7 @@ jobs:
       max-parallel: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build Image
         run: |
