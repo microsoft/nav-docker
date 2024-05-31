@@ -2,8 +2,9 @@
 $ErrorActionPreference = "stop"
 Set-StrictMode -Version 2.0
 
-$osVersion = [System.Version]'10.0.19042.1889'   # 20H2
-$osVersion = [System.Version]'10.0.19041.1415'   # 2004
+$osVersion = '10.0.19042.1889'   # 20H2
+$osVersion = '10.0.19041.1415'   # 2004
+$osVersion = 'ltsc2022'
 
 $isolation = "hyperv"
 $filesOnly = $false
@@ -12,13 +13,14 @@ $image = "bcsql16"
 $genericTag = (Get-Content -Raw -Path (Join-Path $RootPath 'tag.txt')).Trim(@(13,10,32))
 $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
 
-Write-Host "Using OS Version $osVersion"
-
 if ($only24) {
     $baseimage = "mcr.microsoft.com/windows/servercore:$osVersion"
 }
+elseif ($osVersion -like 'ltsc*') {
+    $baseimage = "mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-$osVersion"
+}
 else {
-    $baseImage = ""
+    Write-Host "Using OS Version $osVersion"
     $webclient = New-Object System.Net.WebClient
     $basetags = (Get-NavContainerImageTags -imageName "mcr.microsoft.com/dotnet/framework/runtime").tags | Where-Object { $_.StartsWith('4.8-20') } | Sort-Object -Descending  | Where-Object { -not $_.endswith("-1803") }
     $basetags | ForEach-Object {
@@ -35,6 +37,8 @@ else {
         Write-Error "Unable to find a matching mcr.microsoft.com/dotnet/framework/runtime docker image"
     }
 }
+
+Write-Host "Using base image: $baseimage"
 
 $dockerfile = Join-Path $RootPath "DOCKERFILE"
 if ($only24) {
@@ -61,7 +65,7 @@ docker build --build-arg baseimage=$baseimage `
              --build-arg filesonly="$filesonly" `
              --build-arg only24="$only24" `
              --isolation=$isolation `
-             --memory 64G `
+             --memory 32G `
              --tag $image `
              --file $dockerfile `
              $RootPath
