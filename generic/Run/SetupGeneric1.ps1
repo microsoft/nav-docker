@@ -5,10 +5,10 @@ $sql2019url = 'https://go.microsoft.com/fwlink/p/?linkid=866658'
 $sql2019LatestCuUrl = 'https://download.microsoft.com/download/6/e/7/6e72dddf-dfa4-4889-bc3d-e5d3a0fd11ce/SQLServer2019-KB5035123-x64.exe'
 
 # https://dotnet.microsoft.com/en-us/download/dotnet/6.0 - grab the direct link behind ASP.NET Core Runtime Windows -> Hosting Bundle
-$dotNet6url = 'https://download.visualstudio.microsoft.com/download/pr/41643a5c-1ed5-41c8-abd0-473112282a79/644e14ace834d476fe3fa6797e472c55/dotnet-hosting-6.0.30-win.exe'
+$dotNet6url = 'https://download.visualstudio.microsoft.com/download/pr/fee6ce1d-a3c4-4aed-ba11-5cbb9e22e5b1/8b1248f13ca5326850112ad45ccf3527/dotnet-hosting-6.0.31-win.exe'
 
 # https://dotnet.microsoft.com/en-us/download/dotnet/8.0 - grab the direct link behind ASP.NET Core Runtime Windows -> Hosting Bundle
-$dotNet8url = 'https://download.visualstudio.microsoft.com/download/pr/70f96ebd-54ce-4bb2-a90f-2fbfc8fd90c0/aa542f2f158cc6c9e63b4287e4618f0a/dotnet-hosting-8.0.5-win.exe'
+$dotNet8url = 'https://download.visualstudio.microsoft.com/download/pr/751d3fcd-72db-4da2-b8d0-709c19442225/33cc492bde704bfd6d70a2b9109005a0/dotnet-hosting-8.0.6-win.exe'
 
 # https://github.com/PowerShell/PowerShell/releases - grab the latest PowerShell-7.4.x-win-x64.msi link
 $powerShell7url = 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.msi'
