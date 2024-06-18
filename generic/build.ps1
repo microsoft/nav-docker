@@ -11,6 +11,7 @@ $filesOnly = $false
 $only24 = $false
 $image = "mygeneric"
 $genericTag = (Get-Content -Raw -Path (Join-Path $RootPath 'tag.txt')).Trim(@(13,10,32))
+
 $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
 
 if ($only24) {
