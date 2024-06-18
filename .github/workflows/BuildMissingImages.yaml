@@ -1,4 +1,4 @@
-name: Build missing images (after new windows updates)
+name: Build new images
 
 on:
   workflow_dispatch:
@@ -19,8 +19,8 @@ jobs:
     runs-on: [ windows-latest ]
     outputs:
       genericTag: ${{ steps.Analyze.outputs.genericTag }}
-      missing: ${{ steps.Analyze.outputs.missing }}
-      missingcount: ${{ steps.Analyze.outputs.missingcount }}
+      buildImagesJson: ${{ steps.Analyze.outputs.buildImagesJson }}
+      digestsJson: ${{ steps.Analyze.outputs.digestsJson }}
     steps:
       - uses: actions/checkout@v4
 
@@ -28,10 +28,27 @@ jobs:
         id: Analyze
         env:
           RUNNUMBEROFFSET: ${{ vars.RUNNUMBEROFFSET }}
+          PushToProd: ${{ github.event.inputs.PushToProd }}
         run: |
           $erroractionpreference = "STOP"
           try {
             $servercoretags = @('ltsc2016','ltsc2019','ltsc2022')
+            $pushToProd = $true
+            if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
+              $pushToProd = $env:PushToProd -eq 'True'
+            }
+            $tags = @($servercoretags | ForEach-Object { "$_-dev"; "$_-filesonly-dev" })
+            if ($prod) {
+                $tags += @($servercoretags | ForEach-Object { "$_"; "$_-filesonly" })
+            }
+            $digests = $tags | ForEach-Object {
+                Write-Host -NoNewline "$_ : "
+                $webclient = New-Object System.Net.WebClient
+                $webclient.Headers.Add('Accept', “application/vnd.docker.distribution.manifest.v2+json”)
+                $manifest = $webclient.DownloadString("$url/manifests/$_") | ConvertFrom-Json
+                Write-Host $manifest.config.digest
+                $manifest.config.digest
+            } | Select-Object -Unique
             Set-Location "generic"
             $rootPath = Get-Location
             $genericTag = (Get-Content -Raw -Path (Join-Path $RootPath 'tag.txt')).Trim(@(13,10,32))
@@ -49,35 +66,34 @@ jobs:
             Write-Host "Needed Tags ($($neededBcTags.Count))"
             $neededBcTags | ForEach-Object { Write-Host "- $_" }
             $alltags = (($webclient.DownloadString("https://mcr.microsoft.com/v2/businesscentral/tags/list") | ConvertFrom-Json)).tags
-            $missingBcTags = @($neededBcTags | Where-Object { $alltags -notcontains $_ })
-            Write-Host "Missing Tags ($($missingBcTags.Count))"
-            if ($missingBcTags) {
-                $missingBcTags | ForEach-Object { Write-Host "- $_" }
+            $imagesBcTags = @($neededBcTags | Where-Object { $alltags -notcontains $_ })
+            Write-Host "Image Tags ($($imagesBcTags.Count))"
+            if ($imagesBcTags) {
+                $imagesBcTags | ForEach-Object { Write-Host "- $_" }
             }
             else {
                 Write-Host '- none'
             }
-            $json = ConvertTo-Json -InputObject $missingBcTags -Compress
-            $json | Out-Host
+            $buildImagesJson = ConvertTo-Json -InputObject $imagesBcTags -Compress
+            $digestsJson = ConvertTo-Json -InputObject $digests -Compress
+            Add-Content -encoding utf8 -Path $ENV:GITHUB_OUTPUT -Value "digestsJson=$digestsJson"
+            Write-Host "digestsJson=$digestsJson"
             Add-Content -encoding utf8 -Path $ENV:GITHUB_OUTPUT -Value "genericTag=$genericTag"
             Write-Host "genericTag=$genericTag"
-            Add-Content -encoding utf8 -Path $ENV:GITHUB_OUTPUT -Value "missing=$json"
-            Write-Host "missing=$json"
-            Add-Content -encoding utf8 -Path $ENV:GITHUB_OUTPUT -Value "missingcount=$($missingBcTags.Count)"
-            Write-Host "missingcount=$($missingBcTags.Count)"
+            Add-Content -encoding utf8 -Path $ENV:GITHUB_OUTPUT -Value "buildImagesJson=$buildImagesJson"
+            Write-Host "buildImagesJson=$buildImagesJson"
           }
           catch {
             Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
             $host.SetShouldExit(1)            
           }
 
-  Missing:
+  BuildImages:
     runs-on: [ Windows-Latest ]
     needs: [ AnalyzeImages ]
-    if: ${{ needs.AnalyzeImages.outputs.missingcount > 0 }}
     strategy:
       matrix:
-        tag: ${{fromJson(needs.AnalyzeImages.outputs.missing)}}
+        tag: ${{ fromJson(needs.AnalyzeImages.outputs.buildImagesJson) }}
       fail-fast: false
     steps:
       - name: Checkout
@@ -162,35 +178,61 @@ jobs:
             }
             $newTags | out-host
             $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
-            docker pull $baseimage
-            $inspect = docker inspect $baseimage | ConvertFrom-Json
-            $success = $false
-            docker build --build-arg baseimage=$baseimage `
-                         --build-arg created=$created `
-                         --build-arg tag="$genericTag" `
-                         --build-arg osversion="$osversion" `
-                         --build-arg filesonly="$filesonly" `
-                         --build-arg only24="$only24" `
-                         --isolation=hyperv `
-                         --memory 8G `
-                         --tag $image `
-                         --file $dockerfile `
-                         $RootPath | % {
-              $_ | Out-Host
-              if ($_ -like "Successfully built*") {
-                $success = $true
-              }
-            }
-            if (!$success) {
-              throw "Error building image"
-            }
-            $newtags | ForEach-Object {
-              Write-Host "Push $_"
-              docker tag $image $_
-              docker push $_
-            }
+            #docker pull $baseimage
+            #$inspect = docker inspect $baseimage | ConvertFrom-Json
+            #$success = $false
+            #docker build --build-arg baseimage=$baseimage `
+            #             --build-arg created=$created `
+            #             --build-arg tag="$genericTag" `
+            #             --build-arg osversion="$osversion" `
+            #             --build-arg filesonly="$filesonly" `
+            #             --build-arg only24="$only24" `
+            #             --isolation=hyperv `
+            #             --memory 8G `
+            #             --tag $image `
+            #             --file $dockerfile `
+            #             $RootPath | % {
+            #  $_ | Out-Host
+            #  if ($_ -like "Successfully built*") {
+            #    $success = $true
+            #  }
+            #}
+            #if (!$success) {
+            #  throw "Error building image"
+            #}
+            #$newtags | ForEach-Object {
+            #  Write-Host "Push $_"
+            #  docker tag $image $_
+            #  docker push $_
+            #}
           }
           catch {
             Write-Host "::Error::Error building images. Error was $($_.Exception.Message)"
             $host.SetShouldExit(1)            
           }
+
+  Stale:
+    runs-on: [ Windows-Latest ]
+    needs: [ AnalyzeImages, BuildImages ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: MakeStale
+        env:
+          digestsJson: ${{ needs.AnalyzeImages.outputs.digestsJson }}
+        run: |
+          $erroractionpreference = "STOP"
+          $digests = $env:digestsJson | ConvertFrom-Json
+          $version = "1.2.0"
+          $filename = Join-Path $env:TEMP "oras_$($version)_windows_amd64.zip"
+          Invoke-RestMethod -Method GET -UseBasicParsing -Uri "https://github.com/oras-project/oras/releases/download/v$($version)/oras_$($version)_windows_amd64.zip" -OutFile $filename
+          Expand-Archive -Path $filename -DestinationPath .
+          ./oras.exe login mcrbusinesscentral.azurecr.io --username ${{ secrets.PushUsername }} --password ${{ secrets.PushToken }}
+          $pushRegistry = "mcrbusinesscentral.azurecr.io"
+          $digests | ForEach-Object {
+            $image = "$pushRegistry/public/businesscentral@$_"
+            Write-Host "Stale $image"
+            #./oras.exe attach --artifact-type application/vnd.microsoft.artifact.lifecycle --annotation "vnd.microsoft.artifact.lifecycle.end-of-life.date=2023-05-12" $image
+          }
+
