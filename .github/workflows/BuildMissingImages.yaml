@@ -44,7 +44,7 @@ jobs:
             $digests = $tags | ForEach-Object {
                 Write-Host -NoNewline "$_ : "
                 $webclient = New-Object System.Net.WebClient
-                $webclient.Headers.Add('Accept', “application/vnd.docker.distribution.manifest.v2+json”)
+                $webclient.Headers.Add('Accept', 'application/vnd.docker.distribution.manifest.v2+json')
                 $manifest = $webclient.DownloadString("$url/manifests/$_") | ConvertFrom-Json
                 Write-Host $manifest.config.digest
                 $manifest.config.digest
