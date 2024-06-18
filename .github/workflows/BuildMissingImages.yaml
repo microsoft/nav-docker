@@ -211,14 +211,14 @@ jobs:
             $host.SetShouldExit(1)            
           }
 
-  MakeStale:
+  MarkOldImagesStale:
     runs-on: [ Windows-Latest ]
     needs: [ AnalyzeImages, BuildImages ]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: MakeStale
+      - name: MarkStale
         env:
           digestsJson: ${{ needs.AnalyzeImages.outputs.digestsJson }}
         shell: pwsh
@@ -230,7 +230,7 @@ jobs:
           Invoke-RestMethod -Method GET -UseBasicParsing -Uri "https://github.com/oras-project/oras/releases/download/v$($version)/oras_$($version)_windows_amd64.zip" -OutFile $filename
           Expand-Archive -Path $filename -DestinationPath temp
           $pushRegistry = "mcrbusinesscentral.azurecr.io"
-          $mcrbusinesscentralkey | ./temp/oras.exe login $pushRegistry --username ${{ secrets.PushUsername }} --password-stdin
+          "${{ secrets.PushToken }}" | ./temp/oras.exe login $pushRegistry --username ${{ secrets.PushUsername }} --password-stdin
           $digests | ForEach-Object {
             $image = "$pushRegistry/public/businesscentral@$_"
             Write-Host "Stale $image"
