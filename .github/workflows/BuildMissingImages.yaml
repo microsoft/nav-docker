@@ -33,6 +33,7 @@ jobs:
           try {
             $servercoretags = @('ltsc2016','ltsc2019','ltsc2022')
             Set-Location "generic"
+            $rootPath = Get-Location
             $genericTag = (Get-Content -Raw -Path (Join-Path $RootPath 'tag.txt')).Trim(@(13,10,32))
             $tagver = [System.Version]$genericTag
             $revision = [int]($ENV:GITHUB_RUN_NUMBER)-[int]($ENV:RUNNUMBEROFFSET)
@@ -112,6 +113,7 @@ jobs:
               throw "docker login failed"
             }
             Set-Location "generic"
+            $rootPath = Get-Location
             $genericTag = $env:GenericTag
             $pushToProd = $true
             if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
@@ -122,7 +124,6 @@ jobs:
             $only24 = ('${{ matrix.tag }}' -like '*-24|*' -or '${{ matrix.tag }}' -like '*-24-filesonly|*')
             $baseImage = '${{ matrix.tag }}'.split('|')[1]
             $ltscTag = '${{ matrix.tag }}'.split('|')[2]
-            $rootPath = Get-Location
             $setupUrlsFile = Join-Path $rootPath "Run/SetupUrls.ps1"
             Set-Content -Path $setupUrlsFile -Value "`$sql2019url='$env:sql2019url'"
             Add-Content -Path $setupUrlsFile -Value "`$sql2019LatestCuUrl='$env:sql2019LatestCuUrl'"
