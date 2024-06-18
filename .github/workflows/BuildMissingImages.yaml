@@ -1,12 +1,8 @@
-name: Build missing images (after new windows updates)
+name: Build new images
 
 on:
   workflow_dispatch:
     inputs:
-      GenericTag:
-        description: Generic Tag (leave empty to use value in generic/tag.txt)
-        required: false
-        default: ''
       PushToProd:
         description: Push to production (Y/N)
         type: boolean
@@ -22,23 +18,43 @@ jobs:
   AnalyzeImages:
     runs-on: [ windows-latest ]
     outputs:
-      missing: ${{ steps.Analyze.outputs.missing }}
-      missingcount: ${{ steps.Analyze.outputs.missingcount }}
+      genericTag: ${{ steps.Analyze.outputs.genericTag }}
+      buildImagesJson: ${{ steps.Analyze.outputs.buildImagesJson }}
+      digestsJson: ${{ steps.Analyze.outputs.digestsJson }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Analyze
         id: Analyze
         env:
-          genericTag: ${{ github.event.inputs.GenericTag }}
+          RUNNUMBEROFFSET: ${{ vars.RUNNUMBEROFFSET }}
+          PushToProd: ${{ github.event.inputs.PushToProd }}
         run: |
           $erroractionpreference = "STOP"
           try {
             $servercoretags = @('ltsc2016','ltsc2019','ltsc2022')
+            $pushToProd = $true
+            if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
+              $pushToProd = $env:PushToProd -eq 'True'
+            }
+            $tags = @($servercoretags | ForEach-Object { "$_-dev"; "$_-filesonly-dev" })
+            if ($prod) {
+                $tags += @($servercoretags | ForEach-Object { "$_"; "$_-filesonly" })
+            }
+            $digests = $tags | ForEach-Object {
+                Write-Host -NoNewline "$_ : "
+                $webclient = New-Object System.Net.WebClient
+                $webclient.Headers.Add('Accept', 'application/vnd.docker.distribution.manifest.v2+json')
+                $manifest = $webclient.DownloadString("https://mcr.microsoft.com/v2/businesscentral/manifests/$_") | ConvertFrom-Json
+                Write-Host $manifest.config.digest
+                $manifest.config.digest
+            } | Select-Object -Unique
             Set-Location "generic"
-            $genericTag = "$env:genericTag"
-            if ($genericTag -eq '') { $genericTag = Get-Content -path 'tag.txt' }
-            [System.Version]$genericTag | Out-Null
+            $rootPath = Get-Location
+            $genericTag = (Get-Content -Raw -Path (Join-Path $RootPath 'tag.txt')).Trim(@(13,10,32))
+            $tagver = [System.Version]$genericTag
+            $revision = [int]($ENV:GITHUB_RUN_NUMBER)-[int]($ENV:RUNNUMBEROFFSET)
+            $genericTag = "$($tagver.Major).$($tagver.Minor).$($tagver.Build).$revision"
             Write-Host "Using generic Tag $genericTag"
             $webclient = New-Object System.Net.WebClient
             $webclient.Headers.Add('Accept', "application/json")
@@ -50,33 +66,34 @@ jobs:
             Write-Host "Needed Tags ($($neededBcTags.Count))"
             $neededBcTags | ForEach-Object { Write-Host "- $_" }
             $alltags = (($webclient.DownloadString("https://mcr.microsoft.com/v2/businesscentral/tags/list") | ConvertFrom-Json)).tags
-            $missingBcTags = @($neededBcTags | Where-Object { $alltags -notcontains $_ })
-            Write-Host "Missing Tags ($($missingBcTags.Count))"
-            if ($missingBcTags) {
-                $missingBcTags | ForEach-Object { Write-Host "- $_" }
+            $imagesBcTags = @($neededBcTags | Where-Object { $alltags -notcontains $_ })
+            Write-Host "Image Tags ($($imagesBcTags.Count))"
+            if ($imagesBcTags) {
+                $imagesBcTags | ForEach-Object { Write-Host "- $_" }
             }
             else {
                 Write-Host '- none'
             }
-            $json = ConvertTo-Json -InputObject $missingBcTags -Compress
-            $json | Out-Host
-            Add-Content -encoding utf8 -Path $ENV:GITHUB_OUTPUT -Value "missing=$json"
-            Write-Host "missing=$json"
-            Add-Content -encoding utf8 -Path $ENV:GITHUB_OUTPUT -Value "missingcount=$($missingBcTags.Count)"
-            Write-Host "missingcount=$($missingBcTags.Count)"
+            $buildImagesJson = ConvertTo-Json -InputObject $imagesBcTags -Compress
+            $digestsJson = ConvertTo-Json -InputObject $digests -Compress
+            Add-Content -encoding utf8 -Path $ENV:GITHUB_OUTPUT -Value "digestsJson=$digestsJson"
+            Write-Host "digestsJson=$digestsJson"
+            Add-Content -encoding utf8 -Path $ENV:GITHUB_OUTPUT -Value "genericTag=$genericTag"
+            Write-Host "genericTag=$genericTag"
+            Add-Content -encoding utf8 -Path $ENV:GITHUB_OUTPUT -Value "buildImagesJson=$buildImagesJson"
+            Write-Host "buildImagesJson=$buildImagesJson"
           }
           catch {
             Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
             $host.SetShouldExit(1)            
           }
 
-  Missing:
+  BuildImages:
     runs-on: [ Windows-Latest ]
     needs: [ AnalyzeImages ]
-    if: ${{ needs.AnalyzeImages.outputs.missingcount > 0 }}
     strategy:
       matrix:
-        tag: ${{fromJson(needs.AnalyzeImages.outputs.missing)}}
+        tag: ${{ fromJson(needs.AnalyzeImages.outputs.buildImagesJson) }}
       fail-fast: false
     steps:
       - name: Checkout
@@ -85,7 +102,19 @@ jobs:
       - name: Build Image
         env:
           PushToProd: ${{ github.event.inputs.PushToProd }}
-          GenericTag: ${{ github.event.inputs.GenericTag }}
+          GenericTag: ${{ needs.AnalyzeImages.outputs.genericTag }}
+          sql2019url: ${{ vars.sql2019url }}
+          sql2019LatestCuUrl: ${{ vars.sql2019LatestCuUrl }}
+          dotNet6url: ${{ vars.dotNet6url }}
+          dotNet8url: ${{ vars.dotNet8url }}
+          powerShell7url: ${{ vars.powerShell7url }}
+          rewriteUrl: ${{ vars.rewriteUrl }}
+          sqlncliUrl: ${{ vars.sqlncliUrl }}
+          vcredist_x86url: ${{ vars.vcredist_x86url }}
+          vcredist_x64url: ${{ vars.vcredist_x64url }}
+          vcredist_x64_140url: ${{ vars.vcredist_x64_140url }}
+          navDockerInstallUrl: ${{ vars.navDockerInstallUrl }}
+          openXmlSdkV25url: ${{ vars.openXmlSdkV25url }}
         run: |
           $erroractionpreference = "STOP"
           Set-StrictMode -version 2.0
@@ -100,20 +129,31 @@ jobs:
               throw "docker login failed"
             }
             Set-Location "generic"
-            $genericTag = ''
+            $rootPath = Get-Location
+            $genericTag = $env:GenericTag
             $pushToProd = $true
             if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
-              $genericTag = $env:GenericTag
               $pushToProd = $env:PushToProd -eq 'True'
             }
-            if ($genericTag -eq '') { $genericTag = Get-Content -path 'tag.txt' }
-            [System.Version]$genericTag | Out-Null
             $osversion = '${{ matrix.tag }}'.split('|')[0].split('-')[0]
             $filesonly = ('${{ matrix.tag }}' -like '*-filesonly|*')
             $only24 = ('${{ matrix.tag }}' -like '*-24|*' -or '${{ matrix.tag }}' -like '*-24-filesonly|*')
             $baseImage = '${{ matrix.tag }}'.split('|')[1]
             $ltscTag = '${{ matrix.tag }}'.split('|')[2]
-            $rootPath = Get-Location
+            $setupUrlsFile = Join-Path $rootPath "Run/SetupUrls.ps1"
+            Set-Content -Path $setupUrlsFile -Value "`$sql2019url='$env:sql2019url'"
+            Add-Content -Path $setupUrlsFile -Value "`$sql2019LatestCuUrl='$env:sql2019LatestCuUrl'"
+            Add-Content -Path $setupUrlsFile -Value "`$dotNet6url='$env:dotNet6url'"
+            Add-Content -Path $setupUrlsFile -Value "`$dotNet8url='$env:dotNet8url'"
+            Add-Content -Path $setupUrlsFile -Value "`$powerShell7url='$env:powerShell7url'"
+            Add-Content -Path $setupUrlsFile -Value "`$rewriteUrl='$env:rewriteUrl'"
+            Add-Content -Path $setupUrlsFile -Value "`$sqlncliUrl='$env:sqlncliUrl'"
+            Add-Content -Path $setupUrlsFile -Value "`$vcredist_x86url='$env:vcredist_x86url'"
+            Add-Content -Path $setupUrlsFile -Value "`$vcredist_x64url='$env:vcredist_x64url'"
+            Add-Content -Path $setupUrlsFile -Value "`$vcredist_x64_140url='$env:vcredist_x64_140url'"
+            Add-Content -Path $setupUrlsFile -Value "`$navDockerInstallUrl='$env:navDockerInstallUrl'"
+            Add-Content -Path $setupUrlsFile -Value "`$openXmlSdkV25url='$env:openXmlSdkV25url'"
+            Get-Content -Path $setupUrlsFile | Out-Host
             $dockerfile = Join-Path $rootPath "DOCKERFILE"
             $strFilesOnly = ''
             $str24 = ''
@@ -170,3 +210,30 @@ jobs:
             Write-Host "::Error::Error building images. Error was $($_.Exception.Message)"
             $host.SetShouldExit(1)            
           }
+
+  MarkOldImagesStale:
+    runs-on: [ Windows-Latest ]
+    needs: [ AnalyzeImages, BuildImages ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: MarkStale
+        env:
+          digestsJson: ${{ needs.AnalyzeImages.outputs.digestsJson }}
+        shell: pwsh
+        run: |
+          $erroractionpreference = "STOP"
+          $digests = $env:digestsJson | ConvertFrom-Json
+          $version = "1.2.0"
+          $filename = Join-Path $env:TEMP "oras_$($version)_windows_amd64.zip"
+          Invoke-RestMethod -Method GET -UseBasicParsing -Uri "https://github.com/oras-project/oras/releases/download/v$($version)/oras_$($version)_windows_amd64.zip" -OutFile $filename
+          Expand-Archive -Path $filename -DestinationPath temp
+          $pushRegistry = "mcrbusinesscentral.azurecr.io"
+          "${{ secrets.PushToken }}" | ./temp/oras.exe login $pushRegistry --username ${{ secrets.PushUsername }} --password-stdin
+          $digests | ForEach-Object {
+            $image = "$pushRegistry/public/businesscentral@$_"
+            Write-Host "Stale $image"
+            ./temp/oras.exe attach --artifact-type application/vnd.microsoft.artifact.lifecycle --annotation "vnd.microsoft.artifact.lifecycle.end-of-life.date=2023-05-12" $image
+          }
+
