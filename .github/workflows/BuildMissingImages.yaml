@@ -221,6 +221,7 @@ jobs:
       - name: MakeStale
         env:
           digestsJson: ${{ needs.AnalyzeImages.outputs.digestsJson }}
+        shell: pwsh
         run: |
           $erroractionpreference = "STOP"
           $digests = $env:digestsJson | ConvertFrom-Json
@@ -228,8 +229,8 @@ jobs:
           $filename = Join-Path $env:TEMP "oras_$($version)_windows_amd64.zip"
           Invoke-RestMethod -Method GET -UseBasicParsing -Uri "https://github.com/oras-project/oras/releases/download/v$($version)/oras_$($version)_windows_amd64.zip" -OutFile $filename
           Expand-Archive -Path $filename -DestinationPath .
-          ./oras.exe login mcrbusinesscentral.azurecr.io --username ${{ secrets.PushUsername }} --password ${{ secrets.PushToken }}
           $pushRegistry = "mcrbusinesscentral.azurecr.io"
+          $mcrbusinesscentralkey | ./oras.exe login $pushRegistry --username ${{ secrets.PushUsername }} --password-stdin
           $digests | ForEach-Object {
             $image = "$pushRegistry/public/businesscentral@$_"
             Write-Host "Stale $image"
