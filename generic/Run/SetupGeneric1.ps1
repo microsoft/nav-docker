@@ -116,7 +116,7 @@ if (-not $only24) {
     if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
 }
 Write-Host 'Downloading vcredist_x64_140'
-Invoke-RestMethod -Method Get -UseBasicParsing -Uri $vsredist_x64_140url -OutFile 'temp\vcredist_x64_140.exe'
+Invoke-RestMethod -Method Get -UseBasicParsing -Uri $vcredist_x64_140url -OutFile 'temp\vcredist_x64_140.exe'
 Write-Host 'Installing vcredist_x64_140'
 $process = start-process -Wait -FilePath 'temp\vcredist_x64_140.exe' -ArgumentList /q, /norestart
 if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }

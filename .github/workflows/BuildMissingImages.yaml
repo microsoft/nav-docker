@@ -96,7 +96,7 @@ jobs:
           sqlncliUrl: ${{ vars.sqlncliUrl }}
           vcredist_x86url: ${{ vars.vcredist_x86url }}
           vcredist_x64url: ${{ vars.vcredist_x64url }}
-          vsredist_x64_140url: ${{ vars.vsredist_x64_140url }}
+          vcredist_x64_140url: ${{ vars.vcredist_x64_140url }}
           navDockerInstallUrl: ${{ vars.navDockerInstallUrl }}
           openXmlSdkV25url: ${{ vars.openXmlSdkV25url }}
         run: |
@@ -134,7 +134,7 @@ jobs:
             Add-Content -Path $setupUrlsFile -Value "`$sqlncliUrl='$env:sqlncliUrl'"
             Add-Content -Path $setupUrlsFile -Value "`$vcredist_x86url='$env:vcredist_x86url'"
             Add-Content -Path $setupUrlsFile -Value "`$vcredist_x64url='$env:vcredist_x64url'"
-            Add-Content -Path $setupUrlsFile -Value "`$vsredist_x64_140url='$env:vsredist_x64_140url'"
+            Add-Content -Path $setupUrlsFile -Value "`$vcredist_x64_140url='$env:vcredist_x64_140url'"
             Add-Content -Path $setupUrlsFile -Value "`$navDockerInstallUrl='$env:navDockerInstallUrl'"
             Add-Content -Path $setupUrlsFile -Value "`$openXmlSdkV25url='$env:openXmlSdkV25url'"
             Get-Content -Path $setupUrlsFile | Out-Host
