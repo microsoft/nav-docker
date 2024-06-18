@@ -41,6 +41,17 @@ else {
 
 Write-Host "Using base image: $baseimage"
 
+$setupUrlsFile = Join-Path $rootPath "Run/SetupUrls.ps1"
+Set-Content -Path $setupUrlsFile -Value ""
+$variables = gh variable list --repo microsoft/nav-docker
+$variables | ForEach-Object {
+    $elm = $_.Split("`t")
+    $varName = $elm[0]
+    $varValue = $elm[1]
+    Add-Content -Path $setupUrlsFile -Value "`$$varName = ""$varValue"""
+}
+Get-Content -Path $setupUrlsFile | Out-Host
+
 $dockerfile = Join-Path $RootPath "DOCKERFILE"
 if ($only24) {
     $image += "-24"
