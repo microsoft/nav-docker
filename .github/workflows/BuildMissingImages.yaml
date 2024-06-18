@@ -139,7 +139,6 @@ jobs:
             Add-Content -Path $setupUrlsFile -Value "`$openXmlSdkV25url='$env:openXmlSdkV25url'"
             Get-Content -Path $setupUrlsFile | Out-Host
             $dockerfile = Join-Path $rootPath "DOCKERFILE"
-            throw "error"
             $strFilesOnly = ''
             $str24 = ''
             if ($only24) {
