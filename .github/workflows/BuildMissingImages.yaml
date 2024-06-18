@@ -45,7 +45,7 @@ jobs:
                 Write-Host -NoNewline "$_ : "
                 $webclient = New-Object System.Net.WebClient
                 $webclient.Headers.Add('Accept', 'application/vnd.docker.distribution.manifest.v2+json')
-                $manifest = $webclient.DownloadString("$url/manifests/$_") | ConvertFrom-Json
+                $manifest = $webclient.DownloadString("https://mcr.microsoft.com/v2/businesscentral/manifests/$_") | ConvertFrom-Json
                 Write-Host $manifest.config.digest
                 $manifest.config.digest
             } | Select-Object -Unique
