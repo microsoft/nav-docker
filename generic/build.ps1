@@ -41,6 +41,9 @@ else {
 
 Write-Host "Using base image: $baseimage"
 
+$setupUrlsFile = Join-Path $rootPath "Run/SetupUrls.ps1"
+Get-Content -Path $setupUrlsFile | Out-Host
+
 $dockerfile = Join-Path $RootPath "DOCKERFILE"
 if ($only24) {
     $image += "-24"
