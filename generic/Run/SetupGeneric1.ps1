@@ -35,10 +35,12 @@ if (-not $filesonly) {
         Set-Service 'W3SVC' -startuptype manual
     }
     Write-Host 'Downloading SQL Server 2019 Express'
-    Invoke-RestMethod -Method Get -UseBasicParsing -Uri $sql2019url -OutFile 'temp\SQL2019-SSEI-Expr.exe'
-    $configFileLocation = 'c:\run\SQLConf.ini'
+    Invoke-RestMethod -Method Get -UseBasicParsing -Uri $sql2019url -OutFile 'temp\SQLEXPRADV_x64_ENU.exe'
+    Write-Host 'Unpacking SQL Server 2019 Express'
+    Start-Process -FilePath 'temp\SQLEXPRADV_x64_ENU.exe' -NoNewWindow -Wait -PassThru -ArgumentList /qs, /x:temp\sqlsetup | Out-Null
     Write-Host 'Installing SQL Server 2019 Express'
-    $process = Start-Process -FilePath 'temp\SQL2019-SSEI-Expr.exe' -ArgumentList /Action=Install, /ConfigurationFile=$configFileLocation, /IAcceptSQLServerLicenseTerms, /Quiet -NoNewWindow -Wait -PassThru
+    $configFileLocation = 'c:\run\SQLConf.ini'
+    $process = Start-Process -FilePath 'temp\sqlsetup\setup.exe' -NoNewWindow -Wait -PassThru -ArgumentList /Action=Install, /ConfigurationFile=$configFileLocation, /IAcceptSQLServerLicenseTerms, /Quiet
     if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
     Write-Host 'Downloading SQL Server 2019 Cumulative Update'
     Invoke-RestMethod -Method Get -UseBasicParsing -Uri $sql2019LatestCuUrl -OutFile 'temp\SQL2019CU.exe'
