@@ -2,15 +2,27 @@
 $ErrorActionPreference = "stop"
 Set-StrictMode -Version 2.0
 
-$osVersion = '10.0.19042.1889'   # 20H2
-$osVersion = '10.0.19041.1415'   # 2004
-$osVersion = 'ltsc2022'
-
 $isolation = "hyperv"
 $filesOnly = $false
 $only24 = $false
 $image = "mygeneric"
-$genericTag = (Get-Content -Raw -Path (Join-Path $RootPath 'tag.txt')).Trim(@(13,10,32))
+
+# Get osVersion to use for the right base image
+$genericImage = Get-BestGenericImageName
+$osVersion = ($genericImage.Split(':')[1]).Split('-')[0]  # should return ltsc2016, ltsc2019 or ltsc2022
+if ($osVersion -notlike 'ltsc20??') {
+    throw "Unexpected osversion"
+}
+
+# Get the latest generic tag to use
+$labels = Get-BcContainerImageLabels -imageName $genericImage
+$tagVersion = [System.Version]$labels.tag
+$genericTag = "$($tagVersion.Major).$($tagVersion.Minor).$($tagVersion.Build).$($tagVersion.Revision+1)"
+
+# Manual overrides could be like this:
+# $osVersion = '10.0.19042.1889'   # 20H2
+# $osVersion = '10.0.19041.1415'   # 2004
+# $genericTag = '2.0.0.0'
 
 $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
 
@@ -40,6 +52,9 @@ else {
 }
 
 Write-Host "Using base image: $baseimage"
+
+$setupUrlsFile = Join-Path $rootPath "Run/SetupUrls.ps1"
+Get-Content -Path $setupUrlsFile | Out-Host
 
 $dockerfile = Join-Path $RootPath "DOCKERFILE"
 if ($only24) {

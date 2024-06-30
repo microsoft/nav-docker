@@ -103,18 +103,6 @@ jobs:
         env:
           PushToProd: ${{ github.event.inputs.PushToProd }}
           GenericTag: ${{ needs.AnalyzeImages.outputs.genericTag }}
-          sql2019url: ${{ vars.sql2019url }}
-          sql2019LatestCuUrl: ${{ vars.sql2019LatestCuUrl }}
-          dotNet6url: ${{ vars.dotNet6url }}
-          dotNet8url: ${{ vars.dotNet8url }}
-          powerShell7url: ${{ vars.powerShell7url }}
-          rewriteUrl: ${{ vars.rewriteUrl }}
-          sqlncliUrl: ${{ vars.sqlncliUrl }}
-          vcredist_x86url: ${{ vars.vcredist_x86url }}
-          vcredist_x64url: ${{ vars.vcredist_x64url }}
-          vcredist_x64_140url: ${{ vars.vcredist_x64_140url }}
-          navDockerInstallUrl: ${{ vars.navDockerInstallUrl }}
-          openXmlSdkV25url: ${{ vars.openXmlSdkV25url }}
         run: |
           $erroractionpreference = "STOP"
           Set-StrictMode -version 2.0
@@ -141,18 +129,6 @@ jobs:
             $baseImage = '${{ matrix.tag }}'.split('|')[1]
             $ltscTag = '${{ matrix.tag }}'.split('|')[2]
             $setupUrlsFile = Join-Path $rootPath "Run/SetupUrls.ps1"
-            Set-Content -Path $setupUrlsFile -Value "`$sql2019url='$env:sql2019url'"
-            Add-Content -Path $setupUrlsFile -Value "`$sql2019LatestCuUrl='$env:sql2019LatestCuUrl'"
-            Add-Content -Path $setupUrlsFile -Value "`$dotNet6url='$env:dotNet6url'"
-            Add-Content -Path $setupUrlsFile -Value "`$dotNet8url='$env:dotNet8url'"
-            Add-Content -Path $setupUrlsFile -Value "`$powerShell7url='$env:powerShell7url'"
-            Add-Content -Path $setupUrlsFile -Value "`$rewriteUrl='$env:rewriteUrl'"
-            Add-Content -Path $setupUrlsFile -Value "`$sqlncliUrl='$env:sqlncliUrl'"
-            Add-Content -Path $setupUrlsFile -Value "`$vcredist_x86url='$env:vcredist_x86url'"
-            Add-Content -Path $setupUrlsFile -Value "`$vcredist_x64url='$env:vcredist_x64url'"
-            Add-Content -Path $setupUrlsFile -Value "`$vcredist_x64_140url='$env:vcredist_x64_140url'"
-            Add-Content -Path $setupUrlsFile -Value "`$navDockerInstallUrl='$env:navDockerInstallUrl'"
-            Add-Content -Path $setupUrlsFile -Value "`$openXmlSdkV25url='$env:openXmlSdkV25url'"
             Get-Content -Path $setupUrlsFile | Out-Host
             $dockerfile = Join-Path $rootPath "DOCKERFILE"
             $strFilesOnly = ''
@@ -214,6 +190,7 @@ jobs:
   MarkOldImagesStale:
     runs-on: [ Windows-Latest ]
     needs: [ AnalyzeImages, BuildImages ]
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
