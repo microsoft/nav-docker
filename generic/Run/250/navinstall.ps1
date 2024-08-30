@@ -91,12 +91,6 @@ Write-Host "Copying Service Tier Files"
 RoboCopyFiles -Source "$NavDvdPath\ServiceTier\Program Files" -Destination "C:\Program Files" -e
 RoboCopyFiles -Source "$NavDvdPath\ServiceTier\System64Folder" -Destination "C:\Windows\System32" -Files "NavSip.dll" -e
 
-# Write-Host "Copying PowerShell Scripts"
-# RoboCopyFiles -Source "$navDvdPath\WindowsPowerShellScripts\Cloud\NAVAdministration" -Destination "$runPath\NAVAdministration" -e
-# if (Test-Path "$navDvdPath\WindowsPowerShellScripts\WebSearch") {
-#     RoboCopyFiles -Source "$navDvdPath\WindowsPowerShellScripts\WebSearch" -Destination "$runPath\WebSearch" -e
-# }
-
 Write-Host "Copying Web Client Files"
 RoboCopyFiles -Source "$NavDvdPath\WebClient\Microsoft Dynamics NAV" -Destination "C:\Program Files\Microsoft Dynamics NAV" -e
 
