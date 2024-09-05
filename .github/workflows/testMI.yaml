@@ -18,14 +18,20 @@ jobs:
       - name: 'Az CLI login'
         uses: azure/login@v2
         with:
-            client-id: '73e0326a-bbaa-4ef4-864d-5ae9b66a786f'
-            tenant-id: '72f988bf-86f1-41af-91ab-2d7cd011db47'
-            subscription-id: '23bd34c5-78c9-4a8f-a130-c54588a362ad'
+            client-id: ${{ secrets.AZURE_CLIENT_ID }}
+            tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+            subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
             enable-AzPSSession: true
 
       - name: Test
         run: |
           $pushRegistry = "mcrbusinesscentral.azurecr.io"
           az acr login --name $pushRegistry
-
+          $version = "1.2.0"
+          $filename = Join-Path $env:TEMP "oras_$($version)_windows_amd64.zip"
+          Invoke-RestMethod -Method GET -UseBasicParsing -Uri "https://github.com/oras-project/oras/releases/download/v$($version)/oras_$($version)_windows_amd64.zip" -OutFile $filename
+          Expand-Archive -Path $filename -DestinationPath temp
+          Write-Host "Query federated token"
+          $result = Invoke-RestMethod -Method GET -UseBasicParsing -Headers @{ "Authorization" = "bearer $ENV:ACTIONS_ID_TOKEN_REQUEST_TOKEN"; "Accept" = "application/vnd.github+json" } -Uri "$ENV:ACTIONS_ID_TOKEN_REQUEST_URL&audience=api://AzureADTokenExchange"
+          ./temp/oras.exe login $pushRegistry --identity-token $result.value
 

@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 defaults:
   run:
@@ -96,6 +97,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: 'Az CLI login'
+        uses: azure/login@v2
+        with:
+            client-id: ${{ secrets.AZURE_CLIENT_ID }}
+            tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+            subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+            enable-AzPSSession: true
+
       - name: Build Image
         env:
           PushToProd: ${{ github.event.inputs.PushToProd }}
@@ -105,14 +114,7 @@ jobs:
           Set-StrictMode -version 2.0
           try {
             $pushRegistry = "mcrbusinesscentral.azurecr.io"
-            $job = start-job -ScriptBlock { Param($username, $token, $registry)
-              Write-Output $token | docker login --username $username --password-stdin $registry
-            } -ArgumentList '${{ secrets.PushUsername }}', '${{ secrets.PushToken }}', $pushRegistry
-            $job | Wait-Job -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null
-            $result = Receive-Job -ErrorAction SilentlyContinue -WarningAction SilentlyContinue $job 2> $NULL
-            if ($result -ne 'Login Succeeded') {
-              throw "docker login failed"
-            }
+            az acr login --name $pushRegistry
             Set-Location "generic"
             $rootPath = Get-Location
             $genericTag = $env:GenericTag
@@ -192,6 +194,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: 'Az CLI login'
+        uses: azure/login@v2
+        with:
+            client-id: ${{ secrets.AZURE_CLIENT_ID }}
+            tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+            subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+            enable-AzPSSession: true
+
       - name: MarkStale
         env:
           digestsJson: ${{ needs.AnalyzeImages.outputs.digestsJson }}
@@ -203,8 +213,9 @@ jobs:
           $filename = Join-Path $env:TEMP "oras_$($version)_windows_amd64.zip"
           Invoke-RestMethod -Method GET -UseBasicParsing -Uri "https://github.com/oras-project/oras/releases/download/v$($version)/oras_$($version)_windows_amd64.zip" -OutFile $filename
           Expand-Archive -Path $filename -DestinationPath temp
-          $pushRegistry = "mcrbusinesscentral.azurecr.io"
-          "${{ secrets.PushToken }}" | ./temp/oras.exe login $pushRegistry --username ${{ secrets.PushUsername }} --password-stdin
+          Write-Host "Query federated token"
+          $result = Invoke-RestMethod -Method GET -UseBasicParsing -Headers @{ "Authorization" = "bearer $ENV:ACTIONS_ID_TOKEN_REQUEST_TOKEN"; "Accept" = "application/vnd.github+json" } -Uri "$ENV:ACTIONS_ID_TOKEN_REQUEST_URL&audience=api://AzureADTokenExchange"
+          ./temp/oras.exe login $pushRegistry --identity-token $result.value
           $digests | ForEach-Object {
             $image = "$pushRegistry/public/businesscentral@$_"
             Write-Host "Stale $image"
