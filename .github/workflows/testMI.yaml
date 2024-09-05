@@ -25,5 +25,7 @@ jobs:
 
       - name: Test
         run: |
-          az account show
+          $pushRegistry = "mcrbusinesscentral.azurecr.io"
+          az acr login --name $pushRegistry
+
 
