@@ -214,8 +214,8 @@ jobs:
           Invoke-RestMethod -Method GET -UseBasicParsing -Uri "https://github.com/oras-project/oras/releases/download/v$($version)/oras_$($version)_windows_amd64.zip" -OutFile $filename
           Expand-Archive -Path $filename -DestinationPath temp
           Write-Host "Query federated token"
-          $result = Invoke-RestMethod -Method GET -UseBasicParsing -Headers @{ "Authorization" = "bearer $ENV:ACTIONS_ID_TOKEN_REQUEST_TOKEN"; "Accept" = "application/vnd.github+json" } -Uri "$ENV:ACTIONS_ID_TOKEN_REQUEST_URL&audience=api://AzureADTokenExchange"
-          ./temp/oras.exe login $pushRegistry --identity-token $result.value
+          $pushRegistry = "mcrbusinesscentral.azurecr.io"
+          az acr login --name $pushRegistry
           $digests | ForEach-Object {
             $image = "$pushRegistry/public/businesscentral@$_"
             Write-Host "Stale $image"
