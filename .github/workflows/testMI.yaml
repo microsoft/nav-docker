@@ -1,0 +1,29 @@
+name: Test Managed Identity
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  Test:
+    runs-on: [ windows-latest ]
+    steps:
+      - name: 'Az CLI login'
+        uses: azure/login@v2
+        with:
+            client-id: '73e0326a-bbaa-4ef4-864d-5ae9b66a786f'
+            tenant-id: '72f988bf-86f1-41af-91ab-2d7cd011db47'
+            subscription-id: '23bd34c5-78c9-4a8f-a130-c54588a362ad'
+            enable-AzPSSession: true
+
+      - name: Test
+        run: |
+          az account show
+
