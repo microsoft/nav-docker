@@ -798,7 +798,7 @@ function GetTestToolkitApps {
 
         if (!$includeTestFrameworkOnly) {
             # Add Test Libraries
-            $apps += "Microsoft_System Application Test Library.app", "Microsoft_Business Foundation Test Libraries.app", "Microsoft_Tests-TestLibraries.app" | ForEach-Object {
+            $apps += "Microsoft_System Application Test Library.app", "Microsoft_Business Foundation Test Libraries.app", "Microsoft_Tests-TestLibraries.app", "Microsoft_AI Test Toolkit" | ForEach-Object {
                 @(get-childitem -Path "C:\Applications\*.*" -recurse -filter $_)
             }
 
