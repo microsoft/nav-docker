@@ -37,7 +37,7 @@ jobs:
         shell: pwsh
         run: |
           $erroractionpreference = "STOP"
-          $digests = "$env:digests".Split(",").Trim()
+          $digests = "$env:digests".Split(",").Trim() | Select-Object -Unique
           $version = "1.2.0"
           $filename = Join-Path $env:TEMP "oras_$($version)_windows_amd64.zip"
           Invoke-RestMethod -Method GET -UseBasicParsing -Uri "https://github.com/oras-project/oras/releases/download/v$($version)/oras_$($version)_windows_amd64.zip" -OutFile $filename
