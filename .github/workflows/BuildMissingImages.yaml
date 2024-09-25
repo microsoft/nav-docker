@@ -189,7 +189,7 @@ jobs:
   MarkOldImagesStale:
     runs-on: [ Windows-Latest ]
     needs: [ AnalyzeImages, BuildImages ]
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stale'
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
