@@ -1,11 +1,11 @@
-name: Build new images
+name: Mark Images Stale
 
 on:
   workflow_dispatch:
     inputs:
-      PushToProd:
-        description: Push to production (Y/N)
-        type: boolean
+      SHAsToMarkStale:
+        description: Enter SHAs to mark stale (comma separated)
+        type: string
 
 permissions:
   contents: read
@@ -16,179 +16,8 @@ defaults:
     shell: PowerShell
 
 jobs:
-  AnalyzeImages:
-    runs-on: [ windows-latest ]
-    outputs:
-      genericTag: ${{ steps.Analyze.outputs.genericTag }}
-      buildImagesJson: ${{ steps.Analyze.outputs.buildImagesJson }}
-      digestsJson: ${{ steps.Analyze.outputs.digestsJson }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Analyze
-        id: Analyze
-        env:
-          RUNNUMBEROFFSET: ${{ vars.RUNNUMBEROFFSET }}
-          PushToProd: ${{ github.event.inputs.PushToProd }}
-        run: |
-          $erroractionpreference = "STOP"
-          try {
-            $servercoretags = @('ltsc2016','ltsc2019','ltsc2022')
-            $pushToProd = $true
-            if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
-              $pushToProd = $env:PushToProd -eq 'True'
-            }
-            $tags = @($servercoretags | ForEach-Object { "$_-dev"; "$_-filesonly-dev" })
-            if ($prod) {
-                $tags += @($servercoretags | ForEach-Object { "$_"; "$_-filesonly" })
-            }
-            $digests = $tags | ForEach-Object {
-                Write-Host -NoNewline "$_ : "
-                $manifest = docker manifest inspect mcr.microsoft.com/businesscentral:$_ -v | ConvertFrom-Json
-                $manifest.Descriptor.digest
-            } | Select-Object -Unique
-            Set-Location "generic"
-            $rootPath = Get-Location
-            $genericTag = (Get-Content -Raw -Path (Join-Path $RootPath 'tag.txt')).Trim(@(13,10,32))
-            $tagver = [System.Version]$genericTag
-            $revision = [int]($ENV:GITHUB_RUN_NUMBER)-[int]($ENV:RUNNUMBEROFFSET)
-            $genericTag = "$($tagver.Major).$($tagver.Minor).$($tagver.Build).$revision"
-            Write-Host "Using generic Tag $genericTag"
-            $webclient = New-Object System.Net.WebClient
-            $webclient.Headers.Add('Accept', "application/json")
-            $neededBcTags = $serverCoreTags | ForEach-Object {
-                $osVersion = [System.Version](($webclient.DownloadString("https://mcr.microsoft.com/v2/dotnet/framework/runtime/manifests/4.8-windowsservercore-$_") | ConvertFrom-Json).history[0].v1Compatibility | ConvertFrom-Json)."os.version"
-                "$osVersion-$genericTag|mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-$_|$_"
-                "$osVersion-$genericTag-filesonly|mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-$_|$_"
-            }
-            Write-Host "Needed Tags ($($neededBcTags.Count))"
-            $neededBcTags | ForEach-Object { Write-Host "- $_" }
-            $alltags = (($webclient.DownloadString("https://mcr.microsoft.com/v2/businesscentral/tags/list") | ConvertFrom-Json)).tags
-            $imagesBcTags = @($neededBcTags | Where-Object { $alltags -notcontains $_ })
-            Write-Host "Image Tags ($($imagesBcTags.Count))"
-            if ($imagesBcTags) {
-                $imagesBcTags | ForEach-Object { Write-Host "- $_" }
-            }
-            else {
-                Write-Host '- none'
-            }
-            $buildImagesJson = ConvertTo-Json -InputObject $imagesBcTags -Compress
-            $digestsJson = ConvertTo-Json -InputObject $digests -Compress
-            Add-Content -encoding utf8 -Path $ENV:GITHUB_OUTPUT -Value "digestsJson=$digestsJson"
-            Write-Host "digestsJson=$digestsJson"
-            Add-Content -encoding utf8 -Path $ENV:GITHUB_OUTPUT -Value "genericTag=$genericTag"
-            Write-Host "genericTag=$genericTag"
-            Add-Content -encoding utf8 -Path $ENV:GITHUB_OUTPUT -Value "buildImagesJson=$buildImagesJson"
-            Write-Host "buildImagesJson=$buildImagesJson"
-          }
-          catch {
-            Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
-            $host.SetShouldExit(1)            
-          }
-
-  BuildImages:
+  MarkmagesStale:
     runs-on: [ Windows-Latest ]
-    needs: [ AnalyzeImages ]
-    strategy:
-      matrix:
-        tag: ${{ fromJson(needs.AnalyzeImages.outputs.buildImagesJson) }}
-      fail-fast: false
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: 'Az CLI login'
-        uses: azure/login@v2
-        with:
-            client-id: ${{ secrets.AZURE_CLIENT_ID }}
-            tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-            subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-            enable-AzPSSession: true
-
-      - name: Build Image
-        env:
-          PushToProd: ${{ github.event.inputs.PushToProd }}
-          GenericTag: ${{ needs.AnalyzeImages.outputs.genericTag }}
-        run: |
-          $erroractionpreference = "STOP"
-          Set-StrictMode -version 2.0
-          try {
-            $pushRegistry = "mcrbusinesscentral.azurecr.io"
-            az acr login --name $pushRegistry
-            Set-Location "generic"
-            $rootPath = Get-Location
-            $genericTag = $env:GenericTag
-            $pushToProd = $true
-            if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
-              $pushToProd = $env:PushToProd -eq 'True'
-            }
-            $osversion = '${{ matrix.tag }}'.split('|')[0].split('-')[0]
-            $filesonly = ('${{ matrix.tag }}' -like '*-filesonly|*')
-            $only24 = ('${{ matrix.tag }}' -like '*-24|*' -or '${{ matrix.tag }}' -like '*-24-filesonly|*')
-            $baseImage = '${{ matrix.tag }}'.split('|')[1]
-            $ltscTag = '${{ matrix.tag }}'.split('|')[2]
-            $setupUrlsFile = Join-Path $rootPath "Run/SetupUrls.ps1"
-            Get-Content -Path $setupUrlsFile | Out-Host
-            $dockerfile = Join-Path $rootPath "DOCKERFILE"
-            $strFilesOnly = ''
-            $str24 = ''
-            if ($only24) {
-              $str24 = "-24"
-            }
-            if ($filesOnly) {
-              $strFilesOnly = "-filesonly"
-              $dockerfile += '-filesonly'
-            }
-            $image = "my:$osversion-$genericTag$str24$strFilesOnly"
-            $newtags = @(
-              "$pushRegistry/public/businesscentral:$osversion$str24$strFilesonly-dev"
-              "$pushRegistry/public/businesscentral:$ltscTag$str24$strFilesonly-dev"
-            )
-            if ($pushToProd) {
-              $newtags += @(
-                "$pushRegistry/public/businesscentral:$osversion$str24$strFilesonly"
-                "$pushRegistry/public/businesscentral:$osversion-$genericTag$str24$strFilesonly"
-                "$pushRegistry/public/businesscentral:$ltscTag$str24$strFilesonly"
-              )
-            }
-            $newTags | out-host
-            $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
-            docker pull $baseimage
-            $inspect = docker inspect $baseimage | ConvertFrom-Json
-            $success = $false
-            docker build --build-arg baseimage=$baseimage `
-                         --build-arg created=$created `
-                         --build-arg tag="$genericTag" `
-                         --build-arg osversion="$osversion" `
-                         --build-arg filesonly="$filesonly" `
-                         --build-arg only24="$only24" `
-                         --isolation=hyperv `
-                         --memory 8G `
-                         --tag $image `
-                         --file $dockerfile `
-                         $RootPath | % {
-              $_ | Out-Host
-              if ($_ -like "Successfully built*") {
-                $success = $true
-              }
-            }
-            if (!$success) {
-              throw "Error building image"
-            }
-            $newtags | ForEach-Object {
-              Write-Host "Push $_"
-              docker tag $image $_
-              docker push $_
-            }
-          }
-          catch {
-            Write-Host "::Error::Error building images. Error was $($_.Exception.Message)"
-            $host.SetShouldExit(1)            
-          }
-
-  MarkOldImagesStale:
-    runs-on: [ Windows-Latest ]
-    needs: [ AnalyzeImages, BuildImages ]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stale'
     steps:
       - name: Checkout
@@ -204,11 +33,11 @@ jobs:
 
       - name: MarkStale
         env:
-          digestsJson: ${{ needs.AnalyzeImages.outputs.digestsJson }}
+          digests: ${{ inputs.SHAsToMarkStale }}
         shell: pwsh
         run: |
           $erroractionpreference = "STOP"
-          $digests = $env:digestsJson | ConvertFrom-Json
+          $digests = "$env:digests".Split(",")
           $version = "1.2.0"
           $filename = Join-Path $env:TEMP "oras_$($version)_windows_amd64.zip"
           Invoke-RestMethod -Method GET -UseBasicParsing -Uri "https://github.com/oras-project/oras/releases/download/v$($version)/oras_$($version)_windows_amd64.zip" -OutFile $filename
