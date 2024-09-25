@@ -1,0 +1,52 @@
+name: Mark Images Stale
+
+on:
+  workflow_dispatch:
+    inputs:
+      SHAsToMarkStale:
+        description: Enter SHAs to mark stale (comma separated)
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+defaults:
+  run:
+    shell: PowerShell
+
+jobs:
+  MarkmagesStale:
+    runs-on: [ Windows-Latest ]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: 'Az CLI login'
+        uses: azure/login@v2
+        with:
+            client-id: ${{ secrets.AZURE_CLIENT_ID }}
+            tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+            subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+            enable-AzPSSession: true
+
+      - name: MarkStale
+        env:
+          digests: ${{ inputs.SHAsToMarkStale }}
+        shell: pwsh
+        run: |
+          $erroractionpreference = "STOP"
+          $digests = "$env:digests".Split(",").Trim() | Select-Object -Unique
+          $version = "1.2.0"
+          $filename = Join-Path $env:TEMP "oras_$($version)_windows_amd64.zip"
+          Invoke-RestMethod -Method GET -UseBasicParsing -Uri "https://github.com/oras-project/oras/releases/download/v$($version)/oras_$($version)_windows_amd64.zip" -OutFile $filename
+          Expand-Archive -Path $filename -DestinationPath temp
+          $pushRegistry = "mcrbusinesscentral.azurecr.io"
+          az acr login --name $pushRegistry
+          $digests | ForEach-Object {
+            $image = "$pushRegistry/public/businesscentral@$_"
+            Write-Host "Stale $image"
+            ./temp/oras.exe attach --artifact-type application/vnd.microsoft.artifact.lifecycle --annotation "vnd.microsoft.artifact.lifecycle.end-of-life.date=2023-05-12" $image
+          }
+
