@@ -1,4 +1,4 @@
-name: Build new images
+name: Mark Images Stale
 
 on:
   workflow_dispatch:
