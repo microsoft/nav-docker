@@ -573,10 +573,7 @@ function Set-ConfigSetting {
     $customSettingsArray = $customSettings -split ","
 
     foreach ($customSetting in $customSettingsArray) {
-        $customSettingArray = $customSetting -split "="
-        $customSettingKey = $customSettingArray[0]
-        $customSettingValue = $customSettingArray[1]
-        
+	$customSettingKey , $customSettingValue = $customSetting -split "=",2
         if ($customConfig.SelectSingleNode("$parentPath/$leafName[@key='$customSettingKey']") -eq $null) {
             if (!$silent) {
                 Write-Host "Creating $customSettingKey and setting it to $customSettingValue"
