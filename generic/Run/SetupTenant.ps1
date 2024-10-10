@@ -29,8 +29,12 @@
         "applicationInsightsInstrumentationKey" = $applicationInsightsInstrumentationKey
     }
     if ($AuthenticationEmail) {
+        $aadTenantId = $aadTenant
+        if ($aadTenantId -eq "" -or $aadTenantId -eq "common") {
+            $aadTenantId = $AuthenticationEmail.Split('@')[1]
+        }
         $parameters += @{
-            "AadTenantId" = $AuthenticationEmail.Split('@')[1]
+            "AadTenantId" = $aadTenantId
         }
 
         Write-Host "Setting AadTenantId to $($AuthenticationEmail.Split('@')[1])"
