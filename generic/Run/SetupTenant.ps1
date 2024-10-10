@@ -36,8 +36,7 @@
         $parameters += @{
             "AadTenantId" = $aadTenantId
         }
-
-        Write-Host "Setting AadTenantId to $($AuthenticationEmail.Split('@')[1])"
+        Write-Host "Setting AadTenantId to $aadTenantId"
     }
     Mount-NavDatabase @parameters
     $tenantStartTime = [DateTime]::Now
