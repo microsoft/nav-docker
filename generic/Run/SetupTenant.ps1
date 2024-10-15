@@ -29,11 +29,14 @@
         "applicationInsightsInstrumentationKey" = $applicationInsightsInstrumentationKey
     }
     if ($AuthenticationEmail) {
-        $parameters += @{
-            "AadTenantId" = $AuthenticationEmail.Split('@')[1]
+        $aadTenantId = "$env:aadTenant"
+        if ($aadTenantId -eq "" -or $aadTenantId -eq "common") {
+            $aadTenantId = $AuthenticationEmail.Split('@')[1]
         }
-
-        Write-Host "Setting AadTenantId to $($AuthenticationEmail.Split('@')[1])"
+        $parameters += @{
+            "AadTenantId" = $aadTenantId
+        }
+        Write-Host "Setting AadTenantId to $aadTenantId"
     }
     Mount-NavDatabase @parameters
     $tenantStartTime = [DateTime]::Now
