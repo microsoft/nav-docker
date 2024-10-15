@@ -1,7 +1,9 @@
 $sql2019url = 'https://aka.ms/bcdocker-Sql2019Url'
 
-# https://learn.microsoft.com/en-us/troubleshoot/sql/releases/sqlserver-2019/build-versions
-# https://www.microsoft.com/en-us/download/details.aspx?id=100809
+# https://learn.microsoft.com/en-us/troubleshoot/sql/releases/download-and-install-latest-updates#latest-updates-available-for-currently-supported-versions-of-sql-server
+# Click the link under latest cumulative update including the latest GDR update (NOT the link under latest GDR)
+# In the KB article, click Method 3: Microsoft Download Center -> Download Pakcage now -> Download and right click "click here to download manually" -> Copy link address
+# The file is around 900Mb (GDR update alone is smaller)
 $sql2019LatestCuUrl = 'https://aka.ms/bcdocker-Sql2019LatestCuUrl'
 
 # https://dotnet.microsoft.com/en-us/download/dotnet/6.0 - grab the direct link behind ASP.NET Core Runtime Windows -> Hosting Bundle
