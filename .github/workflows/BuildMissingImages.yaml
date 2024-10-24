@@ -214,10 +214,11 @@ jobs:
           Invoke-RestMethod -Method GET -UseBasicParsing -Uri "https://github.com/oras-project/oras/releases/download/v$($version)/oras_$($version)_windows_amd64.zip" -OutFile $filename
           Expand-Archive -Path $filename -DestinationPath temp
           $pushRegistry = "mcrbusinesscentral.azurecr.io"
+          $staleDate = [System.DateTime]::Today.AddDays(-1).ToString('yyyy-MM-dd')
           az acr login --name $pushRegistry
           $digests | ForEach-Object {
             $image = "$pushRegistry/public/businesscentral@$_"
-            Write-Host "Stale $image"
-            ./temp/oras.exe attach --artifact-type application/vnd.microsoft.artifact.lifecycle --annotation "vnd.microsoft.artifact.lifecycle.end-of-life.date=2023-05-12" $image
+            Write-Host "Stale $image on $staleDate"
+            ./temp/oras.exe attach --artifact-type application/vnd.microsoft.artifact.lifecycle --annotation "vnd.microsoft.artifact.lifecycle.end-of-life.date=$staleDate" $image
           }
 
