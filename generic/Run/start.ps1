@@ -70,6 +70,7 @@ Add-Type -TypeDefinition $Source -Language CSharp -WarningAction SilentlyContinu
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
 . (Get-MyFilePath "HelperFunctions.ps1")
+. (Get-MyFilePath "GetDvdArtifactPaths.ps1")
 
 if (!$multitenant) {
     $multitenant = ($env:multitenant -eq "Y")
@@ -157,7 +158,7 @@ try {
                     $mtParam = @{}
                     $versionFolder = $env:installfolder
                     if (!($versionFolder)) {
-                        $setupVersion = (Get-Item -Path (Join-Path $platformArtifactPath "ServiceTier\program files\Microsoft Dynamics NAV\*\Service\Microsoft.Dynamics.Nav.Server.exe")).VersionInfo.FileVersion
+                        $setupVersion = (Get-Item -Path (Join-Path (Get-NavDvdServiceFolder $platformArtifactPath) "Microsoft.Dynamics.Nav.Server.exe")).VersionInfo.FileVersion
                         $versionNo = [Int]::Parse($setupVersion.Split('.')[0]+$setupVersion.Split('.')[1])
                         $versionFolder = ""
 
@@ -321,7 +322,7 @@ try {
                 }
             }
             elseif (Test-Path $navDvdPath -PathType Container) {
-                $setupVersion = (Get-Item -Path "$navDvdPath\ServiceTier\program files\Microsoft Dynamics NAV\*\Service\Microsoft.Dynamics.Nav.Server.exe").VersionInfo.FileVersion
+                $setupVersion = (Get-Item -Path (Join-Path (Get-NavDvdServiceFolder $platformArtifactPath) "Microsoft.Dynamics.Nav.Server.exe")).VersionInfo.FileVersion
                 $versionNo = [Int]::Parse($setupVersion.Split('.')[0]+$setupVersion.Split('.')[1])
                 $versionFolder = ""
                 Get-ChildItem -Path "C:\Run" -Directory | where-object { [Int]::TryParse($_.Name, [ref]$null) } | % { [Int]::Parse($_.Name) } | Sort-Object | % {
