@@ -93,7 +93,7 @@ jobs:
           }
 
   BuildImages:
-    runs-on: [ Windows-Latest ]
+    runs-on: [ Windows-2025 ]
     needs: [ AnalyzeImages ]
     strategy:
       matrix:
