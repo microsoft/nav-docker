@@ -33,14 +33,20 @@ jobs:
         run: |
           $erroractionpreference = "STOP"
           try {
-            $servercoretags = @('ltsc2016','ltsc2019','ltsc2022')
+            $bctags = @('ltsc2016','ltsc2019','ltsc2022','ltsc2025')
+            $servercoretags = @{
+              "ltsc2016" = "4.8-windowsservercore-ltsc2016"
+              "ltsc2019" = "4.8-windowsservercore-ltsc2019"
+              "ltsc2022" = "4.8.1-windowsservercore-ltsc2022"
+              "ltsc2025" = "4.8.1-windowsservercore-ltsc2025"
+            }
             $pushToProd = $true
             if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
               $pushToProd = $env:PushToProd -eq 'True'
             }
-            $tags = @($servercoretags | ForEach-Object { "$_-dev"; "$_-filesonly-dev" })
+            $tags = @($bctags | ForEach-Object { "$_-dev"; "$_-filesonly-dev" })
             if ($prod) {
-                $tags += @($servercoretags | ForEach-Object { "$_"; "$_-filesonly" })
+                $tags += @($bctags | ForEach-Object { "$_"; "$_-filesonly" })
             }
             $digests = $tags | ForEach-Object {
                 Write-Host -NoNewline "$_ : "
@@ -56,10 +62,10 @@ jobs:
             Write-Host "Using generic Tag $genericTag"
             $webclient = New-Object System.Net.WebClient
             $webclient.Headers.Add('Accept', "application/json")
-            $neededBcTags = $serverCoreTags | ForEach-Object {
-                $osVersion = [System.Version](($webclient.DownloadString("https://mcr.microsoft.com/v2/dotnet/framework/runtime/manifests/4.8-windowsservercore-$_") | ConvertFrom-Json).history[0].v1Compatibility | ConvertFrom-Json)."os.version"
-                "$osVersion-$genericTag|mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-$_|$_"
-                "$osVersion-$genericTag-filesonly|mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-$_|$_"
+            $neededBcTags = $bctags | ForEach-Object {
+                $osVersion = [System.Version](($webclient.DownloadString("https://mcr.microsoft.com/v2/dotnet/framework/runtime/manifests/$($serverCoreTags."$_")") | ConvertFrom-Json).history[0].v1Compatibility | ConvertFrom-Json)."os.version"
+                "$osVersion-$genericTag|mcr.microsoft.com/dotnet/framework/runtime:$($serverCoreTags."$_")|$_"
+                "$osVersion-$genericTag-filesonly|mcr.microsoft.com/dotnet/framework/runtime:$($serverCoreTags."$_")|$_"
             }
             Write-Host "Needed Tags ($($neededBcTags.Count))"
             $neededBcTags | ForEach-Object { Write-Host "- $_" }
