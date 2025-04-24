@@ -93,7 +93,7 @@ RoboCopyFiles -Source (Join-Path "$NavDvdPath\ServiceTier" (Get-WixProgramFiles6
 RoboCopyFiles -Source (Get-NavDvdSipComponentPath "$NavDvdPath") -Destination "C:\Windows\System32" -Files "NavSip.dll" -e
 
 Write-Host "Copying Web Client Files"
-RoboCopyFiles -Source (Get-NavDvdWebClientFolder "$NavDvdPath") -Destination "C:\Program Files\Microsoft Dynamics NAV" -e
+RoboCopyFiles -Source (Get-NavDvdWebRootFolder "$NavDvdPath") -Destination "C:\Program Files\Microsoft Dynamics NAV" -e
 
 if (Test-Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV\*\RoleTailored Client" -PathType Container) {
     Write-Host "Copying Client Files"

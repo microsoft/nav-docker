@@ -76,7 +76,7 @@ if (!$multitenant) {
     $multitenant = ($env:multitenant -eq "Y")
 }
 
-try {
+#try {
 
     if (!$restartingInstance) {
 
@@ -322,7 +322,7 @@ try {
                 }
             }
             elseif (Test-Path $navDvdPath -PathType Container) {
-                $setupVersion = (Get-Item -Path (Join-Path (Get-NavDvdServiceFolder $platformArtifactPath) "Microsoft.Dynamics.Nav.Server.exe")).VersionInfo.FileVersion
+                $setupVersion = (Get-Item -Path (Join-Path (Get-NavDvdServiceFolder $navDvdPath) "Microsoft.Dynamics.Nav.Server.exe")).VersionInfo.FileVersion
                 $versionNo = [Int]::Parse($setupVersion.Split('.')[0]+$setupVersion.Split('.')[1])
                 $versionFolder = ""
                 Get-ChildItem -Path "C:\Run" -Directory | where-object { [Int]::TryParse($_.Name, [ref]$null) } | % { [Int]::Parse($_.Name) } | Sort-Object | % {
@@ -392,7 +392,7 @@ try {
         }
     }
 
-} catch {
+#} catch {
 
     Write-Host -ForegroundColor Red $_.Exception.Message
 
@@ -405,7 +405,7 @@ try {
 
     Write-Host -ForegroundColor Red $_.ScriptStackTrace
 
-}
+#}
 
 if ($dlPathCreated) {
     Write-host "Remove $dlPath"
