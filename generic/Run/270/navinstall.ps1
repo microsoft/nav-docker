@@ -89,11 +89,11 @@ if (!$skipDb) {
 }
 
 Write-Host "Copying Service Tier Files"
-RoboCopyFiles -Source (Join-Path "$NavDvdPath\ServiceTier" (Get-WixProgramFiles64 "$NavDvdPath"))  -Destination "C:\Program Files" -e
-RoboCopyFiles -Source (Get-NavDvdSipComponentPath "$NavDvdPath") -Destination "C:\Windows\System32" -Files "NavSip.dll" -e
+RoboCopyFiles -Source (Join-Path "$NavDvdPath\ServiceTier" (Get-WixProgramFiles64 $NavDvdPath))  -Destination "C:\Program Files" -e
+RoboCopyFiles -Source (Get-NavDvdSipComponentPath $NavDvdPath) -Destination "C:\Windows\System32" -Files "NavSip.dll" -e
 
 Write-Host "Copying Web Client Files"
-RoboCopyFiles -Source (Get-NavDvdWebClientFolder "$NavDvdPath") -Destination "C:\Program Files\Microsoft Dynamics NAV" -e
+RoboCopyFiles -Source (Get-NavDvdWebRootFolder $NavDvdPath) -Destination "C:\Program Files\Microsoft Dynamics NAV" -e
 
 if (Test-Path "$navDvdPath\RoleTailoredClient\program files\Microsoft Dynamics NAV\*\RoleTailored Client" -PathType Container) {
     Write-Host "Copying Client Files"
@@ -110,7 +110,7 @@ if (Test-Path "$navDvdPath\LegacyDlls\program files\Microsoft Dynamics NAV\*\Rol
 }
 
 Write-Host "Copying ModernDev Files"
-RoboCopyFiles -Source "$navDvdPath" -Destination "$runPath" -Files "*.vsix"
+RoboCopyFiles -Source $navDvdPath -Destination "$runPath" -Files "*.vsix"
 $DevToolsPath = (Get-NavDvdDevToolsFolder $navDvdPath)
 if (!($null -eq $DevToolsPath) -and (Test-Path "$DevToolsPath")) {
     RoboCopyFiles -Source "$DevToolsPath" -Destination "C:\Program Files\Microsoft Dynamics NAV" -e
@@ -183,7 +183,7 @@ else {
 }
 
 # Restore CRONUS Demo database to databases folder
-$CommonAppData = Get-WixCommonAppData "$navDvdPath"
+$CommonAppData = Get-WixCommonAppData $navDvdPath
 if (!$skipDb -and $databasePath) {
 
     if (Test-NavDatabase -DatabaseServer $databaseServer -DatabaseInstance $databaseInstance -DatabaseCredentials $databaseCredentials -DatabaseName $databaseName) {
