@@ -76,7 +76,7 @@ if (!$multitenant) {
     $multitenant = ($env:multitenant -eq "Y")
 }
 
-#try {
+try {
 
     if (!$restartingInstance) {
 
@@ -392,7 +392,7 @@ if (!$multitenant) {
         }
     }
 
-#} catch {
+} catch {
 
     Write-Host -ForegroundColor Red $_.Exception.Message
 
@@ -405,7 +405,7 @@ if (!$multitenant) {
 
     Write-Host -ForegroundColor Red $_.ScriptStackTrace
 
-#}
+}
 
 if ($dlPathCreated) {
     Write-host "Remove $dlPath"

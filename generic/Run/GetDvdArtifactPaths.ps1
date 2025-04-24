@@ -31,9 +31,9 @@ function Get-WixCommonAppData {
         [string] $platformArtifactPath
     )
 
-    $ServiceFolder = Join-Path -Resolve $platformArtifactPath "ServiceTier\pfiles64\Microsoft Dynamics NAV\*\Service" -ErrorAction Ignore
     $CommonAppData = "CommApp"
-    if (!(Test-Path $ServiceFolder)) {
+    $databaseFolder = Join-Path $platformArtifactPath "SQLDemoDatabase\$CommonAppData"
+    if (!(Test-Path $databaseFolder -PathType Container)) {
         # Use the legacy folder path used before version 27 (wix 6.0)
         $CommonAppData = "CommonAppData"
     }
