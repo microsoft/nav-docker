@@ -23,5 +23,5 @@ $vcredist_x64url = 'https://aka.ms/highdpimfc2013x64enu'
 $vcredist_x64_140url = 'https://aka.ms/vs/17/release/vc_redist.x64.exe'
 
 # NAV/BC Docker Install Files
-$navDockerInstallUrl = 'https://bcartifacts.blob.core.windows.net/prerequisites/nav-docker-install.zip'
-$openXmlSdkV25url = 'https://bcartifacts.blob.core.windows.net/prerequisites/OpenXMLSDKv25.msi'
+$navDockerInstallUrl = 'https://bcartifacts-exdbf9fwegejdqak.b02.azurefd.net/prerequisites/nav-docker-install.zip'
+$openXmlSdkV25url = 'https://bcartifacts-exdbf9fwegejdqak.b02.azurefd.net/prerequisites/OpenXMLSDKv25.msi'
