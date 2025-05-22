@@ -121,8 +121,8 @@ function Get-NavDvdSipComponentPath {
     $sipComponentPath = Join-Path $platformArtifactPath "ServiceTier\System64"
     if (!(Test-Path $sipComponentPath)) {
         # Use the legacy folder path used before version 27 and wix 6.0
-        $sipComponent = Join-Path $platformArtifactPath "ServiceTier\System64Folder"
+        $sipComponentPath = Join-Path $platformArtifactPath "ServiceTier\System64Folder"
     }
 
-    return $sipComponent
+    return $sipComponentPath
 }
