@@ -1,0 +1,112 @@
+name: Build new images
+
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: PowerShell
+
+jobs:
+  AnalyzeImages:
+    runs-on: [ windows-latest ]
+    outputs:
+      genericTag: ${{ steps.Analyze.outputs.genericTag }}
+      buildImagesJson: ${{ steps.Analyze.outputs.buildImagesJson }}
+      digestsJson: ${{ steps.Analyze.outputs.digestsJson }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Analyze
+        id: Analyze
+        run: |
+          $erroractionpreference = "STOP"
+          try {
+            $bctags = @('ltsc2016','ltsc2019','ltsc2022','ltsc2025')
+            $servercoretags = @{
+              "ltsc2016" = "4.8-windowsservercore-ltsc2016"
+              "ltsc2019" = "4.8-windowsservercore-ltsc2019"
+              "ltsc2022" = "4.8.1-windowsservercore-ltsc2022"
+              "ltsc2025" = "4.8.1-windowsservercore-ltsc2025"
+            }
+            $tags = @($bctags | ForEach-Object { "$_-dev"; "$_-filesonly-dev" })
+            if ($prod) {
+                $tags += @($bctags | ForEach-Object { "$_"; "$_-filesonly" })
+            }
+            $digests = $tags | ForEach-Object {
+                Write-Host -NoNewline "$_ : "
+                $manifest = docker manifest inspect mcr.microsoft.com/businesscentral:$_ -v | ConvertFrom-Json
+                $manifest.Descriptor.digest
+            } | Select-Object -Unique
+            Set-Location "generic"
+            $rootPath = Get-Location
+            $genericTag = (Get-Content -Raw -Path (Join-Path $RootPath 'tag.txt')).Trim(@(13,10,32))
+            $tagver = [System.Version]$genericTag
+            $revision = [int]($ENV:GITHUB_RUN_NUMBER)
+            $genericTag = "$($tagver.Major).$($tagver.Minor).$($tagver.Build).$revision"
+            Write-Host "Using generic Tag $genericTag"
+            $webclient = New-Object System.Net.WebClient
+            $webclient.Headers.Add('Accept', "application/json")
+            $neededBcTags = $bctags | ForEach-Object {
+                $osVersion = [System.Version](($webclient.DownloadString("https://mcr.microsoft.com/v2/dotnet/framework/runtime/manifests/$($serverCoreTags."$_")") | ConvertFrom-Json).history[0].v1Compatibility | ConvertFrom-Json)."os.version"
+                "$osVersion-$genericTag|mcr.microsoft.com/dotnet/framework/runtime:$($serverCoreTags."$_")|$_"
+                "$osVersion-$genericTag-filesonly|mcr.microsoft.com/dotnet/framework/runtime:$($serverCoreTags."$_")|$_"
+            }
+            Write-Host "Needed Tags ($($neededBcTags.Count))"
+            $neededBcTags | ForEach-Object { Write-Host "- $_" }
+            $alltags = (($webclient.DownloadString("https://mcr.microsoft.com/v2/businesscentral/tags/list") | ConvertFrom-Json)).tags
+            $imagesBcTags = @($neededBcTags | Where-Object { $alltags -notcontains $_ })
+            Write-Host "Image Tags ($($imagesBcTags.Count))"
+            if ($imagesBcTags) {
+                $imagesBcTags | ForEach-Object { Write-Host "- $_" }
+            }
+            else {
+                Write-Host '- none'
+            }
+            $buildImagesJson = ConvertTo-Json -InputObject $imagesBcTags -Compress
+            $digestsJson = ConvertTo-Json -InputObject $digests -Compress
+            Add-Content -encoding utf8 -Path $ENV:GITHUB_OUTPUT -Value "digestsJson=$digestsJson"
+            Write-Host "digestsJson=$digestsJson"
+            Add-Content -encoding utf8 -Path $ENV:GITHUB_OUTPUT -Value "genericTag=$genericTag"
+            Write-Host "genericTag=$genericTag"
+            Add-Content -encoding utf8 -Path $ENV:GITHUB_OUTPUT -Value "buildImagesJson=$buildImagesJson"
+            Write-Host "buildImagesJson=$buildImagesJson"
+          }
+          catch {
+            Write-Host "::Error::Error analyzing images. Error was $($_.Exception.Message)"
+            $host.SetShouldExit(1)            
+          }
+
+  BuildImages:
+    runs-on: [ Windows-2025 ]
+    needs: [ AnalyzeImages ]
+    strategy:
+      matrix:
+        tag: ${{ fromJson(needs.AnalyzeImages.outputs.buildImagesJson) }}
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Image
+        env:
+          Tag: ${{ matrix.tag }}
+          GenericTag: ${{ needs.AnalyzeImages.outputs.genericTag }}
+        run: |
+          $osversion = $env:Tag.split('|')[0].split('-')[0]
+          $filesonly = ($env:Tag -like '*-filesonly|*')
+          $only24 = ($env:Tag -like '*-24|*' -or $env:Tag -like '*-24-filesonly|*')
+          $baseImage = $env:Tag.split('|')[1]
+          $ltscTag = $env:Tag.split('|')[2]
+
+          . ${{ github.workspace }}/build/build.ps1 `
+              -OSVersion $osversion `
+              -BaseImage $baseImage `
+              -LtscTag $ltscTag `
+              -FilesOnly $filesonly `
+              -Only24 $only24 `
+              -GenericTag $env:GenericTag
