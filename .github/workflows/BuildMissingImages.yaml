@@ -113,84 +113,30 @@ jobs:
 
       - name: Build Image
         env:
+          Tag: ${{ matrix.tag }}
           PushToProd: ${{ github.event.inputs.PushToProd }}
           GenericTag: ${{ needs.AnalyzeImages.outputs.genericTag }}
         run: |
-          $erroractionpreference = "STOP"
-          Set-StrictMode -version 2.0
-          try {
-            $pushRegistry = "mcrbusinesscentral.azurecr.io"
-            az acr login --name $pushRegistry
-            Set-Location "generic"
-            $rootPath = Get-Location
-            $genericTag = $env:GenericTag
-            $pushToProd = $true
-            if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
+          $osversion = $env:Tag.split('|')[0].split('-')[0]
+          $filesonly = ($env:Tag -like '*-filesonly|*')
+          $only24 = ($env:Tag -like '*-24|*' -or $env:Tag -like '*-24-filesonly|*')
+          $baseImage = $env:Tag.split('|')[1]
+          $ltscTag = $env:Tag.split('|')[2]
+
+          $pushToProd = $true
+          if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
               $pushToProd = $env:PushToProd -eq 'True'
-            }
-            $osversion = '${{ matrix.tag }}'.split('|')[0].split('-')[0]
-            $filesonly = ('${{ matrix.tag }}' -like '*-filesonly|*')
-            $only24 = ('${{ matrix.tag }}' -like '*-24|*' -or '${{ matrix.tag }}' -like '*-24-filesonly|*')
-            $baseImage = '${{ matrix.tag }}'.split('|')[1]
-            $ltscTag = '${{ matrix.tag }}'.split('|')[2]
-            $setupUrlsFile = Join-Path $rootPath "Run/SetupUrls.ps1"
-            Get-Content -Path $setupUrlsFile | Out-Host
-            $dockerfile = Join-Path $rootPath "DOCKERFILE"
-            $strFilesOnly = ''
-            $str24 = ''
-            if ($only24) {
-              $str24 = "-24"
-            }
-            if ($filesOnly) {
-              $strFilesOnly = "-filesonly"
-              $dockerfile += '-filesonly'
-            }
-            $image = "my:$osversion-$genericTag$str24$strFilesOnly"
-            $newtags = @(
-              "$pushRegistry/public/businesscentral:$osversion$str24$strFilesonly-dev"
-              "$pushRegistry/public/businesscentral:$ltscTag$str24$strFilesonly-dev"
-            )
-            if ($pushToProd) {
-              $newtags += @(
-                "$pushRegistry/public/businesscentral:$osversion$str24$strFilesonly"
-                "$pushRegistry/public/businesscentral:$osversion-$genericTag$str24$strFilesonly"
-                "$pushRegistry/public/businesscentral:$ltscTag$str24$strFilesonly"
-              )
-            }
-            $newTags | out-host
-            $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
-            docker pull $baseimage
-            $inspect = docker inspect $baseimage | ConvertFrom-Json
-            $success = $false
-            docker build --build-arg baseimage=$baseimage `
-                         --build-arg created=$created `
-                         --build-arg tag="$genericTag" `
-                         --build-arg osversion="$osversion" `
-                         --build-arg filesonly="$filesonly" `
-                         --build-arg only24="$only24" `
-                         --isolation=hyperv `
-                         --memory 8G `
-                         --tag $image `
-                         --file $dockerfile `
-                         $RootPath | % {
-              $_ | Out-Host
-              if ($_ -like "Successfully built*") {
-                $success = $true
-              }
-            }
-            if (!$success) {
-              throw "Error building image"
-            }
-            $newtags | ForEach-Object {
-              Write-Host "Push $_"
-              docker tag $image $_
-              docker push $_
-            }
           }
-          catch {
-            Write-Host "::Error::Error building images. Error was $($_.Exception.Message)"
-            $host.SetShouldExit(1)            
-          }
+
+          . ${{ github.workspace }}/build/build.ps1 `
+              -OSVersion $osversion `
+              -BaseImage $baseImage `
+              -LtscTag $ltscTag `
+              -FilesOnly $filesonly `
+              -Only24 $only24 `
+              -GenericTag $env:GenericTag `
+              -PushToDev `
+              -PushToProd:$env:PushToProd
 
   MarkOldImagesStale:
     runs-on: [ Windows-Latest ]
@@ -215,16 +161,4 @@ jobs:
         run: |
           $erroractionpreference = "STOP"
           $digests = $env:digestsJson | ConvertFrom-Json
-          $version = "1.2.0"
-          $filename = Join-Path $env:TEMP "oras_$($version)_windows_amd64.zip"
-          Invoke-RestMethod -Method GET -UseBasicParsing -Uri "https://github.com/oras-project/oras/releases/download/v$($version)/oras_$($version)_windows_amd64.zip" -OutFile $filename
-          Expand-Archive -Path $filename -DestinationPath temp
-          $pushRegistry = "mcrbusinesscentral.azurecr.io"
-          $staleDate = [System.DateTime]::Today.AddDays(-1).ToString('yyyy-MM-dd')
-          az acr login --name $pushRegistry
-          $digests | ForEach-Object {
-            $image = "$pushRegistry/public/businesscentral@$_"
-            Write-Host "Stale $image on $staleDate"
-            ./temp/oras.exe attach --artifact-type application/vnd.microsoft.artifact.lifecycle --annotation "vnd.microsoft.artifact.lifecycle.end-of-life.date=$staleDate" $image
-          }
-
+          . ${{ github.workspace }}/build/markstale.ps1 -Digests $digests
