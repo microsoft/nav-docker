@@ -45,8 +45,7 @@ if (-not $filesonly) {
 
     Write-Host 'Installing SQL Server 2022 Express'
     $configFileLocation = 'c:\run\SQLConf.ini'
-    $sqlExe = Join-Path $tempPath "SQLEXPRADV_x64_ENU.exe" -Resolve
-    $process = Start-Process -FilePath $sqlExe.FullName -NoNewWindow -Wait -PassThru -ArgumentList /Action=Install, /ConfigurationFile=$configFileLocation, /IAcceptSQLServerLicenseTerms, /Quiet
+    $process = Start-Process -FilePath 'temp\SQLEXPRADV_x64_ENU.exe' -NoNewWindow -Wait -PassThru -ArgumentList /Action=Install, /ConfigurationFile=$configFileLocation, /IAcceptSQLServerLicenseTerms, /Quiet
     if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
 
     # Installing the latest Cumulative Update does not work with the SQL Server 2022 Express installer
