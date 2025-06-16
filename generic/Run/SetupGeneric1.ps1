@@ -37,10 +37,16 @@ if (-not $filesonly) {
 
     Write-Host "Downloading SQL Server 2022 Express from $sql2022url"
     Invoke-RestMethod -Method Get -UseBasicParsing -Uri $sql2022url -OutFile 'temp\SQL2022-SSEI-Expr.exe'
+    $sqlInstaller = Get-Item 'temp\SQL2022-SSEI-Expr.exe'
+    $tempPath = $sqlInstaller.DirectoryName
+
+    Write-Host 'Unpacking SQL Server 2019 Express'
+    Start-Process -FilePath $sqlInstaller.FullName -NoNewWindow -Wait -PassThru -ArgumentList "/Quiet", "/Action=Download" ,"/MediaPath=$tempPath", "/MediaType=Advanced"
 
     Write-Host 'Installing SQL Server 2022 Express'
     $configFileLocation = 'c:\run\SQLConf.ini'
-    $process = Start-Process -FilePath 'temp\SQL2022-SSEI-Expr.exe' -NoNewWindow -Wait -PassThru -ArgumentList /Action=Install, /ConfigurationFile=$configFileLocation, /IAcceptSQLServerLicenseTerms, /Quiet
+    $sqlExe = Get-Item "temp\SQL2022-SSEI-Expr.exe"
+    $process = Start-Process -FilePath $sqlExe.FullName -NoNewWindow -Wait -PassThru -ArgumentList /Action=Install, /ConfigurationFile=$configFileLocation, /IAcceptSQLServerLicenseTerms, /Quiet
     if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
 
     # Installing the latest Cumulative Update does not work with the SQL Server 2022 Express installer
