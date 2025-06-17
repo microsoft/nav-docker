@@ -40,7 +40,7 @@ if (-not $filesonly) {
     $sqlInstaller = Get-Item 'temp\SQL2022-SSEI-Expr.exe'
     $tempPath = $sqlInstaller.DirectoryName
 
-    Write-Host 'Unpacking SQL Server 2019 Express'
+    Write-Host 'Unpacking SQL Server 2022 Express'
     Start-Process -FilePath $sqlInstaller.FullName -NoNewWindow -Wait -PassThru -ArgumentList "/Quiet", "/Action=Download" ,"/MediaPath=$tempPath", "/MediaType=Advanced"
 
     Write-Host 'Installing SQL Server 2022 Express'
