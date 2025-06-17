@@ -5,7 +5,7 @@
 Update DOCKERFILE AND DOCKERFILE-filesonly
 
 SQL Server
-https://learn.microsoft.com/en-us/troubleshoot/sql/releases/sqlserver-2019/build-versions
+https://learn.microsoft.com/en-us/troubleshoot/sql/releases/sqlserver-2022/build-versions
 
 dotnet 8
 https://dotnet.microsoft.com/en-us/download/dotnet/8.0 - grab the direct link behind ASP.NET Core Runtime Windows -> Hosting Bundle
