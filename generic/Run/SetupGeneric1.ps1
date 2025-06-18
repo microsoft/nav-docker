@@ -35,6 +35,11 @@ if (-not $filesonly) {
         Set-Service 'W3SVC' -startuptype manual
     }
 
+    # Copy DLLs to GAC_MSIL before installing SQL Server (https://github.com/microsoft/mssql-docker/issues/540)
+    Invoke-RestMethod -Method Get -UseBasicParsing -Uri $sqlDllsUrl -OutFile 'temp\MissingSQLDlls.zip'
+    Expand-Archive -Path 'temp\MissingSQLDlls.zip' -DestinationPath 'temp' -Force
+    Copy-Item -Path "temp\MissingSQLDlls\*" -Destination 'C:/Windows/Microsoft.Net/assembly/GAC_MSIL/' -Recurse -Force
+
     Write-Host "Downloading SQL Server 2022 Express from $sql2022url"
     Invoke-RestMethod -Method Get -UseBasicParsing -Uri $sql2022url -OutFile 'temp\SQL2022-SSEI-Expr.exe'
     $sqlInstaller = Get-Item 'temp\SQL2022-SSEI-Expr.exe'
@@ -49,12 +54,12 @@ if (-not $filesonly) {
     if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
 
     # Installing the latest Cumulative Update does not work with the SQL Server 2022 Express installer
-    # Write-Host 'Downloading SQL Server 2022 Cumulative Update'
-    # Invoke-RestMethod -Method Get -UseBasicParsing -Uri $sql2022LatestCuUrl -OutFile 'temp\SQL2022CU.exe'
+    Write-Host 'Downloading SQL Server 2022 Cumulative Update'
+    Invoke-RestMethod -Method Get -UseBasicParsing -Uri $sql2022LatestCuUrl -OutFile 'temp\SQL2022CU.exe'
 
-    # Write-Host 'Installing SQL Server 2022 Cumulative Update'
-    # $process = Start-Process -FilePath 'temp\SQL2022CU.exe' -ArgumentList /Action=Patch, /Quiet, /IAcceptSQLServerLicenseTerms, /AllInstances, /SuppressPrivacyStatementNotice -NoNewWindow -Wait -PassThru
-    # if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
+    Write-Host 'Installing SQL Server 2022 Cumulative Update'
+    $process = Start-Process -FilePath 'temp\SQL2022CU.exe' -ArgumentList /Action=Patch, /Quiet, /IAcceptSQLServerLicenseTerms, /AllInstances, /SuppressPrivacyStatementNotice -NoNewWindow -Wait -PassThru
+    if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
 
     Write-Host 'Configuring SQL Server 2022 Express'
     Set-ItemProperty -path 'HKLM:\software\microsoft\microsoft sql server\mssql16.SQLEXPRESS\mssqlserver\supersocketnetlib\tcp\ipall' -name tcpdynamicports -value ''
