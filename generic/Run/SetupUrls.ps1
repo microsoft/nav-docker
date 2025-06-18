@@ -21,6 +21,7 @@ $sqlncliUrl = 'https://download.microsoft.com/download/B/E/D/BED73AAC-3C8A-43F5-
 $vcredist_x86url = 'https://aka.ms/highdpimfc2013x86enu'
 $vcredist_x64url = 'https://aka.ms/highdpimfc2013x64enu'
 $vcredist_x64_140url = 'https://aka.ms/vs/17/release/vc_redist.x64.exe'
+$sqlDllsUrl = "https://bcartifacts-exdbf9fwegejdqak.b02.azurefd.net/prerequisites/MissingSQLDlls.zip"
 
 # NAV/BC Docker Install Files
 $navDockerInstallUrl = 'https://bcartifacts-exdbf9fwegejdqak.b02.azurefd.net/prerequisites/nav-docker-install.zip'
