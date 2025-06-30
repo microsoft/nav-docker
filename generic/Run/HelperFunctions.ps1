@@ -76,24 +76,36 @@ function Restore-BacpacWithRetry
 		[Parameter(Mandatory=$false)]
 		[int]$maxattempts = 10
     )
-
-    $dacdll = Get-Item "C:\Program Files\Microsoft SQL Server\*\DAC\bin\Microsoft.SqlServer.Dac.dll"
-    if (!($dacdll))
-    {
-        InstallPrerequisite -Name "Dac Framework 18.2" -MsiPath "c:\download\DacFramework.msi" -MsiUrl "https://download.microsoft.com/download/9/2/2/9228AAC2-90D1-4F48-B423-AF345296C7DD/EN/x64/DacFramework.msi" | Out-Null
-        $dacdll = Get-Item "C:\Program Files\Microsoft SQL Server\*\DAC\bin\Microsoft.SqlServer.Dac.dll"
+    
+    # Test if the bacpac file exists
+    if (-not (Test-Path $Bacpac)) {
+        throw "Bacpac file '$Bacpac' not found."
     }
-    Add-Type -path $dacdll.FullName
-    $conn = "Data Source=$DatabaseServer\$DatabaseInstance;Initial Catalog=master;Connection Timeout=0;Integrated Security=True;"
+
+    # Install Dac Framework if SqlPackage.exe is not found
+    $sqlPackageExe = Get-ChildItem "C:\Program Files\Microsoft SQL Server\" -Recurse -Filter "SqlPackage.exe" -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+    if (-not $sqlPackageExe) {
+        InstallPrerequisite -Name "Dac Framework" -MsiPath "c:\download\DacFramework.msi" -MsiUrl "https://go.microsoft.com/fwlink/?linkid=2316310" | Out-Null
+        $sqlPackageExe = Get-ChildItem "C:\Program Files\Microsoft SQL Server\" -Recurse -Filter "SqlPackage.exe" -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+    }
+    
+    if (-not $sqlPackageExe) {
+        throw "SqlPackage.exe not found. Cannot restore database from bacpac."
+    }
+
+    $conn = "Data Source=$DatabaseServer\$DatabaseInstance;Initial Catalog=$DatabaseName;Connection Timeout=0;Integrated Security=True;Encrypt=True;TrustServerCertificate=True"
+
+    $Action = "Import"
+    if ($Bacpac.EndsWith(".dacpac", [System.StringComparison]::OrdinalIgnoreCase)) {
+        $Action = "Publish"
+    }
 
     $attempt = 0
     while ($true) {
         try {
             $attempt++
             Write-Host "Restoring Database from $Bacpac as $DatabaseName"
-            $AppimportBac = New-Object Microsoft.SqlServer.Dac.DacServices $conn
-            $ApploadBac = [Microsoft.SqlServer.Dac.BacPackage]::Load($Bacpac)
-            $AppimportBac.ImportBacpac($ApploadBac, $DatabaseName)
+            Start-Process -FilePath $sqlPackageExe -ArgumentList @("/Action:$Action","/SourceFile:`"$Bacpac`"", "/TargetConnectionString:`"$conn`"", "/Quiet") -NoNewWindow -Wait
             break
         } catch {
             if ($attempt -ge $maxattempts) {
