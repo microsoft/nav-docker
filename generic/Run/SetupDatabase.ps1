@@ -127,7 +127,11 @@ if ($restartingInstance) {
     $databaseName = "app"
 
     if ("$licenseFile" -eq "") {
-        $licenseFile = Join-Path $serviceTierFolder "Cronus.flf"
+        if (Test-Path (Join-Path $serviceTierFolder "Cronus.flf")) {
+            $licenseFile = Join-Path $serviceTierFolder "Cronus.flf"
+        } else {
+            $licenseFile = Join-Path $serviceTierFolder "Cronus.bclicense"
+        }
     }
 
 } elseif ($databaseCredentials) {
