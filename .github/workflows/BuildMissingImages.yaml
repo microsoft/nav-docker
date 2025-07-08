@@ -117,7 +117,6 @@ jobs:
           PushToProd: ${{ github.event.inputs.PushToProd }}
           GenericTag: ${{ needs.AnalyzeImages.outputs.genericTag }}
         run: |
-          $osversion = $env:Tag.split('|')[0].split('-')[0]
           $filesonly = ($env:Tag -like '*-filesonly|*')
           $only24 = ($env:Tag -like '*-24|*' -or $env:Tag -like '*-24-filesonly|*')
           $baseImage = $env:Tag.split('|')[1]
@@ -129,14 +128,13 @@ jobs:
           }
 
           . ${{ github.workspace }}/build/build.ps1 `
-              -OSVersion $osversion `
               -BaseImage $baseImage `
               -LtscTag $ltscTag `
               -FilesOnly $filesonly `
               -Only24 $only24 `
               -GenericTag $env:GenericTag `
               -PushToDev `
-              -PushToProd:$env:PushToProd
+              -PushToProd:$pushToProd
 
   MarkOldImagesStale:
     runs-on: [ Windows-Latest ]

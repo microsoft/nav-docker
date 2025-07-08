@@ -104,7 +104,6 @@ jobs:
           $ltscTag = $env:Tag.split('|')[2]
 
           . ${{ github.workspace }}/build/build.ps1 `
-              -OSVersion $osversion `
               -BaseImage $baseImage `
               -LtscTag $ltscTag `
               -FilesOnly $filesonly `
