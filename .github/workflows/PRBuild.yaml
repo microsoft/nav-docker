@@ -27,15 +27,10 @@ jobs:
           RUNNUMBEROFFSET: ${{ vars.RUNNUMBEROFFSET }}
           PushToProd: ${{ github.event.inputs.PushToProd }}
         run: |
-          $pushToProd = $true
-          if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
-              $pushToProd = $env:PushToProd -eq 'True'
-          }
           [int] $revisionNumber = ([int]($ENV:GITHUB_RUN_NUMBER) - [int]($ENV:RUNNUMBEROFFSET))
 
           . ${{ github.workspace }}/build/analyzeimages.ps1 `
-                -RevisionNumber $revisionNumber `
-                -PushToProd:$pushToProd
+                -RevisionNumber $revisionNumber
 
   BuildImages:
     runs-on: [ Windows-2025 ]
