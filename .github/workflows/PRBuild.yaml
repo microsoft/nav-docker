@@ -1,4 +1,4 @@
-name: CI
+name: Pull Request Build
 
 on:
   pull_request:
@@ -25,7 +25,6 @@ jobs:
         id: Analyze
         env:
           RUNNUMBEROFFSET: ${{ vars.RUNNUMBEROFFSET }}
-          PushToProd: ${{ github.event.inputs.PushToProd }}
         run: |
           [int] $revisionNumber = ([int]($ENV:GITHUB_RUN_NUMBER) - [int]($ENV:RUNNUMBEROFFSET))
 
