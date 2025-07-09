@@ -153,3 +153,5 @@ if ($PushToDev -or $PushToProd) {
         docker push $_
     }
 }
+
+return $image
