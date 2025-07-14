@@ -95,10 +95,15 @@ if (-not $filesonly) {
     Write-Host 'Installing rewrite_amd64'
     $process = start-process -Wait -FilePath 'temp\rewrite_amd64.msi' -ArgumentList /quiet, /qn, /passive
     if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
+    Write-Host 'Downloading Microsoft ODBC Driver 17 for SQL Server'
+    Invoke-RestMethod -Method Get -UseBasicParsing -Uri $odbcDriverUrl -OutFile 'temp\msodbcsql.msi'
+    Write-Host 'Installing Microsoft ODBC Driver 17 for SQL Server'
+    $process = Start-Process -Wait -FilePath 'temp\msodbcsql.msi' -ArgumentList /quiet, /qn, /passive, 'IACCEPTMSODBCSQLLICENSETERMS=YES'
+    if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
     Write-Host 'Downloading SQL Server Native Client'
     Invoke-RestMethod -Method Get -UseBasicParsing -Uri $sqlncliUrl -OutFile 'temp\sqlncli.msi'
     Write-Host 'Installing SQL Server Native Client'
-    $process = start-process -Wait -FilePath 'temp\sqlncli.msi' -ArgumentList /quiet, /qn, /passive
+    $process = start-process -Wait -FilePath 'temp\sqlncli.msi' -ArgumentList /quiet, /qn, /passive, "IACCEPTSQLNCLILICENSETERMS=YES"
     if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
 }
 Write-Host 'Downloading OpenXMLSDKV25'
