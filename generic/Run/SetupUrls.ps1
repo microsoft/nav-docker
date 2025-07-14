@@ -17,8 +17,8 @@ $powerShell7url = 'https://aka.ms/bcdocker-PowerShell7Url'
 
 # Misc URLs
 $rewriteUrl = 'https://download.microsoft.com/download/1/2/8/128E2E22-C1B9-44A4-BE2A-5859ED1D4592/rewrite_amd64_en-US.msi'
-$sqlncliUrl = 'https://download.microsoft.com/download/F/3/C/F3C64941-22A0-47E9-BC9B-1A19B4CA3E88/ENU/x64/sqlncli.msi'  # SQL Server Native Client (additional compatibility for older BC versions, issue #3968)
-$odbcDriverUrl = 'https://go.microsoft.com/fwlink/?linkid=2266337'  # Microsoft ODBC Driver 17 for SQL Server (x64) - compatible with SQL Server 2022
+$sqlncliUrl = 'https://download.microsoft.com/download/F/3/C/F3C64941-22A0-47E9-BC9B-1A19B4CA3E88/ENU/x64/sqlncli.msi'  # SQL Server Native Client (Version 11.4.7462.6)
+$odbcDriverUrl = 'https://go.microsoft.com/fwlink/?linkid=2266337'  # Microsoft ODBC Driver 17 for SQL Server (x64)
 $vcredist_x86url = 'https://aka.ms/highdpimfc2013x86enu'
 $vcredist_x64url = 'https://aka.ms/highdpimfc2013x64enu'
 $vcredist_x64_140url = 'https://aka.ms/vs/17/release/vc_redist.x64.exe'
