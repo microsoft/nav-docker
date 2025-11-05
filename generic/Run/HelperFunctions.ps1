@@ -801,7 +801,7 @@ function GetTestToolkitApps {
 
         if (!$includeTestFrameworkOnly) {
             # Add Test Libraries
-            $apps += "Microsoft_System Application Test Library.app", "Microsoft_Business Foundation Test Libraries.app", "Microsoft_Tests-TestLibraries.app", "Microsoft_AI Test Toolkit.app" | ForEach-Object {
+            $apps += "Microsoft_System Application Test Library.app", "Microsoft_Business Foundation Test Libraries.app", "Microsoft_Application Test Library.app", "Microsoft_Tests-TestLibraries.app", "Microsoft_AI Test Toolkit.app" | ForEach-Object {
                 @(get-childitem -Path "C:\Applications\*.*" -recurse -filter $_)
             }
 
@@ -886,3 +886,4 @@ function RoboCopyFiles {
         }
     }
 }
+
