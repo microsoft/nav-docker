@@ -1,0 +1,61 @@
+name: Pull Request Build
+
+on:
+  pull_request:
+    branches: [ master ]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: PowerShell
+
+jobs:
+  AnalyzeImages:
+    runs-on: [ windows-latest ]
+    outputs:
+      genericTag: ${{ steps.Analyze.outputs.genericTag }}
+      buildImagesJson: ${{ steps.Analyze.outputs.buildImagesJson }}
+      digestsJson: ${{ steps.Analyze.outputs.digestsJson }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Analyze
+        id: Analyze
+        env:
+          RUNNUMBEROFFSET: ${{ vars.RUNNUMBEROFFSET }}
+        run: |
+          [int] $revisionNumber = ([int]($ENV:GITHUB_RUN_NUMBER) - [int]($ENV:RUNNUMBEROFFSET))
+
+          . ${{ github.workspace }}/build/analyzeimages.ps1 `
+                -RevisionNumber $revisionNumber
+
+  BuildImages:
+    runs-on: [ Windows-2025 ]
+    needs: [ AnalyzeImages ]
+    strategy:
+      matrix:
+        tag: ${{ fromJson(needs.AnalyzeImages.outputs.buildImagesJson) }}
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Image
+        env:
+          Tag: ${{ matrix.tag }}
+          GenericTag: ${{ needs.AnalyzeImages.outputs.genericTag }}
+        run: |
+          $osversion = $env:Tag.split('|')[0].split('-')[0]
+          $filesonly = ($env:Tag -like '*-filesonly|*')
+          $only24 = ($env:Tag -like '*-24|*' -or $env:Tag -like '*-24-filesonly|*')
+          $baseImage = $env:Tag.split('|')[1]
+          $ltscTag = $env:Tag.split('|')[2]
+
+          . ${{ github.workspace }}/build/build.ps1 `
+              -BaseImage $baseImage `
+              -LtscTag $ltscTag `
+              -FilesOnly $filesonly `
+              -Only24 $only24 `
+              -GenericTag $env:GenericTag
