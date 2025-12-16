@@ -19,8 +19,8 @@ $powerShell7url = 'https://aka.ms/bcdocker-PowerShell7Url'
 $rewriteUrl = 'https://download.microsoft.com/download/1/2/8/128E2E22-C1B9-44A4-BE2A-5859ED1D4592/rewrite_amd64_en-US.msi'
 $sqlncliUrl = 'https://download.microsoft.com/download/F/3/C/F3C64941-22A0-47E9-BC9B-1A19B4CA3E88/ENU/x64/sqlncli.msi'  # SQL Server Native Client (Version 11.4.7462.6)
 $odbcDriverUrl = 'https://go.microsoft.com/fwlink/?linkid=2266337'  # Microsoft ODBC Driver 17 for SQL Server (x64)
-$vcredist_x86url = 'https://aka.ms/highdpimfc2013x86enu'
-$vcredist_x64url = 'https://aka.ms/highdpimfc2013x64enu'
+$vcredist_x86url = 'https://download.microsoft.com/download/2/e/6/2e61cfa4-993b-4dd4-91da-3737cd5cd6e3/vcredist_x86.exe' # Visual C++ Redistributable Packages for Visual Studio x86 (https://www.microsoft.com/en-us/download/details.aspx?id=40784)
+$vcredist_x64url = 'https://download.microsoft.com/download/2/e/6/2e61cfa4-993b-4dd4-91da-3737cd5cd6e3/vcredist_x64.exe' # Visual C++ Redistributable Packages for Visual Studio x64 (https://www.microsoft.com/en-us/download/details.aspx?id=40784)
 $vcredist_x64_140url = 'https://aka.ms/vs/17/release/vc_redist.x64.exe'
 $sqlDllsUrl = "https://bcartifacts-exdbf9fwegejdqak.b02.azurefd.net/prerequisites/MissingSQLDlls.zip"
 
