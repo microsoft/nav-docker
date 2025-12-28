@@ -155,7 +155,9 @@ if ($installersFolder) {
 
 Write-Host "Copying dependencies"
 $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName
-Copy-Item -Path (Join-Path $runPath 'Install\t2embed.dll') -Destination "c:\windows\system32\t2embed.dll"
+if (!(Test-Path "c:\windows\system32\t2embed.dll")) {
+    Copy-Item -Path (Join-Path $runPath 'Install\t2embed.dll') -Destination "c:\windows\system32\t2embed.dll"
+}
 
 Write-Host "Importing PowerShell Modules"
 try {
