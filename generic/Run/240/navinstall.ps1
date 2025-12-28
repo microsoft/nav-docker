@@ -155,7 +155,9 @@ if ($installersFolder) {
 
 Write-Host "Copying dependencies"
 $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName
-Copy-Item -Path (Join-Path $runPath 'Install\t2embed.dll') -Destination "c:\windows\system32\t2embed.dll"
+if (!(Test-Path "c:\windows\system32\t2embed.dll")) {
+    Copy-Item -Path (Join-Path $runPath 'Install\t2embed.dll') -Destination "c:\windows\system32\t2embed.dll"
+}
 
 Write-Host "Importing PowerShell Modules"
 try {
@@ -372,3 +374,4 @@ if (!$skipDb -and ($multitenant -or $installOnly -or $licenseFilePath -ne "" -or
 $timespend = [Math]::Round([DateTime]::Now.Subtract($startTime).Totalseconds)
 Write-Host "Installation took $timespend seconds"
 Write-Host "Installation complete"
+
