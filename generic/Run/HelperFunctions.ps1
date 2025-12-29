@@ -678,7 +678,7 @@ function Download-Artifacts {
         [switch] $includePlatform,
         [switch] $force,
         [switch] $forceRedirection,
-        [string] $basePath = 'c:\dl'
+        [string] $basePath = 'c:\bcartifacts.cache'
     )
 
     if (-not (Test-Path $basePath)) {
