@@ -678,7 +678,7 @@ function Download-Artifacts {
         [switch] $includePlatform,
         [switch] $force,
         [switch] $forceRedirection,
-        [string] $basePath = 'c:\bcartifacts.cache'
+        [string] $basePath = 'c:\dl'
     )
 
     if (-not (Test-Path $basePath)) {
@@ -886,4 +886,5 @@ function RoboCopyFiles {
         }
     }
 }
+
 
