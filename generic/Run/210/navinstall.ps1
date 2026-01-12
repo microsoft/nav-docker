@@ -105,7 +105,9 @@ $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Servic
 
 # Due to dependencies from finsql.exe, we have to copy hlink.dll and ReportBuilder in place inside the container
 Copy-Item -Path (Join-Path $runPath 'Install\hlink.dll') -Destination (Join-Path $serviceTierFolder 'hlink.dll')
-Copy-Item -Path (Join-Path $runPath 'Install\t2embed.dll') -Destination "c:\windows\system32\t2embed.dll"
+if (!(Test-Path "c:\windows\system32\t2embed.dll")) {
+    Copy-Item -Path (Join-Path $runPath 'Install\t2embed.dll') -Destination "c:\windows\system32\t2embed.dll"
+}
 Copy-Item -Path (Join-Path $runPath 'Install\Microsoft.IdentityModel.dll') -Destination (Join-Path $serviceTierFolder 'Microsoft.IdentityModel.dll')
 
 $reportBuilderPath = "C:\Program Files (x86)\ReportBuilder"
