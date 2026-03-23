@@ -3,6 +3,7 @@ Param(
     [switch] $filesOnly,
     [switch] $multitenant,
     [string] $artifactUrl = "",
+    [string] $platformArtifactUrl = "",
     [switch] $includeTestToolkit,
     [switch] $includeTestLibrariesOnly,
     [switch] $includeTestFrameworkOnly,
@@ -30,7 +31,7 @@ if (!$filesOnly) {
 $myStart = Join-Path $myPath "start.ps1"
 if ($PSCommandPath -ne $mystart) {
     if (Test-Path -Path $myStart) {
-        . $myStart -installOnly:$installOnly -filesOnly:$filesOnly -multitenant:$multitenant -artifactUrl $artifactUrl -includeTestToolkit:$includeTestToolkit -includeTestLibrariesOnly:$includeTestLibrariesOnly -includeTestFrameworkOnly:$includeTestFrameworkOnly -includePerformanceToolkit:$includePerformanceToolkit
+        . $myStart -installOnly:$installOnly -filesOnly:$filesOnly -multitenant:$multitenant -artifactUrl $artifactUrl -platformArtifactUrl $platformArtifactUrl -includeTestToolkit:$includeTestToolkit -includeTestLibrariesOnly:$includeTestLibrariesOnly -includeTestFrameworkOnly:$includeTestFrameworkOnly -includePerformanceToolkit:$includePerformanceToolkit
         exit
     }
 }
@@ -150,7 +151,11 @@ try {
 
                     Write-Host "Using artifactUrl $($artifactUrl.split('?')[0])"
 
-                    $artifactPaths = Download-Artifacts -artifactUrl $artifactUrl -includePlatform
+                    if (!$platformArtifactUrl) {
+                        $platformArtifactUrl = "$env:platformArtifactUrl"
+                    }
+
+                    $artifactPaths = Download-Artifacts -artifactUrl $artifactUrl -includePlatform -platformArtifactUrl $platformArtifactUrl
                     $appArtifactPath = $artifactPaths[0]
                     $platformArtifactPath = $artifactPaths[1]
 
