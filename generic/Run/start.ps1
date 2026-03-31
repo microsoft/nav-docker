@@ -31,7 +31,7 @@ if (!$filesOnly) {
 $myStart = Join-Path $myPath "start.ps1"
 if ($PSCommandPath -ne $mystart) {
     if (Test-Path -Path $myStart) {
-        . $myStart -installOnly:$installOnly -filesOnly:$filesOnly -multitenant:$multitenant -artifactUrl $artifactUrl -platformArtifactUrl $platformArtifactUrl -includeTestToolkit:$includeTestToolkit -includeTestLibrariesOnly:$includeTestLibrariesOnly -includeTestFrameworkOnly:$includeTestFrameworkOnly -includePerformanceToolkit:$includePerformanceToolkit
+        . $myStart -installOnly:$installOnly -filesOnly:$filesOnly -multitenant:$multitenant -artifactUrl $artifactUrl -includeTestToolkit:$includeTestToolkit -includeTestLibrariesOnly:$includeTestLibrariesOnly -includeTestFrameworkOnly:$includeTestFrameworkOnly -includePerformanceToolkit:$includePerformanceToolkit
         exit
     }
 }
