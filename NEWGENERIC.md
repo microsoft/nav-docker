@@ -10,6 +10,9 @@ https://learn.microsoft.com/en-us/troubleshoot/sql/releases/sqlserver-2022/build
 dotnet 8
 https://dotnet.microsoft.com/en-us/download/dotnet/8.0 - grab the direct link behind ASP.NET Core Runtime Windows -> Hosting Bundle
 
+dotnet 10
+https://dotnet.microsoft.com/en-us/download/dotnet/10.0 - grab the direct link behind ASP.NET Core Runtime Windows -> Hosting Bundle
+
 dotnet 6
 https://dotnet.microsoft.com/en-us/download/dotnet/6.0 - grab the direct link behind ASP.NET Core Runtime Windows -> Hosting Bundle
 

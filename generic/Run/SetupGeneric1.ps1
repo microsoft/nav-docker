@@ -121,6 +121,11 @@ Invoke-RestMethod -Method Get -UseBasicParsing -Uri $dotNet8url -OutFile 'temp\D
 Write-Host 'Installing dotnet 8'
 $process = start-process -Wait -FilePath 'temp\DotNet8-Win.exe' -ArgumentList /quiet
 if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
+Write-Host 'Downloading dotnet 10'
+Invoke-RestMethod -Method Get -UseBasicParsing -Uri $dotNet10url -OutFile 'temp\DotNet10-Win.exe'
+Write-Host 'Installing dotnet 10'
+$process = start-process -Wait -FilePath 'temp\DotNet10-Win.exe' -ArgumentList /quiet
+if (($null -ne $process.ExitCode) -and ($process.ExitCode -ne 0)) { Write-Host ('EXIT CODE '+$process.ExitCode) } else { Write-Host 'Success' }
 Write-Host 'Downloading PowerShell 7'
 Invoke-RestMethod -Method Get -UseBasicParsing -Uri $powerShell7url -OutFile 'temp\powershell-7-win-x64.msi'
 Write-Host 'Installing PowerShell 7'
