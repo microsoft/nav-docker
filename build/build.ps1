@@ -87,6 +87,11 @@ function Get-OsVersion {
 }
 
 try {
+    # Login to ACR early, before the lengthy docker build, to avoid OIDC token expiry
+    if ($PushToDev -or $PushToProd) {
+        az acr login --name $PushRegistry
+    }
+
     Push-Location "generic"
     $rootPath = Get-Location
 
@@ -146,7 +151,6 @@ if ($PushToDev -or $PushToProd) {
         )
     }
     
-    az acr login --name $PushRegistry
     $newtags | ForEach-Object {
         Write-Host "Pushing $image with tag $_"
         docker tag $image $_
