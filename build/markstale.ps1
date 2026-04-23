@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
-    [string]$Digests, # $digests = $env:digestsJson | ConvertFrom-Json
+    [string[]]$Digests, # $digests = $env:digestsJson | ConvertFrom-Json
     [Parameter(Mandatory = $false)]
     [string]$PushRegistry = "mcrbusinesscentral.azurecr.io"
 )
