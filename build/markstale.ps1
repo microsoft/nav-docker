@@ -6,7 +6,13 @@ param(
 )
 
 if (-not (Get-Command -name "oras" -ErrorAction SilentlyContinue)) {
-    throw "Please install the ORAS CLI before running this script e.g. via 'winget install oras-cli' or 'choco install oras-cli'"
+    $version = "1.2.0"
+    $filename = Join-Path $env:TEMP "oras_$($version)_windows_amd64.zip"
+    $orasPath = Join-Path $env:TEMP "oras"
+    Write-Host "Installing ORAS CLI v$version..."
+    Invoke-RestMethod -Method GET -UseBasicParsing -Uri "https://github.com/oras-project/oras/releases/download/v$($version)/oras_$($version)_windows_amd64.zip" -OutFile $filename
+    Expand-Archive -Path $filename -DestinationPath $orasPath -Force
+    $env:PATH = "$orasPath;$env:PATH"
 }
 
 az acr login --name $PushRegistry
