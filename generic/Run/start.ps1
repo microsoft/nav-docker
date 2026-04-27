@@ -3,6 +3,7 @@ Param(
     [switch] $filesOnly,
     [switch] $multitenant,
     [string] $artifactUrl = "",
+    [string] $platformArtifactUrl = "",
     [switch] $includeTestToolkit,
     [switch] $includeTestLibrariesOnly,
     [switch] $includeTestFrameworkOnly,
@@ -150,7 +151,11 @@ try {
 
                     Write-Host "Using artifactUrl $($artifactUrl.split('?')[0])"
 
-                    $artifactPaths = Download-Artifacts -artifactUrl $artifactUrl -includePlatform
+                    if (!$platformArtifactUrl) {
+                        $platformArtifactUrl = "$env:platformArtifactUrl"
+                    }
+
+                    $artifactPaths = Download-Artifacts -artifactUrl $artifactUrl -includePlatform -platformArtifactUrl $platformArtifactUrl
                     $appArtifactPath = $artifactPaths[0]
                     $platformArtifactPath = $artifactPaths[1]
 

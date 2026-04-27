@@ -676,6 +676,7 @@ function Download-Artifacts {
         [Parameter(Mandatory=$true)]
         [string] $artifactUrl,
         [switch] $includePlatform,
+        [string] $platformArtifactUrl = "",
         [switch] $force,
         [switch] $forceRedirection,
         [string] $basePath = 'c:\dl'
@@ -729,7 +730,11 @@ function Download-Artifacts {
     $appArtifactPath
 
     if ($includePlatform) {
-        if ($appManifest.PSObject.Properties.name -eq "platformUrl") {
+        if ($platformArtifactUrl) {
+            Write-Host "Using separate platformArtifactUrl $($platformArtifactUrl.split('?')[0])"
+            $platformUrl = $platformArtifactUrl
+        }
+        elseif ($appManifest.PSObject.Properties.name -eq "platformUrl") {
             $platformUrl = $appManifest.platformUrl
         }
         else {
