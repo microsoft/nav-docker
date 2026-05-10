@@ -11,6 +11,19 @@ if ($restartingInstance) {
 
 } elseif ($licensefile -ne "") {
 
+    if ($multitenant)
+    {
+        $status = (Get-NavTenant -ServerInstance $ServerInstance).State
+
+        while ($status -eq "Mounting")
+        {
+            Write-Host "Tenant default was not ready: $($status)"
+            Start-Sleep -Seconds 5
+
+            $status = (Get-NavTenant -ServerInstance $ServerInstance).State
+        }
+    }
+
     if ($licensefile.StartsWith("https://") -or $licensefile.StartsWith("http://"))
     {
         $licensefileurl = $licensefile
