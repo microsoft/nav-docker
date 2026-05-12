@@ -255,7 +255,7 @@ function Copy-NavDatabase
                                    -DatabaseCredentials $databaseCredentials `
                                    -Query $backupQuery
 
-            $move = (($files | % { $_.name+[System.IO.Path]::GetExtension($_.physical_name) }) -join "', move '").Replace(".mdf","' to '$dbfolder\$DestinationDatabaseName.mdf").Replace(".ldf","' to '$dbfolder\$DestinationDatabaseName.ldf").Replace(".ndf","' to '$dbfolder\$DestinationDatabaseName.ndf")
+            $move = (($files | % { $_.name+[System.IO.Path]::GetExtension($_.physical_name) }) -join "', move '") -replace '\.mdf', "' to '$dbfolder\$DestinationDatabaseName.mdf" -replace '\.ldf', "' to '$dbfolder\$DestinationDatabaseName.ldf" -replace '\.ndf', "' to '$dbfolder\$DestinationDatabaseName.ndf"
 
             $restoreQuery = "restore database [$DestinationDatabaseName] from disk = '$dbfolder\$sourceDatabaseName.bak' with stats=10, recovery, move '$move'"
             Write-Host $restoreQuery
