@@ -175,6 +175,11 @@ catch {
     Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
 }
 
+$appsManagementModule = Join-Path $serviceTierFolder 'Admin\Microsoft.BusinessCentral.Apps.Management.psd1'
+if (Test-Path $appsManagementModule) {
+    Import-Module $appsManagementModule -WarningAction SilentlyContinue
+}
+
 $databaseServer = "localhost"
 $databaseInstance = "SQLEXPRESS"
 if ($multitenant) {
