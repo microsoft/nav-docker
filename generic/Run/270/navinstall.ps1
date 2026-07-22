@@ -175,6 +175,23 @@ catch {
     Import-Module "$serviceTierFolder\Microsoft.Dynamics.Nav.Management.psm1"
 }
 
+# On newer BC platforms the app-management cmdlets (Get-NAVAppInfo, Publish/Sync/Install-NAVApp, ...)
+# were split out of the classic module above into Microsoft.BusinessCentral.Apps.Management. Only import
+# it when those cmdlets are actually missing: on older platforms the classic module still exports them and
+# that module's manifest is backed by a .NET assembly that cannot load under Windows PowerShell 5.1, so
+# importing it there aborts the install (see AL-Go issue 2325).
+if (-not (Get-Command Get-NAVAppInfo -ErrorAction SilentlyContinue)) {
+    $appsManagementModule = Join-Path $serviceTierFolder 'Admin\Microsoft.BusinessCentral.Apps.Management.psd1'
+    if (Test-Path $appsManagementModule) {
+        try {
+            Import-Module $appsManagementModule -WarningAction SilentlyContinue
+        }
+        catch {
+            Write-Host "Warning: Could not import '$appsManagementModule': $($_.Exception.Message)"
+        }
+    }
+}
+
 $databaseServer = "localhost"
 $databaseInstance = "SQLEXPRESS"
 if ($multitenant) {
