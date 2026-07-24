@@ -25,8 +25,13 @@ else {
     # Windows PowerShell 5.1 and PowerShell 7
     $usePurePsModules = $false
     if (Test-Path $bcMgmtPsd1) {
-        $platformVersion = [System.Version](Import-PowerShellDataFile $bcMgmtPsd1).ModuleVersion
-        $usePurePsModules = ($platformVersion.Major -ge 29)
+        try {
+            $platformVersion = [System.Version](Import-PowerShellDataFile $bcMgmtPsd1).ModuleVersion
+            $usePurePsModules = ($platformVersion.Major -ge 29)
+        }
+        catch {
+            $usePurePsModules = $false
+        }
     }
 
     if ($usePurePsModules) {
