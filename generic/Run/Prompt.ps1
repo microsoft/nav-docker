@@ -17,7 +17,33 @@ if ($PSScriptRoot -eq "c:\run" -and (Test-Path "c:\run\my\prompt.ps1")) {
 }
 else {
     $serviceTierFolder = (Get-Item "C:\Program Files\Microsoft Dynamics NAV\*\Service").FullName
-    if ($isPsCore -and (Test-Path "$serviceTierFolder\Admin")) {
+    $adminFolder = Join-Path $serviceTierFolder 'Admin'
+    $bcMgmtPsd1  = Join-Path $adminFolder 'Microsoft.BusinessCentral.Management.psd1'
+    $bcAppsPsd1  = Join-Path $adminFolder 'Microsoft.BusinessCentral.Apps.Management.psd1'
+
+    # The pure-PowerShell admin modules ship from BC v29 onwards and work in BOTH
+    # Windows PowerShell 5.1 and PowerShell 7
+    $usePurePsModules = $false
+    if (Test-Path $bcMgmtPsd1) {
+        $platformVersion = [System.Version](Import-PowerShellDataFile $bcMgmtPsd1).ModuleVersion
+        $usePurePsModules = ($platformVersion.Major -ge 29)
+    }
+
+    if ($usePurePsModules) {
+        # Preferred path -- identical for PS 5.1 and PS 7, full cmdlet parity
+        ImportModule (Join-Path $adminFolder 'NAVWebClientManagement.psm1')
+        ImportModule $bcMgmtPsd1
+        ImportModule $bcAppsPsd1
+        if ($isPsCore) {
+            if (Test-Path 'c:\run\my\pscoreoverrides.ps1') {
+                . 'c:\run\my\pscoreoverrides.ps1'
+            }
+            elseif (Test-Path 'c:\run\pscoreoverrides.ps1') {
+                . 'c:\run\pscoreoverrides.ps1'
+            }
+        }
+    }
+    elseif ($isPsCore -and (Test-Path $adminFolder)) {
         ImportModule "$serviceTierFolder\Admin\Microsoft.Dynamics.Nav.Management.psm1"
         ImportModule "$serviceTierFolder\Admin\Microsoft.BusinessCentral.Management.psd1"
         ImportModule "$serviceTierFolder\Admin\Microsoft.BusinessCentral.Apps.Management.dll"
