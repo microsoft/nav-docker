@@ -31,7 +31,6 @@ else {
 
     if ($usePurePsModules) {
         # Preferred path -- identical for PS 5.1 and PS 7, full cmdlet parity
-        ImportModule (Join-Path $adminFolder 'NAVWebClientManagement.psm1')
         ImportModule $bcMgmtPsd1
         ImportModule $bcAppsPsd1
         if ($isPsCore) {
