@@ -1,5 +1,12 @@
 . (Join-Path $PSScriptRoot 'SetupUrls.ps1')
 
+# Workaround for Windows Server 2019 - see https://github.com/microsoft/dotnet-framework-docker/issues/1314
+if ([Environment]::OSVersion.Version.Build -eq 17763) {
+    Write-Host 'Repairing StateRepository ACL'
+    $q=[char]34; $n=[Environment]::NewLine; $k='MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModel\StateRepository\Cache'; $s='D:(A;;KR;;;IU)(A;;KR;;;SU)(A;OICIIO;GA;;;SY)(A;;KA;;;SY)(A;;KR;;;BA)(A;;KR;;;BU)(A;;KA;;;S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464)(A;;KR;;;AC)'; [IO.File]::WriteAllText('C:\f.inf','[Unicode]'+$n+'Unicode=yes'+$n+'[Version]'+$n+'signature='+$q+'$CHICAGO$'+$q+$n+'Revision=1'+$n+'[Registry Keys]'+$n+$q+$k+$q+',0,'+$q+$s+$q,[Text.Encoding]::Unicode); secedit /configure /db C:\f.sdb /cfg C:\f.inf /areas REGKEYS /quiet; Remove-Item C:\f.* -Force -EA 0; if(@((Get-Acl ('HKLM:\'+$k.Substring(8))).Access|Where-Object{-not $_.IsInherited}).Count -lt 8){throw 'StateRepository ACL repair failed'}
+    Write-Host 'Success'
+}
+
 Write-Host "FilesOnly=$env:filesOnly"
 Write-Host "only24=$env:only24"
 $filesonly = $env:filesonly -eq 'true'
