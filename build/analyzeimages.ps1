@@ -23,20 +23,36 @@ try {
     # List of the Business Central tags to be used
     $bctags = @('ltsc2016', 'ltsc2019', 'ltsc2022', 'ltsc2025')
 
-    # Get the tags for the Business Central images
-    $tags = @($bctags | ForEach-Object { "$_-dev"; "$_-filesonly-dev" })
+    # Get the tags whose images should be marked stale (the ones superseded by this build)
+    $staleTags = @($bctags | ForEach-Object { "$_-dev"; "$_-filesonly-dev" })
     if ($PushToProd) {
-        $tags += @($bctags | ForEach-Object { "$_"; "$_-filesonly" })
+        $staleTags += @($bctags | ForEach-Object { "$_"; "$_-filesonly" })
+    }
+
+    # Helper to resolve the digests for a list of Business Central tags
+    function Get-DigestsForTags {
+        param([string[]] $TagList)
+        return @($TagList | ForEach-Object {
+                $tag = $_
+                $manifest = docker manifest inspect mcr.microsoft.com/businesscentral:$tag -v | ConvertFrom-Json
+                Write-Host "Digest for tag $($tag): $($manifest.Descriptor.digest)" -ForegroundColor Cyan
+                $manifest.Descriptor.digest
+            })
     }
 
     # Get the digests for the tags from the Microsoft Container Registry
-    $digests = $tags | ForEach-Object {
-        $tag = $_
-        $manifest = docker manifest inspect mcr.microsoft.com/businesscentral:$tag -v | ConvertFrom-Json
-        $digest = $manifest.Descriptor.digest
-        Write-Host "Digest for tag $($tag): $digest" -ForegroundColor Cyan
-        return $manifest.Descriptor.digest
-    } | Select-Object -Unique
+    $digests = Get-DigestsForTags -TagList $staleTags
+
+    if (-not $PushToProd) {
+        # Dev-only build: never mark stale a digest that a live prod (ltsc) tag still points to,
+        # since prod is not being rolled in this run. Otherwise we would flag the current prod
+        # image as end-of-life while dev and prod still share the same digest.
+        $protectedTags = @($bctags | ForEach-Object { "$_"; "$_-filesonly" })
+        $protectedDigests = Get-DigestsForTags -TagList $protectedTags
+        $digests = @($digests | Where-Object { $protectedDigests -notcontains $_ })
+    }
+
+    $digests = @($digests | Select-Object -Unique)
     Write-Host "Found $($digests.Count) digests will be marked as stale:"
 
     # Get the generic tag to use for the images
@@ -70,7 +86,8 @@ try {
 
     # Output digests, generic tag and build images as JSON to be used in the GitHub Actions workflow
     $buildImagesJson = ConvertTo-Json -InputObject $imagesBcTags -Compress
-    $digestsJson = ConvertTo-Json -InputObject $digests -Compress
+    $digestsJson = ConvertTo-Json -InputObject @($digests) -Compress
+    if ([string]::IsNullOrWhiteSpace($digestsJson)) { $digestsJson = '[]' }
     Write-Host "genericTag=$genericTag" -ForegroundColor Green
     Write-Host "digestsJson=$digestsJson" -ForegroundColor Green
     Write-Host "buildImagesJson=$buildImagesJson" -ForegroundColor Green

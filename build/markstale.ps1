@@ -1,9 +1,15 @@
 param(
-    [Parameter(Mandatory = $true)]
-    [string[]]$Digests, # $digests = $env:digestsJson | ConvertFrom-Json
+    [Parameter(Mandatory = $false)]
+    [string[]]$Digests = @(), # $digests = $env:digestsJson | ConvertFrom-Json
     [Parameter(Mandatory = $false)]
     [string]$PushRegistry = "mcrbusinesscentral.azurecr.io"
 )
+
+$Digests = @($Digests | Where-Object { $_ })
+if ($Digests.Count -eq 0) {
+    Write-Host "No digests to mark stale."
+    return
+}
 
 if (-not (Get-Command -name "oras" -ErrorAction SilentlyContinue)) {
     $version = "1.2.0"

@@ -1,6 +1,9 @@
 name: Build new images
 
 on:
+  schedule:
+    # Every Wednesday at 06:00 UTC (after Patch Tuesday) - rebuilds dev images if a new base image is available
+    - cron: '0 6 * * 3'
   workflow_dispatch:
     inputs:
       PushToProd:
@@ -16,8 +19,31 @@ defaults:
     shell: PowerShell
 
 jobs:
+  CheckBaseImages:
+    runs-on: [ windows-latest ]
+    outputs:
+      newBaseAvailable: ${{ steps.check.outputs.newBaseAvailable }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check for new base image
+        id: check
+        env:
+          eventName: ${{ github.event_name }}
+        run: |
+          # Manual (and any non-scheduled) triggers skip the check and always build.
+          # Scheduled runs only build when a new base image is available.
+          if ($env:eventName -eq 'schedule') {
+              . ${{ github.workspace }}/build/checknewbaseimage.ps1
+          }
+          else {
+              Add-Content -encoding utf8 -Path $env:GITHUB_OUTPUT -Value "newBaseAvailable=true"
+          }
+
   AnalyzeImages:
     runs-on: [ windows-latest ]
+    needs: [ CheckBaseImages ]
+    if: needs.CheckBaseImages.outputs.newBaseAvailable == 'true'
     outputs:
       genericTag: ${{ steps.Analyze.outputs.genericTag }}
       buildImagesJson: ${{ steps.Analyze.outputs.buildImagesJson }}
@@ -31,7 +57,7 @@ jobs:
           RUNNUMBEROFFSET: ${{ vars.RUNNUMBEROFFSET }}
           PushToProd: ${{ github.event.inputs.PushToProd }}
         run: |
-          $pushToProd = $true
+          $pushToProd = $false
           if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
               $pushToProd = $env:PushToProd -eq 'True'
           }
@@ -71,7 +97,7 @@ jobs:
           $baseImage = $env:Tag.split('|')[1]
           $ltscTag = $env:Tag.split('|')[2]
 
-          $pushToProd = $true
+          $pushToProd = $false
           if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
               $pushToProd = $env:PushToProd -eq 'True'
           }
