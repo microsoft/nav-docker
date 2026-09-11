@@ -123,7 +123,7 @@ Note, that in this mode, you will be able to locate your Windows AD password in 
 Note also, if your docker image is publicly available for docker inspect, then you will also see you Windows AD credentials right there… - please use with caution…
 Example:
 ```
-docker run -e ACCEPT_EULA=Y -e auth=Windows -e username=freddyk -e password=P@ssword1 navdocker.azurecr.io/dynamics-nav:2017
+docker run -e ACCEPT_EULA=Y -e auth=Windows -e username=myuser -e password=P@ssword1 navdocker.azurecr.io/dynamics-nav:2017
 ```
 
 #### Setup gMSA with the Domain of the host computer
@@ -131,7 +131,7 @@ This is done by setting up group managed service accounts in your AD and then sp
 Note, you have to be a domain admin to setup gMSA.
 Example:
 ```
-docker run -e ACCEPT_EULA=Y -e auth=Windows -e username=europe\freddyk navdocker.azurecr.io/dynamics-nav:2017
+docker run -e ACCEPT_EULA=Y -e auth=Windows -e username=europe\myuser navdocker.azurecr.io/dynamics-nav:2017
 ```
 We strongly recommend to use gMSA if you are using Windows Authentication.
 
