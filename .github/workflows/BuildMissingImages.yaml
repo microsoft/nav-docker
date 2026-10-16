@@ -45,7 +45,7 @@ jobs:
     runs-on: [ Windows-2025 ]
     needs: [ AnalyzeImages ]
     if: github.ref == 'refs/heads/main'
-    environment: production
+    environment: Production
     permissions:
       contents: read
       id-token: write
@@ -94,7 +94,7 @@ jobs:
     runs-on: [ Windows-Latest ]
     needs: [ AnalyzeImages, BuildImages ]
     if: github.ref == 'refs/heads/main'
-    environment: production
+    environment: Production
     permissions:
       contents: read
       id-token: write
