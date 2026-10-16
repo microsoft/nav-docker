@@ -98,6 +98,9 @@ try {
                 $dir = $folder.Substring(0,$idx)
                 $value = $folder.Substring($idx+1).Split('\')[0]
                 $subfolder = $folder.Substring($idx+1).Split('\')[1]
+                if ($value -like "http://*") {
+                    Write-Host "WARNING: Downloading folders over HTTP is insecure. Use HTTPS instead." -ForegroundColor Yellow
+                }
                 Write-Host "Downloading $value to $dir"
                 if (-not (Test-Path $dir)) {
                     New-Item $dir -ItemType Directory | Out-Null
