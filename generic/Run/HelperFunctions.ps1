@@ -668,6 +668,9 @@ function Download-File {
     }
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
     Write-Host "Downloading $destinationFile"
+    if ($sourceUrl -like "http://*") {
+        Write-Host "WARNING: Downloading files over HTTP is insecure. Use HTTPS instead." -ForegroundColor Yellow
+    }
     (New-Object System.Net.WebClient).DownloadFile($sourceUrl, $destinationFile)
 }
 
