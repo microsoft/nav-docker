@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 defaults:
   run:
@@ -18,6 +17,7 @@ defaults:
 jobs:
   AnalyzeImages:
     runs-on: [ windows-latest ]
+    if: github.ref == 'refs/heads/main'
     outputs:
       genericTag: ${{ steps.Analyze.outputs.genericTag }}
       buildImagesJson: ${{ steps.Analyze.outputs.buildImagesJson }}
@@ -44,6 +44,11 @@ jobs:
   BuildImages:
     runs-on: [ Windows-2025 ]
     needs: [ AnalyzeImages ]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
     strategy:
       matrix:
         tag: ${{ fromJson(needs.AnalyzeImages.outputs.buildImagesJson) }}
@@ -89,6 +94,10 @@ jobs:
     runs-on: [ Windows-Latest ]
     needs: [ AnalyzeImages, BuildImages ]
     if: github.ref == 'refs/heads/main'
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
