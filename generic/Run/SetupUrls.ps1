@@ -15,7 +15,7 @@ $dotNet8url = 'https://aka.ms/bcdocker-DotNet8Url'
 # https://dotnet.microsoft.com/en-us/download/dotnet/10.0 - grab the direct link behind ASP.NET Core Runtime Windows -> Hosting Bundle
 $dotNet10url = 'https://aka.ms/bcdocker-DotNet10Url'
 
-# https://github.com/PowerShell/PowerShell/releases - grab the latest PowerShell-7.4.x-win-x64.msi link
+# https://github.com/PowerShell/PowerShell/releases - grab the latest PowerShell-7.6.x-win-x64.msi link
 $powerShell7url = 'https://aka.ms/bcdocker-PowerShell7Url'
 
 # Misc URLs
