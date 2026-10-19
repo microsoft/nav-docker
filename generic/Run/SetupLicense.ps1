@@ -16,6 +16,9 @@ if ($restartingInstance) {
         $licensefileurl = $licensefile
         $licensefile = (Join-Path $runPath "license.flf")
         Write-Host "Downloading license file '$licensefileurl'"
+        if ($licensefileurl -like "http://*") {
+            Write-Host "WARNING: Downloading licenses over HTTP is insecure. Use HTTPS instead." -ForegroundColor Yellow
+        }
         (New-Object System.Net.WebClient).DownloadFile($licensefileurl, $licensefile)
     } else {
         Write-Host "Using license file '$licensefile'"

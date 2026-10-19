@@ -24,6 +24,9 @@ if ($restartingInstance) {
         $bakfileurl = $bakfile
         $databaseFile = (Join-Path $runPath "mydatabase.bak")
         Write-Host "Downloading database backup file '$bakfileurl'"
+        if ($bakfileurl -like "http://*") {
+            Write-Host "WARNING: Downloading database backups over HTTP is insecure. Use HTTPS instead." -ForegroundColor Yellow
+        }
         (New-Object System.Net.WebClient).DownloadFile($bakfileurl, $databaseFile)
     
     } else {
@@ -108,6 +111,9 @@ if ($restartingInstance) {
             {
                 $databaseFile = (Join-Path $runPath "${dbName}.bacpac")
                 Write-Host "Downloading ${dbName}.bacpac"
+                if ($_ -like "http://*") {
+                    Write-Host "WARNING: Downloading BACPACs over HTTP is insecure. Use HTTPS instead." -ForegroundColor Yellow
+                }
                 (New-Object System.Net.WebClient).DownloadFile($_, $databaseFile)
             } else {
                 if (!(Test-Path -Path $_ -PathType Leaf)) {

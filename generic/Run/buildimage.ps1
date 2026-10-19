@@ -1,5 +1,8 @@
 ﻿if ("$env:NAVDVDURL" -ne "") {
     Write-Host "Downloading NAVDVD"
+    if ($env:NAVDVDURL -like "http://*") {
+        Write-Host "WARNING: Downloading NAVDVD over HTTP is insecure. Use HTTPS instead." -ForegroundColor Yellow
+    }
     (New-Object System.Net.WebClient).DownloadFile("$env:NAVDVDURL", "C:\NAVDVD.zip")
     [Reflection.Assembly]::LoadWithPartialName("System.IO.Compression.Filesystem") | Out-Null
     [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\NAVDVD.zip","C:\NAVDVD\")
@@ -7,6 +10,9 @@
 }
 if ("$env:VSIXURL" -ne "") {
     Write-Host "Downloading VSIX"
+    if ($env:VSIXURL -like "http://*") {
+        Write-Host "WARNING: Downloading VSIX over HTTP is insecure. Use HTTPS instead." -ForegroundColor Yellow
+    }
     (New-Object System.Net.WebClient).DownloadFile("$env:VSIXURL", ("C:\NAVDVD\"+"$env:VSIXURL".Substring("$env:VSIXURL".LastIndexOf("/")+1)))
 }
 
