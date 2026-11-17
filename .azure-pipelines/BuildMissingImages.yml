@@ -17,6 +17,14 @@ parameters:
     displayName: Push to production
     type: boolean
     default: false
+  # build.ps1 uses Hyper-V isolation with --memory 8G, which needs >= 16 GB RAM and nested virtualization.
+  # Standard Microsoft-hosted agents (2 vCPU / 7 GB) are too small; use e.g. a Managed DevOps Pool / 1ES pool:
+  #   { name: '<pool name>' }
+  - name: BuildImagesPool
+    displayName: Pool for building images
+    type: object
+    default:
+      vmImage: windows-2025
 
 variables:
   - name: AzureServiceConnection
@@ -76,8 +84,7 @@ jobs:
         ne(dependencies.AnalyzeImages.outputs['Analyze.buildImagesMatrix'], '{}')
       )
     timeoutInMinutes: 360
-    pool:
-      vmImage: windows-2025
+    pool: ${{ parameters.BuildImagesPool }}
     variables:
       GenericTag: $[ dependencies.AnalyzeImages.outputs['Analyze.genericTag'] ]
     strategy:
