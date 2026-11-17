@@ -1,0 +1,137 @@
+# Azure Pipelines equivalent of .github/workflows/BuildMissingImages.yaml
+#
+# Prerequisites:
+# - An Azure Resource Manager service connection (workload identity federation) with push access to
+#   mcrbusinesscentral.azurecr.io. Set its name in the AzureServiceConnection variable below.
+#   Add an approval check on the service connection to mirror the GitHub "Production" environment gate.
+# - Optional pipeline variable RunNumberOffset (default 0). The image revision number is
+#   (pipeline run counter - RunNumberOffset), mirroring GITHUB_RUN_NUMBER - RUNNUMBEROFFSET.
+
+name: $(Date:yyyyMMdd)$(Rev:.r)
+
+trigger: none
+pr: none
+
+parameters:
+  - name: PushToProd
+    displayName: Push to production
+    type: boolean
+    default: false
+
+variables:
+  - name: AzureServiceConnection
+    value: nav-docker-production
+  - name: RunNumber
+    value: $[counter('BuildMissingImages', 1)]
+  - name: RunNumberOffset
+    value: 0
+  - name: PushToProd
+    value: ${{ parameters.PushToProd }}
+
+jobs:
+  - job: AnalyzeImages
+    displayName: Analyze images
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+    pool:
+      vmImage: windows-latest
+    steps:
+      - checkout: self
+
+      - task: PowerShell@2
+        name: Analyze
+        displayName: Analyze
+        inputs:
+          targetType: inline
+          workingDirectory: $(Build.SourcesDirectory)
+          script: |
+            $pushToProd = $env:PUSHTOPROD -eq 'True'
+            [int] $revisionNumber = ([int]($env:RUNNUMBER) - [int]($env:RUNNUMBEROFFSET))
+
+            . "$env:BUILD_SOURCESDIRECTORY/build/analyzeimages.ps1" `
+                  -RevisionNumber $revisionNumber `
+                  -PushToProd:$pushToProd
+
+            # Azure Pipelines matrix requires an object of legs: { "legName": { "tag": "..." } }
+            # Leg names may only contain letters, numbers and underscores and must start with a letter
+            $matrix = [ordered]@{}
+            $imagesBcTags | ForEach-Object {
+                $legName = "img_$($_.Split('|')[0] -replace '[^A-Za-z0-9_]', '_')"
+                $matrix[$legName] = @{ "tag" = $_ }
+            }
+            $buildImagesMatrix = ConvertTo-Json -InputObject $matrix -Compress
+            Write-Host "buildImagesMatrix=$buildImagesMatrix"
+
+            Write-Host "##vso[task.setvariable variable=genericTag;isOutput=true]$genericTag"
+            Write-Host "##vso[task.setvariable variable=digestsJson;isOutput=true]$digestsJson"
+            Write-Host "##vso[task.setvariable variable=buildImagesJson;isOutput=true]$buildImagesJson"
+            Write-Host "##vso[task.setvariable variable=buildImagesMatrix;isOutput=true]$buildImagesMatrix"
+
+  - job: BuildImages
+    displayName: Build image
+    dependsOn: AnalyzeImages
+    # Skip (instead of failing) when there are no missing images
+    condition: >-
+      and(
+        succeeded(),
+        eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+        ne(dependencies.AnalyzeImages.outputs['Analyze.buildImagesMatrix'], '{}')
+      )
+    timeoutInMinutes: 360
+    pool:
+      vmImage: windows-2025
+    variables:
+      GenericTag: $[ dependencies.AnalyzeImages.outputs['Analyze.genericTag'] ]
+    strategy:
+      matrix: $[ dependencies.AnalyzeImages.outputs['Analyze.buildImagesMatrix'] ]
+    steps:
+      - checkout: self
+
+      - task: AzureCLI@2
+        displayName: Build image
+        inputs:
+          azureSubscription: $(AzureServiceConnection)
+          scriptType: ps
+          scriptLocation: inlineScript
+          workingDirectory: $(Build.SourcesDirectory)
+          inlineScript: |
+            $filesonly = ($env:IMAGETAG -like '*-filesonly|*')
+            $only24 = ($env:IMAGETAG -like '*-24|*' -or $env:IMAGETAG -like '*-24-filesonly|*')
+            $baseImage = $env:IMAGETAG.split('|')[1]
+            $ltscTag = $env:IMAGETAG.split('|')[2]
+            $pushToProd = $env:PUSHTOPROD -eq 'True'
+
+            . "$env:BUILD_SOURCESDIRECTORY/build/build.ps1" `
+                -BaseImage $baseImage `
+                -LtscTag $ltscTag `
+                -FilesOnly $filesonly `
+                -Only24 $only24 `
+                -GenericTag $env:GENERICTAG `
+                -PushToDev `
+                -PushToProd:$pushToProd
+        env:
+          IMAGETAG: $(tag)
+
+  - job: MarkOldImagesStale
+    displayName: Mark old images stale
+    dependsOn:
+      - AnalyzeImages
+      - BuildImages
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    pool:
+      vmImage: windows-latest
+    variables:
+      DigestsJson: $[ dependencies.AnalyzeImages.outputs['Analyze.digestsJson'] ]
+    steps:
+      - checkout: self
+
+      - task: AzureCLI@2
+        displayName: Mark stale
+        inputs:
+          azureSubscription: $(AzureServiceConnection)
+          scriptType: pscore
+          scriptLocation: inlineScript
+          workingDirectory: $(Build.SourcesDirectory)
+          inlineScript: |
+            $erroractionpreference = "STOP"
+            $digests = $env:DIGESTSJSON | ConvertFrom-Json
+            . "$env:BUILD_SOURCESDIRECTORY/build/markstale.ps1" -Digests $digests
