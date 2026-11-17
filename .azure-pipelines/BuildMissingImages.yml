@@ -4,7 +4,7 @@
 # - An Azure Resource Manager service connection (workload identity federation) with push access to
 #   mcrbusinesscentral.azurecr.io. Set its name in the AzureServiceConnection variable below.
 #   Add an approval check on the service connection to mirror the GitHub "Production" environment gate.
-# - Optional pipeline variable RunNumberOffset (default 0). The image revision number is
+# - Optional pipeline variable RunNumberOffset, defined in the pipeline UI (default 0). The image revision number is
 #   (pipeline run counter - RunNumberOffset), mirroring GITHUB_RUN_NUMBER - RUNNUMBEROFFSET.
 
 name: $(Date:yyyyMMdd)$(Rev:.r)
@@ -23,8 +23,7 @@ variables:
     value: nav-docker-production
   - name: RunNumber
     value: $[counter('BuildMissingImages', 1)]
-  - name: RunNumberOffset
-    value: 0
+  # RunNumberOffset is intentionally not defined here: YAML variables override pipeline (UI) variables
   - name: PushToProd
     value: ${{ parameters.PushToProd }}
 
