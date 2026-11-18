@@ -8,11 +8,15 @@
 # - An agent pool able to run Hyper-V isolated containers with 8 GB memory (see BuildImagesPoolName).
 #
 # Revision numbers are allocated from the tags already published to mcr.microsoft.com/businesscentral
-# (highest published revision for the current generic tag + 1), which is shared with the GitHub workflow.
-# As a safeguard against collisions (e.g. MCR sync lag or concurrent runs), each build fails before pushing
-# if the versioned tag already exists in the push registry.
+# (highest published revision for the current generic tag + 1).
+# build.ps1 refuses to push a versioned tag that already exists in the push registry (and fails if it cannot verify
+# that), so neither this pipeline nor the GitHub workflow can overwrite a published versioned tag.
+# To serialize publishing across runs, add an "Exclusive Lock" check on the service connection
+# (lockBehavior: sequential below). Only one publisher (this pipeline or the GitHub workflow) should be active.
 
 name: $(Date:yyyyMMdd)$(Rev:.r)
+
+lockBehavior: sequential
 
 trigger: none
 pr: none
@@ -66,10 +70,10 @@ stages:
                     if ($_ -match "^\d+\.\d+\.\d+\.\d+-$versionPrefix(\d+)(-|$)") { [int]$Matches[1] }
                 })
                 [int] $revisionNumber = 0
-                if ($publishedRevisions) {
+                if ($publishedRevisions.Count -gt 0) {
                     $revisionNumber = ($publishedRevisions | Measure-Object -Maximum).Maximum + 1
                 }
-                Write-Host "Highest published revision: $(if ($publishedRevisions) { $revisionNumber - 1 } else { 'none' }), using $revisionNumber"
+                Write-Host "Highest published revision: $(if ($publishedRevisions.Count -gt 0) { $revisionNumber - 1 } else { 'none' }), using $revisionNumber"
 
                 . "$env:BUILD_SOURCESDIRECTORY/build/analyzeimages.ps1" `
                       -RevisionNumber $revisionNumber `
@@ -126,24 +130,9 @@ stages:
               inlineScript: |
                 $filesonly = ($env:IMAGETAG -like '*-filesonly|*')
                 $only24 = ($env:IMAGETAG -like '*-24|*' -or $env:IMAGETAG -like '*-24-filesonly|*')
-                $versionedTag = $env:IMAGETAG.split('|')[0]
                 $baseImage = $env:IMAGETAG.split('|')[1]
                 $ltscTag = $env:IMAGETAG.split('|')[2]
                 $pushToProd = $env:PUSHTOPROD -eq 'True'
-
-                # Never overwrite an already published versioned tag
-                if ($pushToProd) {
-                    $registryName = $env:PUSHREGISTRY.Split('.')[0]
-                    $eap = $ErrorActionPreference
-                    $ErrorActionPreference = 'Continue'
-                    az acr repository show --name $registryName --image "public/businesscentral:$versionedTag" --only-show-errors 2>&1 | Out-Null
-                    $exists = $LASTEXITCODE -eq 0
-                    $ErrorActionPreference = $eap
-                    if ($exists) {
-                        throw "Tag public/businesscentral:$versionedTag already exists in $($env:PUSHREGISTRY). Re-run to allocate a new revision."
-                    }
-                    $global:LASTEXITCODE = 0
-                }
 
                 . "$env:BUILD_SOURCESDIRECTORY/build/build.ps1" `
                     -BaseImage $baseImage `
@@ -164,7 +153,11 @@ stages:
             inputs:
               targetType: inline
               script: |
+                # Log out first, as Docker may have stored the token in a credential helper (e.g. wincred) outside DOCKER_CONFIG
+                $env:DOCKER_CONFIG = $env:DOCKERCONFIGDIR
+                docker logout $env:PUSHREGISTRY
                 if (Test-Path $env:DOCKERCONFIGDIR) { Remove-Item -Recurse -Force $env:DOCKERCONFIGDIR }
+                exit 0
 
       - job: MarkOldImagesStale
         displayName: Mark old images stale
@@ -197,4 +190,8 @@ stages:
             inputs:
               targetType: inline
               script: |
+                # Log out first, as Docker may have stored the token in a credential helper (e.g. wincred) outside DOCKER_CONFIG
+                $env:DOCKER_CONFIG = $env:DOCKERCONFIGDIR
+                docker logout $env:PUSHREGISTRY
                 if (Test-Path $env:DOCKERCONFIGDIR) { Remove-Item -Recurse -Force $env:DOCKERCONFIGDIR }
+                exit 0

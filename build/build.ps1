@@ -86,10 +86,38 @@ function Get-OsVersion {
     return $osversion
 }
 
+# Fails if the tag is already published or if the registry tags cannot be listed (fail closed)
+function Assert-TagNotPublished {
+    param(
+        [string]$Registry,
+        [string]$Repository,
+        [string]$Tag
+    )
+    $eap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $tagsJson = az acr repository show-tags --name $Registry.Split('.')[0] --repository $Repository --output json --only-show-errors
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $eap
+    }
+    if ($exitCode -ne 0) {
+        throw "Could not list tags of $Repository in $Registry (exit code $exitCode)"
+    }
+    $tags = ($tagsJson -join '') | ConvertFrom-Json
+    if ($tags -contains $Tag) {
+        throw "Tag $($Repository):$Tag already exists in $Registry. Refusing to overwrite it."
+    }
+}
+
 try {
     # Login to ACR early, before the lengthy docker build, to avoid OIDC token expiry
     if ($PushToDev -or $PushToProd) {
         az acr login --name $PushRegistry
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to log in to $PushRegistry"
+        }
     }
 
     Push-Location "generic"
@@ -112,6 +140,12 @@ try {
     $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
     docker pull $baseimage
     $osversion = Get-OsVersion -Baseimage $baseimage
+    $versionedTag = "$osversion-$GenericTag$str24$strFilesOnly"
+
+    # Fail fast, before the lengthy build, if the versioned tag is already published
+    if ($PushToProd) {
+        Assert-TagNotPublished -Registry $PushRegistry -Repository "public/businesscentral" -Tag $versionedTag
+    }
 
     $success = $false
     $image = "my:$osversion-$GenericTag$str24$strFilesOnly"
@@ -146,15 +180,23 @@ if ($PushToDev -or $PushToProd) {
     if ($PushToProd) {
         $newtags += @(
             "$PushRegistry/public/businesscentral:$osversion$str24$strFilesonly"
-            "$PushRegistry/public/businesscentral:$osversion-$GenericTag$str24$strFilesonly"
+            "$PushRegistry/public/businesscentral:$versionedTag"
             "$PushRegistry/public/businesscentral:$ltscTag$str24$strFilesonly"
         )
+        # Check again right before pushing, as another run may have published the tag during the build
+        Assert-TagNotPublished -Registry $PushRegistry -Repository "public/businesscentral" -Tag $versionedTag
     }
     
     $newtags | ForEach-Object {
         Write-Host "Pushing $image with tag $_"
         docker tag $image $_
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to tag $image as $_"
+        }
         docker push $_
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to push $_"
+        }
     }
 }
 

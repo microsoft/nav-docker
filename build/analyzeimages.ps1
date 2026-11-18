@@ -37,6 +37,15 @@ try {
         Write-Host "Digest for tag $($tag): $digest" -ForegroundColor Cyan
         return $manifest.Descriptor.digest
     } | Select-Object -Unique
+
+    # Dev and production tags share digests after a production build, so in a dev-only run,
+    # don't mark images stale which are still referenced by the current production tags
+    if (-not $PushToProd) {
+        $prodDigests = $bctags | ForEach-Object { "$_"; "$_-filesonly" } | ForEach-Object {
+            (docker manifest inspect mcr.microsoft.com/businesscentral:$_ -v | ConvertFrom-Json).Descriptor.digest
+        }
+        $digests = @($digests | Where-Object { $prodDigests -notcontains $_ })
+    }
     Write-Host "Found $($digests.Count) digests will be marked as stale:"
 
     # Get the generic tag to use for the images
