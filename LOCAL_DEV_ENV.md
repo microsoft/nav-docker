@@ -33,3 +33,15 @@ Once you have a local image you can use New-BCContainer to spin up a Business Ce
 ```powershell
     New-BcContainer -accept_eula -accept_insiderEula -containerName "MyTestContainer" -artifactUrl (Get-BCArtifactUrl -select NextMajor -accept_insiderEula -country W1) -useGenericImage $imageName
 ```
+
+## Azure pipeline
+
+The manual Azure pipeline is defined in `.azure-pipelines/BuildMissingImages.yml`.
+It extends the Official 1ES Pipeline Template and uses the pool named by
+`AgentPoolName`, letting the pool select its configured image, with the
+`NAVDocker-ImagePublisher` Azure Resource Manager service connection.
+Authorize access to the template repository,
+agent pool, and service connection, and configure approval and Exclusive Lock
+checks on that connection.
+Runs publish only from `main`. The default `PushToProd: false` still publishes dev
+images and marks eligible old images stale; it is not a dry run.
