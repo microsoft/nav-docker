@@ -1,21 +1,11 @@
-# Azure Pipelines equivalent of .github/workflows/BuildMissingImages.yaml
-#
-# Prerequisites:
-# - An Azure Resource Manager service connection (workload identity federation) with push access to
-#   mcrbusinesscentral.azurecr.io. Set its name in the AzureServiceConnection variable below.
-#   Add an approval check on the service connection to mirror the GitHub "Production" environment gate.
-#   Only the Publish stage uses the service connection, so approvers can review the Analyze stage output first.
-# - Authorize the pipeline to read the 1ESPipelineTemplates repository and use the configured agent pool.
-# - Update the pool SKU to provide at least 16 GB RAM for the 8 GB Hyper-V container builds.
-#
-# Revision numbers are allocated from the tags already published to mcr.microsoft.com/businesscentral
-# (highest published revision for the current generic tag + 1).
-# build.ps1 refuses to push a versioned tag that already exists in the push registry (and fails if it cannot verify
-# that), so neither this pipeline nor the GitHub workflow can overwrite a published versioned tag.
-# To serialize publishing across runs, add an "Exclusive Lock" check on the service connection
-# (lockBehavior: sequential below). Only one publisher (this pipeline or the GitHub workflow) should be active.
+# Builds and publishes Business Central images using Official 1ES templates.
+# Setup instructions: LOCAL_DEV_ENV.md
+# Keep only one publisher active: this pipeline or the GitHub workflow.
 
-name: $(Date:yyyyMMdd)$(Rev:.r)
+${{ if eq(parameters.PushToProd, true) }}:
+  name: Prod_$(Date:yyyyMMdd)$(Rev:.r)
+${{ else }}:
+  name: Dev_$(Date:yyyyMMdd)$(Rev:.r)
 
 lockBehavior: sequential
 
