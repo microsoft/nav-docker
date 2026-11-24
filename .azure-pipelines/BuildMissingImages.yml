@@ -60,7 +60,7 @@ extends:
                   script: |
                     $pushToProd = $env:PUSHTOPROD -eq 'True'
 
-                    # Allocate the next revision from the published tags (format: osVersion-major.minor.build.revision[-suffix])
+                    # Preview only: the final revision is allocated from ACR under the Publish stage lock.
                     $tagver = [System.Version](Get-Content -Raw -Path "$env:BUILD_SOURCESDIRECTORY/generic/tag.txt").Trim(@(13, 10, 32, 0xFEFF))
                     $publishedTags = (Invoke-RestMethod -Uri 'https://mcr.microsoft.com/v2/businesscentral/tags/list').tags
                     $versionPrefix = [regex]::Escape("$($tagver.Major).$($tagver.Minor).$($tagver.Build).")
@@ -104,13 +104,36 @@ extends:
             ne(coalesce(dependencies.Analyze.outputs['AnalyzeImages.Analyze.buildImagesMatrix'], '{}'), '{}')
           )
         jobs:
+          - job: PreparePublish
+            displayName: Allocate publishing revision
+            variables:
+              AnalyzedGenericTag: $[ stageDependencies.Analyze.AnalyzeImages.outputs['Analyze.genericTag'] ]
+            steps:
+              - checkout: self
+
+              - task: AzureCLI@2
+                name: Allocate
+                displayName: Allocate revision from current ACR tags
+                inputs:
+                  azureSubscription: $(AzureServiceConnection)
+                  scriptType: ps
+                  scriptLocation: inlineScript
+                  workingDirectory: $(Build.SourcesDirectory)
+                  inlineScript: |
+                    $genericTag = & "$env:BUILD_SOURCESDIRECTORY/build/getnextgenerictag.ps1" `
+                        -GenericTag $env:ANALYZEDGENERICTAG `
+                        -PushRegistry $env:PUSHREGISTRY
+                    Write-Host "Publishing with generic tag $genericTag"
+                    Write-Host "##vso[task.setvariable variable=genericTag;isOutput=true]$genericTag"
+
           - job: BuildImages
             displayName: Build image
+            dependsOn: PreparePublish
             timeoutInMinutes: 360
             strategy:
               matrix: $[ coalesce(stageDependencies.Analyze.AnalyzeImages.outputs['Analyze.buildImagesMatrix'], '{}') ]
             variables:
-              GenericTag: $[ stageDependencies.Analyze.AnalyzeImages.outputs['Analyze.genericTag'] ]
+              GenericTag: $[ dependencies.PreparePublish.outputs['Allocate.genericTag'] ]
               # Job-specific Docker config, so registry credentials from az acr login don't persist on the agent
               DockerConfigDir: $(Agent.TempDirectory)\docker-config-$(System.JobId)
             steps:
@@ -197,7 +220,10 @@ extends:
                   inlineScript: |
                     $erroractionpreference = "STOP"
                     $digests = $env:DIGESTSJSON | ConvertFrom-Json
-                    . "$env:BUILD_SOURCESDIRECTORY/build/markstale.ps1" -Digests $digests -PushRegistry $env:PUSHREGISTRY
+                    . "$env:BUILD_SOURCESDIRECTORY/build/markstale.ps1" `
+                        -Digests $digests `
+                        -PushRegistry $env:PUSHREGISTRY `
+                        -ProtectProductionTags:($env:PUSHTOPROD -ne 'True')
                 env:
                   DOCKER_CONFIG: $(DockerConfigDir)
 

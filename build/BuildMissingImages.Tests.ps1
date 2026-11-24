@@ -2,9 +2,109 @@ BeforeAll {
     $repositoryRoot = Split-Path $PSScriptRoot -Parent
     $analyzeScript = Join-Path $PSScriptRoot 'analyzeimages.ps1'
     $buildScript = Join-Path $PSScriptRoot 'build.ps1'
+    $nextTagScript = Join-Path $PSScriptRoot 'getnextgenerictag.ps1'
+    $staleScript = Join-Path $PSScriptRoot 'markstale.ps1'
 
     function docker { throw 'Unexpected Docker command' }
     function az { throw 'Unexpected Azure CLI command' }
+    function oras { throw 'Unexpected ORAS command' }
+}
+
+Describe 'Publishing revision allocation under the lock' {
+    BeforeEach {
+        $state = @{ Tags = '[]'; ExitCode = 0 }
+        Mock az {
+            $global:LASTEXITCODE = $state.ExitCode
+            return $state.Tags
+        }
+    }
+
+    It 'advances past tags published since the initial analysis, including suffix variants' {
+        $state.Tags = '["10.0.20348.1-1.2.3.8","10.0.26100.1-1.2.3.10-filesonly","10.0.26100.1-1.2.4.99"]'
+
+        & $nextTagScript -GenericTag '1.2.3.8' -PushRegistry 'test.azurecr.io' | Should -Be '1.2.3.11'
+
+        $state.Tags = '["10.0.26100.1-1.2.3.11"]'
+        & $nextTagScript -GenericTag '1.2.3.8' -PushRegistry 'test.azurecr.io' | Should -Be '1.2.3.12'
+    }
+
+    It 'allocates zero for an empty repository and one after a revision-zero publish' {
+        & $nextTagScript -GenericTag '1.2.3.0' -PushRegistry 'test.azurecr.io' | Should -Be '1.2.3.0'
+
+        $state.Tags = '["10.0.20348.1-1.2.3.0"]'
+        & $nextTagScript -GenericTag '1.2.3.0' -PushRegistry 'test.azurecr.io' | Should -Be '1.2.3.1'
+    }
+
+    It 'fails closed when the registry lookup fails' {
+        $state.ExitCode = 1
+
+        { & $nextTagScript -GenericTag '1.2.3.8' -PushRegistry 'test.azurecr.io' } | Should -Throw '*Could not list published tags*'
+    }
+
+    It 'rejects a missing tag list rather than reusing revision zero' {
+        $state.Tags = 'null'
+
+        { & $nextTagScript -GenericTag '1.2.3.8' -PushRegistry 'test.azurecr.io' } | Should -Throw '*No tag list*'
+    }
+}
+
+Describe 'Production digest protection at stale-marking time' {
+    BeforeEach {
+        $state = @{ FailedTag = ''; MissingDigestTag = '' }
+        Mock Write-Host {}
+        Mock az {
+            $global:LASTEXITCODE = 0
+            if ($args -contains 'login') { return }
+            $tag = $args[($args.IndexOf('--image') + 1)]
+            if ($tag -eq $state.FailedTag) {
+                $global:LASTEXITCODE = 1
+                return
+            }
+            if ($tag -eq $state.MissingDigestTag) { return 'null' }
+            if ($tag -eq 'public/businesscentral:ltsc2025-filesonly') {
+                return '"sha256:promoted"'
+            }
+            return '"sha256:production"'
+        }
+        Mock oras { $global:LASTEXITCODE = 0 }
+    }
+
+    It 'excludes a candidate promoted after analysis while marking dev-only digests' {
+        & $staleScript -Digests @('sha256:promoted', 'sha256:old-dev') -PushRegistry 'test.azurecr.io' -ProtectProductionTags
+
+        Should -Invoke az -Times 8 -Exactly -ParameterFilter { $args -contains '--image' }
+        Should -Invoke oras -Times 1 -Exactly
+        Should -Invoke oras -Times 1 -Exactly -ParameterFilter { $args -contains 'test.azurecr.io/public/businesscentral@sha256:old-dev' }
+    }
+
+    It 'does not mark anything when every candidate is now referenced by production' {
+        & $staleScript -Digests @('sha256:promoted') -PushRegistry 'test.azurecr.io' -ProtectProductionTags
+
+        Should -Invoke oras -Times 0 -Exactly
+    }
+
+    It 'fails before marking any candidate if a production lookup fails' {
+        $state.FailedTag = 'public/businesscentral:ltsc2025-filesonly'
+
+        { & $staleScript -Digests @('sha256:old-dev') -PushRegistry 'test.azurecr.io' -ProtectProductionTags } | Should -Throw '*Could not inspect production tag*'
+
+        Should -Invoke oras -Times 0 -Exactly
+    }
+
+    It 'fails before marking any candidate if a production digest is missing' {
+        $state.MissingDigestTag = 'public/businesscentral:ltsc2025-filesonly'
+
+        { & $staleScript -Digests @('sha256:old-dev') -PushRegistry 'test.azurecr.io' -ProtectProductionTags } | Should -Throw '*has no digest*'
+
+        Should -Invoke oras -Times 0 -Exactly
+    }
+
+    It 'preserves existing callers that do not request production protection' {
+        & $staleScript -Digests @('sha256:old-prod') -PushRegistry 'test.azurecr.io'
+
+        Should -Invoke az -Times 0 -Exactly -ParameterFilter { $args -contains '--image' }
+        Should -Invoke oras -Times 1 -Exactly
+    }
 }
 
 Describe 'Image analysis manifest lookups' {

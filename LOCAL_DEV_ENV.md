@@ -45,3 +45,10 @@ agent pool, and service connection, and configure approval and Exclusive Lock
 checks on that connection.
 Runs publish only from `main`. The default `PushToProd: false` still publishes dev
 images and marks eligible old images stale; it is not a dry run.
+
+Analysis provides a preview before approval. Inside the locked Publish stage, the
+pipeline allocates the final revision from current ACR tags before building.
+Dev-only runs recheck production tag digests in ACR immediately before stale
+marking, excluding candidates that became production images while awaiting the
+lock. Keep the GitHub publisher disabled while this pipeline is active; the ADO
+lock does not coordinate with GitHub Actions.
