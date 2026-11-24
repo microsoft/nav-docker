@@ -33,6 +33,10 @@
     .PARAMETER PushToProd
     A switch indicating whether to push the image to the production registry.
 
+    .PARAMETER PublishOnly
+    Publish an already built local image without pulling or building again.
+    Use the same build parameters on the same agent, with fresh Azure authentication.
+
     .EXAMPLE
     ./build.ps1 -BaseImage 'mcr.microsoft.com/dotnet/framework/runtime:4.8.1-windowsservercore-ltsc2025' -LtscTag ltsc2025 -FilesOnly $false -Only24 $false -GenericTag "1.2.3.5"
 #>
@@ -52,7 +56,9 @@ param(
     [Parameter(Mandatory = $false)]
     [switch] $PushToDev,
     [Parameter(Mandatory = $false)]
-    [switch] $PushToProd
+    [switch] $PushToProd,
+    [Parameter(Mandatory = $false)]
+    [switch] $PublishOnly
 )
 
 $erroractionpreference = "STOP"
@@ -68,6 +74,11 @@ Write-Host "GenericTag: $GenericTag" -ForegroundColor Green
 Write-Host "PushRegistry: $PushRegistry" -ForegroundColor Green
 Write-Host "PushToDev: $PushToDev" -ForegroundColor Green
 Write-Host "PushToProd: $PushToProd" -ForegroundColor Green
+Write-Host "PublishOnly: $PublishOnly" -ForegroundColor Green
+
+if ($PublishOnly -and -not ($PushToDev -or $PushToProd)) {
+    throw "PublishOnly requires PushToDev or PushToProd"
+}
 
 function Get-OsVersion {
     param(
@@ -112,7 +123,7 @@ function Assert-TagNotPublished {
 }
 
 try {
-    # Login to ACR early, before the lengthy docker build, to avoid OIDC token expiry
+    # Pipelines build separately and authenticate again before invoking PublishOnly.
     if ($PushToDev -or $PushToProd) {
         az acr login --name $PushRegistry
         if ($LASTEXITCODE -ne 0) {
@@ -138,35 +149,39 @@ try {
         $dockerfile += '-filesonly'
     }
     $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
-    docker pull $baseimage
+    if (-not $PublishOnly) {
+        docker pull $baseimage
+    }
     $osversion = Get-OsVersion -Baseimage $baseimage
     $versionedTag = "$osversion-$GenericTag$str24$strFilesOnly"
 
     # Fail fast, before the lengthy build, if the versioned tag is already published
-    if ($PushToProd) {
+    if ($PushToProd -and -not $PublishOnly) {
         Assert-TagNotPublished -Registry $PushRegistry -Repository "public/businesscentral" -Tag $versionedTag
     }
 
-    $success = $false
     $image = "my:$osversion-$GenericTag$str24$strFilesOnly"
-    docker build --build-arg baseimage=$baseimage `
-        --build-arg created=$created `
-        --build-arg tag="$GenericTag" `
-        --build-arg osversion="$osversion" `
-        --build-arg filesonly="$filesonly" `
-        --build-arg only24="$only24" `
-        --isolation=hyperv `
-        --memory 8G `
-        --tag $image `
-        --file $dockerfile `
-        $RootPath | ForEach-Object {
-            $_ | Out-Host
-            if ($_ -like "Successfully built*") {
-                $success = $true
-            }
-    }
-    if (!$success) {
-        throw "Error building image"
+    if (-not $PublishOnly) {
+        $success = $false
+        docker build --build-arg baseimage=$baseimage `
+            --build-arg created=$created `
+            --build-arg tag="$GenericTag" `
+            --build-arg osversion="$osversion" `
+            --build-arg filesonly="$filesonly" `
+            --build-arg only24="$only24" `
+            --isolation=hyperv `
+            --memory 8G `
+            --tag $image `
+            --file $dockerfile `
+            $RootPath | ForEach-Object {
+                $_ | Out-Host
+                if ($_ -like "Successfully built*") {
+                    $success = $true
+                }
+        }
+        if (!$success) {
+            throw "Error building image"
+        }
     }
 } finally {
     Pop-Location

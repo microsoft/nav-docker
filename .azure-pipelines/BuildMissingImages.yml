@@ -120,8 +120,30 @@ stages:
         steps:
           - checkout: self
 
-          - task: AzureCLI@2
+          - task: PowerShell@2
             displayName: Build image
+            inputs:
+              targetType: inline
+              workingDirectory: $(Build.SourcesDirectory)
+              script: |
+                $filesonly = ($env:IMAGETAG -like '*-filesonly|*')
+                $only24 = ($env:IMAGETAG -like '*-24|*' -or $env:IMAGETAG -like '*-24-filesonly|*')
+                $baseImage = $env:IMAGETAG.split('|')[1]
+                $ltscTag = $env:IMAGETAG.split('|')[2]
+
+                . "$env:BUILD_SOURCESDIRECTORY/build/build.ps1" `
+                    -BaseImage $baseImage `
+                    -LtscTag $ltscTag `
+                    -FilesOnly $filesonly `
+                    -Only24 $only24 `
+                    -GenericTag $env:GENERICTAG
+            env:
+              IMAGETAG: $(tag)
+              DOCKER_CONFIG: $(DockerConfigDir)
+
+          # A new AzureCLI task authenticates after the potentially hours-long build.
+          - task: AzureCLI@2
+            displayName: Publish image
             inputs:
               azureSubscription: $(AzureServiceConnection)
               scriptType: ps
@@ -141,6 +163,7 @@ stages:
                     -Only24 $only24 `
                     -GenericTag $env:GENERICTAG `
                     -PushRegistry $env:PUSHREGISTRY `
+                    -PublishOnly `
                     -PushToDev `
                     -PushToProd:$pushToProd
             env:

@@ -5,6 +5,24 @@ param(
     [switch] $PushToProd
 )
 
+function Get-ManifestDigest {
+    param(
+        [string]$Tag
+    )
+
+    $manifestJson = docker manifest inspect mcr.microsoft.com/businesscentral:$Tag -v
+    if ($LASTEXITCODE -ne 0) {
+        throw "Could not inspect manifest for tag $Tag (exit code $LASTEXITCODE)"
+    }
+    $manifest = $manifestJson | ConvertFrom-Json -ErrorAction Stop
+    $digest = $manifest.Descriptor.digest
+    if ([string]::IsNullOrWhiteSpace($digest)) {
+        throw "Manifest for tag $Tag has no digest"
+    }
+    Write-Host "Digest for tag $($Tag): $digest" -ForegroundColor Cyan
+    return $digest
+}
+
 try {
     $repositoryRoot = Join-Path $PSScriptRoot "..\"
     Push-Location (Join-Path $repositoryRoot "generic")
@@ -31,18 +49,14 @@ try {
 
     # Get the digests for the tags from the Microsoft Container Registry
     $digests = $tags | ForEach-Object {
-        $tag = $_
-        $manifest = docker manifest inspect mcr.microsoft.com/businesscentral:$tag -v | ConvertFrom-Json
-        $digest = $manifest.Descriptor.digest
-        Write-Host "Digest for tag $($tag): $digest" -ForegroundColor Cyan
-        return $manifest.Descriptor.digest
+        Get-ManifestDigest -Tag $_
     } | Select-Object -Unique
 
     # Dev and production tags share digests after a production build, so in a dev-only run,
     # don't mark images stale which are still referenced by the current production tags
     if (-not $PushToProd) {
         $prodDigests = $bctags | ForEach-Object { "$_"; "$_-filesonly" } | ForEach-Object {
-            (docker manifest inspect mcr.microsoft.com/businesscentral:$_ -v | ConvertFrom-Json).Descriptor.digest
+            Get-ManifestDigest -Tag $_
         }
         $digests = @($digests | Where-Object { $prodDigests -notcontains $_ })
     }
