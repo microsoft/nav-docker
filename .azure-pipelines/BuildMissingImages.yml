@@ -2,10 +2,7 @@
 # Setup instructions: LOCAL_DEV_ENV.md
 # Keep only one publisher active: this pipeline or the GitHub workflow.
 
-${{ if eq(parameters.PushToProd, true) }}:
-  name: Prod_$(Date:yyyyMMdd)$(Rev:.r)
-${{ else }}:
-  name: Dev_$(Date:yyyyMMdd)$(Rev:.r)
+name: $(PublishTarget)_$(Date:yyyyMMdd)$(Rev:.r)
 
 lockBehavior: sequential
 
@@ -26,6 +23,11 @@ parameters:
     default: false
 
 variables:
+  - name: PublishTarget
+    ${{ if eq(parameters.PushToProd, true) }}:
+      value: Prod
+    ${{ else }}:
+      value: Dev
   - name: AgentPoolName
     value: d365bc-agentpool-nonprod-1ESPT
   - name: AzureServiceConnection
