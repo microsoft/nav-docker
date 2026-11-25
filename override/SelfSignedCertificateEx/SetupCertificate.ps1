@@ -6,6 +6,10 @@
 #     $certificateThumbprint
 #     $dnsIdentity
 #
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingConvertToSecureStringWithPlainText', '',
+    Justification = 'Certificate creation and PFX import APIs require the runtime-generated password as a SecureString. This exception covers conversion only, not password generation, disclosure or PFX storage.')]
+param()
+
 . (Get-MyFilePath "New-SelfSignedCertificateEx.ps1")
 
 Write-Host "Creating Self Signed Certificate"
