@@ -46,7 +46,8 @@ extends:
     stages:
       - stage: Analyze
         displayName: Analyze images
-        condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+        # TODO: Restore the main-only guard after feature-branch testing.
+        # condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
         jobs:
           - job: AnalyzeImages
             displayName: Analyze images
@@ -99,10 +100,11 @@ extends:
       - stage: Publish
         displayName: Build and publish images
         dependsOn: Analyze
+        # TODO: Restore this main-only operand inside and(...) after feature-branch testing.
+        # eq(variables['Build.SourceBranch'], 'refs/heads/main'),
         condition: >-
           and(
             succeeded(),
-            eq(variables['Build.SourceBranch'], 'refs/heads/main'),
             ne(coalesce(dependencies.Analyze.outputs['AnalyzeImages.Analyze.buildImagesMatrix'], '{}'), '{}')
           )
         jobs:
