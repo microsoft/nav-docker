@@ -1,4 +1,4 @@
-﻿$RootPath = $PSScriptRoot
+$RootPath = $PSScriptRoot
 $ErrorActionPreference = "stop"
 Set-StrictMode -Version 2.0
 
@@ -63,6 +63,9 @@ if ($only24) {
 if ($filesOnly) {
     $dockerfile += '-filesonly'
     $image += '-filesonly'
+}
+if (-not $filesOnly) {
+    & "$PSScriptRoot\..\build\Stage-SqlServerModule.ps1"
 }
 docker pull $baseimage
 $osversion = docker inspect --format "{{.OsVersion}}" $baseImage

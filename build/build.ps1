@@ -37,6 +37,10 @@
     Publish an already built local image without pulling or building again.
     Use the same build parameters on the same agent, with fresh Azure authentication.
 
+    .PARAMETER SqlServerModulePath
+    Optional extracted SqlServer 22.2.0 module directory. Otherwise stage from PSGallery
+    on the host. Azure Pipelines must supply the internally staged module directory.
+
     .EXAMPLE
     ./build.ps1 -BaseImage 'mcr.microsoft.com/dotnet/framework/runtime:4.8.1-windowsservercore-ltsc2025' -LtscTag ltsc2025 -FilesOnly $false -Only24 $false -GenericTag "1.2.3.5"
 #>
@@ -58,7 +62,9 @@ param(
     [Parameter(Mandatory = $false)]
     [switch] $PushToProd,
     [Parameter(Mandatory = $false)]
-    [switch] $PublishOnly
+    [switch] $PublishOnly,
+    [Parameter(Mandatory = $false)]
+    [string] $SqlServerModulePath
 )
 
 $erroractionpreference = "STOP"
@@ -150,6 +156,10 @@ try {
     }
     $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
     if (-not $PublishOnly) {
+        if (-not $FilesOnly) {
+            & "$PSScriptRoot\Stage-SqlServerModule.ps1" -ModulePath $SqlServerModulePath `
+                -Destination (Join-Path $rootPath 'dependencies\SqlServer\22.2.0')
+        }
         docker pull $baseimage
     }
     $osversion = Get-OsVersion -Baseimage $baseimage

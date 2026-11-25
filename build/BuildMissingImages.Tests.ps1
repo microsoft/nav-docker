@@ -4,6 +4,7 @@ BeforeAll {
     $buildScript = Join-Path $PSScriptRoot 'build.ps1'
     $nextTagScript = Join-Path $PSScriptRoot 'getnextgenerictag.ps1'
     $staleScript = Join-Path $PSScriptRoot 'markstale.ps1'
+    $stageSqlServerScript = Join-Path $PSScriptRoot 'Stage-SqlServerModule.ps1'
 
     function docker { throw 'Unexpected Docker command' }
     function az { throw 'Unexpected Azure CLI command' }
@@ -178,7 +179,17 @@ Describe 'Image analysis manifest lookups' {
 
 Describe 'Separate build and publication' {
     BeforeEach {
-        Push-Location $repositoryRoot
+        $buildRoot = Join-Path $TestDrive ("build-root-" + [guid]::NewGuid())
+        New-Item -ItemType Directory -Path "$buildRoot\generic\Run" -Force | Out-Null
+        Set-Content -Path "$buildRoot\generic\Run\SetupUrls.ps1" -Value ''
+        Push-Location $buildRoot
+        $originalTfBuild = $env:TF_BUILD
+        $env:TF_BUILD = $null
+        Mock Save-Module {
+            $module = New-Item -ItemType Directory -Path "$Path\SqlServer\22.2.0" -Force
+            Set-Content -Path "$module\SqlServer.psd1" -Value "@{ ModuleVersion = '22.2.0' }"
+            Set-Content -Path "$module\SqlServer.psm1" -Value ''
+        }
         $state = @{
             AzureAuthenticated = $false
             PublishedTags = '[]'
@@ -222,6 +233,7 @@ Describe 'Separate build and publication' {
 
     AfterEach {
         Pop-Location
+        $env:TF_BUILD = $originalTfBuild
     }
 
     It 'builds without Azure and publishes after fresh authentication without rebuilding' {
@@ -258,5 +270,190 @@ Describe 'Separate build and publication' {
         { & $buildScript @buildParameters -PublishOnly -PushToProd } | Should -Throw '*Could not list tags*'
 
         Should -Invoke docker -Times 0 -Exactly -ParameterFilter { $args[0] -eq 'push' }
+    }
+
+    It 'does not retrieve SqlServer for files-only builds or publication' {
+        $buildParameters.FilesOnly = $true
+        & $buildScript @buildParameters
+        $state.AzureAuthenticated = $true
+        $buildParameters.FilesOnly = $false
+        & $buildScript @buildParameters -PublishOnly -PushToDev
+
+        Should -Invoke Save-Module -Times 0 -Exactly
+        Test-Path "$buildRoot\generic\dependencies" | Should -BeFalse
+    }
+
+    It 'uses the supplied module without gallery access or Docker credential arguments' {
+        $module = New-Item -ItemType Directory -Path "$TestDrive\approved-module" -Force
+        Set-Content -Path "$module\SqlServer.psd1" -Value "@{ ModuleVersion = '22.2.0' }"
+        Set-Content -Path "$module\SqlServer.psm1" -Value ''
+        $env:TF_BUILD = 'True'
+
+        & $buildScript @buildParameters -SqlServerModulePath $module.FullName
+
+        Should -Invoke Save-Module -Times 0 -Exactly
+        Test-Path "$buildRoot\generic\dependencies\SqlServer\22.2.0\SqlServer.psd1" | Should -BeTrue
+        Should -Invoke docker -Times 1 -Exactly -ParameterFilter {
+            $args[0] -eq 'build' -and ($args -join ' ') -notmatch 'Token|Authorization|SqlServerModulePath'
+        }
+    }
+
+    It 'stops before Docker when a supplied dependency is missing' {
+        { & $buildScript @buildParameters -SqlServerModulePath "$TestDrive\missing" } | Should -Throw '*must contain*'
+
+        Should -Invoke docker -Times 0 -Exactly
+        Should -Invoke Save-Module -Times 0 -Exactly
+    }
+}
+
+Describe 'SqlServer host-side staging' {
+    BeforeEach {
+        $destination = Join-Path $TestDrive 'context\dependencies\SqlServer\22.2.0'
+        $source = New-Item -ItemType Directory -Path "$TestDrive\source" -Force
+        Set-Content -Path "$source\SqlServer.psd1" -Value "@{ ModuleVersion = '22.2.0' }"
+        Set-Content -Path "$source\SqlServer.psm1" -Value '# module payload'
+        $archive = Join-Path $TestDrive 'package.zip'
+        Compress-Archive -Path "$source\*" -DestinationPath $archive -Force
+        $originalToken = $env:SYSTEM_ACCESSTOKEN
+        $originalTfBuild = $env:TF_BUILD
+        $env:SYSTEM_ACCESSTOKEN = 'test-only-token'
+        $env:TF_BUILD = 'True'
+        $state = @{ ArchivePath = ''; DownloadFails = $false; Authorization = '' }
+
+        Mock Write-Host {}
+        Mock Save-Module { throw 'Unexpected gallery access' }
+        Mock Invoke-WebRequest {
+            if ($state.DownloadFails) { throw 'Authenticated request failed' }
+            $state.ArchivePath = $OutFile
+            $state.Authorization = $Headers.Authorization
+            Copy-Item -LiteralPath $archive -Destination $OutFile
+        }
+    }
+
+    AfterEach {
+        $env:SYSTEM_ACCESSTOKEN = $originalToken
+        $env:TF_BUILD = $originalTfBuild
+    }
+
+    It 'downloads the pinned internal package with the job token and stages only extracted contents' {
+        & $stageSqlServerScript -InternalFeed -Destination $destination
+
+        Should -Invoke Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {
+            $Uri -eq 'https://pkgs.dev.azure.com/dynamicssmb2/_packaging/71e7dd80-1e53-4c33-b5f6-2603011e73b4/nuget/v3/flat2/sqlserver/22.2.0/sqlserver.22.2.0.nupkg'
+        }
+        $state.Authorization | Should -Be ('Basic ' + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(':test-only-token')))
+        @(Get-ChildItem -LiteralPath $destination).Count | Should -Be 2
+        Get-Content -LiteralPath "$destination\SqlServer.psm1" | Should -Be '# module payload'
+        Test-Path (Split-Path $state.ArchivePath -Parent) | Should -BeFalse
+        Should -Invoke Save-Module -Times 0 -Exactly
+    }
+
+    It 'fails closed on missing job authentication without contacting a feed' {
+        $env:SYSTEM_ACCESSTOKEN = ''
+
+        { & $stageSqlServerScript -InternalFeed -Destination $destination } | Should -Throw '*System.AccessToken is required*'
+
+        Should -Invoke Invoke-WebRequest -Times 0 -Exactly
+        Should -Invoke Save-Module -Times 0 -Exactly
+    }
+
+    It 'reports feed reader requirements without leaking the request or falling back to the gallery' {
+        $state.DownloadFails = $true
+
+        { & $stageSqlServerScript -InternalFeed -Destination $destination } | Should -Throw '*Feed Reader access*'
+
+        Should -Invoke Save-Module -Times 0 -Exactly
+    }
+
+    It 'never falls back to public retrieval in Azure Pipelines' {
+        { & $stageSqlServerScript -Destination $destination } | Should -Throw '*must stage SqlServer from DynamicsSMBPackages*'
+
+        Should -Invoke Save-Module -Times 0 -Exactly
+        Should -Invoke Invoke-WebRequest -Times 0 -Exactly
+    }
+
+    It 'supports host-side gallery staging for existing local and GitHub callers' {
+        $env:TF_BUILD = $null
+        Mock Save-Module {
+            New-Item -ItemType Directory -Path "$Path\SqlServer\22.2.0" -Force | Out-Null
+            Copy-Item -Path "$source\*" -Destination "$Path\SqlServer\22.2.0"
+        }
+
+        & $stageSqlServerScript -Destination $destination
+
+        Should -Invoke Save-Module -Times 1 -Exactly -ParameterFilter {
+            $Name -eq 'SqlServer' -and $RequiredVersion -eq '22.2.0' -and $Repository -eq 'PSGallery'
+        }
+        Test-Path "$destination\SqlServer.psd1" | Should -BeTrue
+    }
+
+    It 'rejects the wrong module version before replacing staged files' {
+        Set-Content -Path "$source\SqlServer.psd1" -Value "@{ ModuleVersion = '22.1.0' }"
+
+        { & $stageSqlServerScript -ModulePath $source.FullName -Destination $destination } | Should -Throw '*must be version 22.2.0*'
+    }
+
+    It 'accepts an already staged module without deleting its contents' {
+        & $stageSqlServerScript -ModulePath $source.FullName -Destination $destination
+        & $stageSqlServerScript -ModulePath $destination -Destination $destination
+
+        Test-Path "$destination\SqlServer.psm1" | Should -BeTrue
+        Should -Invoke Invoke-WebRequest -Times 0 -Exactly
+        Should -Invoke Save-Module -Times 0 -Exactly
+    }
+}
+
+Describe 'Staged SqlServer container setup' {
+    BeforeAll {
+        function pwsh { throw 'Unexpected pwsh command' }
+        $setupScript = Join-Path $repositoryRoot 'generic\Run\SetupGeneric2.ps1'
+    }
+
+    BeforeEach {
+        $originalFilesOnly = $env:filesonly
+        $originalOnly24 = $env:only24
+        $env:filesonly = 'false'
+        $env:only24 = 'false'
+        Mock Write-Host {}
+        Mock Test-Path { return $true }
+        Mock pwsh { $global:LASTEXITCODE = 0 }
+        Mock Save-Module { throw 'Unexpected gallery access in the container' }
+    }
+
+    AfterEach {
+        $env:filesonly = $originalFilesOnly
+        $env:only24 = $originalOnly24
+    }
+
+    It 'verifies the staged module in PowerShell 7 without changing PS5 module resolution' {
+        $modulePathBefore = $env:PSModulePath
+        & $setupScript
+
+        Should -Invoke pwsh -Times 1 -Exactly -ParameterFilter {
+            $args -contains 'Import-Module -Name SqlServer -RequiredVersion 22.2.0 -ErrorAction Stop'
+        }
+        $env:PSModulePath | Should -Be $modulePathBefore
+        Should -Invoke Save-Module -Times 0 -Exactly
+    }
+
+    It 'fails if the staged module is absent' {
+        Mock Test-Path { return $false }
+
+        { & $setupScript } | Should -Throw '*staged SqlServer 22.2.0 module is missing*'
+        Should -Invoke pwsh -Times 0 -Exactly
+    }
+
+    It 'fails if PowerShell 7 cannot import the staged module' {
+        Mock pwsh { $global:LASTEXITCODE = 1 }
+
+        { & $setupScript } | Should -Throw '*failed to import*'
+    }
+
+    It 'does not require or import SqlServer in files-only setup' {
+        $env:filesonly = 'true'
+        & $setupScript
+
+        Should -Invoke Test-Path -Times 0 -Exactly
+        Should -Invoke pwsh -Times 0 -Exactly
     }
 }

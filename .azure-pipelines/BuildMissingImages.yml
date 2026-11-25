@@ -142,6 +142,17 @@ extends:
               - checkout: self
 
               - task: PowerShell@2
+                displayName: Stage SqlServer from DynamicsSMBPackages
+                condition: and(succeeded(), not(contains(variables['tag'], '-filesonly|')))
+                inputs:
+                  targetType: filePath
+                  filePath: $(Build.SourcesDirectory)\build\Stage-SqlServerModule.ps1
+                  arguments: -InternalFeed
+                  workingDirectory: $(Build.SourcesDirectory)
+                env:
+                  SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+              - task: PowerShell@2
                 displayName: Build image
                 inputs:
                   targetType: inline
@@ -157,7 +168,8 @@ extends:
                         -LtscTag $ltscTag `
                         -FilesOnly $filesonly `
                         -Only24 $only24 `
-                        -GenericTag $env:GENERICTAG
+                        -GenericTag $env:GENERICTAG `
+                        -SqlServerModulePath "$env:BUILD_SOURCESDIRECTORY\generic\dependencies\SqlServer\22.2.0"
                 env:
                   IMAGETAG: $(tag)
                   DOCKER_CONFIG: $(DockerConfigDir)
