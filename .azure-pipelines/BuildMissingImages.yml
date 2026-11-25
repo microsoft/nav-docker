@@ -145,10 +145,35 @@ extends:
                 displayName: Stage SqlServer from DynamicsSMBPackages
                 condition: and(succeeded(), not(contains(variables['tag'], '-filesonly|')))
                 inputs:
-                  targetType: filePath
-                  filePath: $(Build.SourcesDirectory)\build\Stage-SqlServerModule.ps1
-                  arguments: -InternalFeed
+                  targetType: inline
                   workingDirectory: $(Build.SourcesDirectory)
+                  script: |
+                    $ErrorActionPreference = 'Stop'
+                    if ([string]::IsNullOrWhiteSpace($env:SYSTEM_ACCESSTOKEN)) {
+                        throw 'System.AccessToken is required to read DynamicsSMBPackages.'
+                    }
+                    $archive = Join-Path $env:AGENT_TEMPDIRECTORY ("SqlServer-" + [guid]::NewGuid() + '.zip')
+                    $destination = Join-Path $env:BUILD_SOURCESDIRECTORY 'generic\dependencies\SqlServer\22.2.0'
+                    $headers = @{ Authorization = 'Basic ' + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(":$env:SYSTEM_ACCESSTOKEN")) }
+                    try {
+                        $uri = 'https://pkgs.dev.azure.com/dynamicssmb2/_packaging/71e7dd80-1e53-4c33-b5f6-2603011e73b4/nuget/v3/flat2/sqlserver/22.2.0/sqlserver.22.2.0.nupkg'
+                        try {
+                            Invoke-WebRequest -Uri $uri -Headers $headers -OutFile $archive -UseBasicParsing | Out-Null
+                        }
+                        catch {
+                            throw 'Could not download SqlServer 22.2.0 from DynamicsSMBPackages. Check feed availability and Feed Reader access for the pipeline build identity.'
+                        }
+                        if (Test-Path -LiteralPath $destination) {
+                            Remove-Item -LiteralPath $destination -Recurse -Force
+                        }
+                        Expand-Archive -LiteralPath $archive -DestinationPath $destination
+                    }
+                    finally {
+                        $headers.Clear()
+                        if (Test-Path -LiteralPath $archive) {
+                            Remove-Item -LiteralPath $archive -Force
+                        }
+                    }
                 env:
                   SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
@@ -168,8 +193,7 @@ extends:
                         -LtscTag $ltscTag `
                         -FilesOnly $filesonly `
                         -Only24 $only24 `
-                        -GenericTag $env:GENERICTAG `
-                        -SqlServerModulePath "$env:BUILD_SOURCESDIRECTORY\generic\dependencies\SqlServer\22.2.0"
+                        -GenericTag $env:GENERICTAG
                 env:
                   IMAGETAG: $(tag)
                   DOCKER_CONFIG: $(DockerConfigDir)

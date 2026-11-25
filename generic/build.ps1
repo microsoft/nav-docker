@@ -64,9 +64,6 @@ if ($filesOnly) {
     $dockerfile += '-filesonly'
     $image += '-filesonly'
 }
-if (-not $filesOnly) {
-    & "$PSScriptRoot\..\build\Stage-SqlServerModule.ps1"
-}
 docker pull $baseimage
 $osversion = docker inspect --format "{{.OsVersion}}" $baseImage
 
