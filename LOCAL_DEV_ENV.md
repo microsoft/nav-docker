@@ -21,14 +21,8 @@ reuses the local base image without pulling or rebuilding, so the production tag
 guard checks the version that was actually built. Both publishing pipelines use
 this split to avoid relying on an Azure session created before the build.
 
-Full builds require the extracted SqlServer 22.2.0 module in
-`generic\dependencies\SqlServer\22.2.0` before Docker runs. The Azure pipeline
-stages it automatically. For local builds, copy an approved module into that
-directory, including `SqlServer.psd1` and `SqlServer.psm1`. Do not include
-credentials or NuGet configuration. Docker copies the module to the PowerShell 7
-module path; Windows PowerShell 5.1 continues using SQLPS. Files-only builds do
-not require this dependency. GitHub publishing is being deprecated and does not
-stage the module.
+For local full-image builds, place the extracted SqlServer 22.2.0 module in
+`generic\dependencies\SqlServer\22.2.0` before building.
 
 If you'd rather use a different base image, you can also use one of the following:
 * mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-ltsc2016
@@ -54,26 +48,6 @@ agent pool, and service connection, and configure approval and Exclusive Lock
 checks on that connection.
 Runs publish only from `main`. The default `PushToProd: false` still publishes dev
 images and marks eligible old images stale; it is not a dry run.
-
-Before full-image builds, `DownloadPackage@1` downloads the pinned SqlServer
-22.2.0 package from the organization-scoped `DynamicsSMBPackages` Azure Artifacts
-feed. It authenticates automatically with the job's OAuth token through
-`SYSTEMVSSCONNECTION`; no PAT, service connection, `NuGetAuthenticate` task, or
-explicit `System.AccessToken` environment mapping is needed. The job's build
-identity must have **Feed Reader** access to that feed. This is the project's
-Build Service identity for project-scoped job authorization, or the Project
-Collection Build Service identity for collection-scoped authorization. No feed
-permissions are changed by the pipeline. Both identities already inherit
-Collaborator access through the feed's Package-Collaborators group, so no
-additional authentication or feed permission setup is currently required.
-
-With `extract: true`, package entries are extracted directly into
-`generic\dependencies\SqlServer\22.2.0`, matching the Docker COPY layout.
-The task stores the downloaded `.nupkg` in `Agent.TempDirectory`, outside the
-Docker context; the current task implementation retains it there for agent
-cleanup. Credentials are not written into the context, Docker arguments, or
-image. ADO builds do not fall back to PSGallery; feed failures stop the build.
-Files-only legs skip the download task.
 
 Analysis provides a preview before approval. Inside the locked Publish stage, the
 pipeline allocates the final revision from current ACR tags before building.
