@@ -55,16 +55,25 @@ checks on that connection.
 Runs publish only from `main`. The default `PushToProd: false` still publishes dev
 images and marks eligible old images stale; it is not a dry run.
 
-Before full-image builds, the pipeline downloads the pinned SqlServer 22.2.0
-package from the organization-scoped `DynamicsSMBPackages` Azure Artifacts feed
-using `System.AccessToken`. Grant the pipeline build identity **Feed Reader**
-access to that feed if needed. No PAT, extra service connection, or feed permission
-changes are performed by the pipeline. Authentication exists only in the staging
-task's environment and in-memory request header, never in Docker build arguments,
-environment, layers, or context. The temporary package archive is stored outside
-the context, extracted into the module directory, and removed in a `finally`
-block. ADO builds do not fall back to PSGallery;
-feed failures stop the build. Files-only legs skip the staging task.
+Before full-image builds, `DownloadPackage@1` downloads the pinned SqlServer
+22.2.0 package from the organization-scoped `DynamicsSMBPackages` Azure Artifacts
+feed. It authenticates automatically with the job's OAuth token through
+`SYSTEMVSSCONNECTION`; no PAT, service connection, `NuGetAuthenticate` task, or
+explicit `System.AccessToken` environment mapping is needed. The job's build
+identity must have **Feed Reader** access to that feed. This is the project's
+Build Service identity for project-scoped job authorization, or the Project
+Collection Build Service identity for collection-scoped authorization. No feed
+permissions are changed by the pipeline. Both identities already inherit
+Collaborator access through the feed's Package-Collaborators group, so no
+additional authentication or feed permission setup is currently required.
+
+With `extract: true`, package entries are extracted directly into
+`generic\dependencies\SqlServer\22.2.0`, matching the Docker COPY layout.
+The task stores the downloaded `.nupkg` in `Agent.TempDirectory`, outside the
+Docker context; the current task implementation retains it there for agent
+cleanup. Credentials are not written into the context, Docker arguments, or
+image. ADO builds do not fall back to PSGallery; feed failures stop the build.
+Files-only legs skip the download task.
 
 Analysis provides a preview before approval. Inside the locked Publish stage, the
 pipeline allocates the final revision from current ACR tags before building.
