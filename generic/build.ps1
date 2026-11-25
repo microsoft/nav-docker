@@ -1,4 +1,4 @@
-$RootPath = $PSScriptRoot
+﻿$RootPath = $PSScriptRoot
 $ErrorActionPreference = "stop"
 Set-StrictMode -Version 2.0
 

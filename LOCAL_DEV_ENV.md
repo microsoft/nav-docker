@@ -24,7 +24,7 @@ this split to avoid relying on an Azure session created before the build.
 Full builds require the extracted SqlServer 22.2.0 module in
 `generic\dependencies\SqlServer\22.2.0` before Docker runs. The Azure pipeline
 stages it automatically. For local builds, copy an approved module into that
-ignored directory, including `SqlServer.psd1` and `SqlServer.psm1`. Do not include
+directory, including `SqlServer.psd1` and `SqlServer.psm1`. Do not include
 credentials or NuGet configuration. Docker copies the module to the PowerShell 7
 module path; Windows PowerShell 5.1 continues using SQLPS. Files-only builds do
 not require this dependency. GitHub publishing is being deprecated and does not
