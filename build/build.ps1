@@ -33,6 +33,10 @@
     .PARAMETER PushToProd
     A switch indicating whether to push the image to the production registry.
 
+    .PARAMETER PublishOnly
+    Publish an already built local image without pulling or building again.
+    Use the same build parameters on the same agent, with fresh Azure authentication.
+
     .EXAMPLE
     ./build.ps1 -BaseImage 'mcr.microsoft.com/dotnet/framework/runtime:4.8.1-windowsservercore-ltsc2025' -LtscTag ltsc2025 -FilesOnly $false -Only24 $false -GenericTag "1.2.3.5"
 #>
@@ -52,7 +56,9 @@ param(
     [Parameter(Mandatory = $false)]
     [switch] $PushToDev,
     [Parameter(Mandatory = $false)]
-    [switch] $PushToProd
+    [switch] $PushToProd,
+    [Parameter(Mandatory = $false)]
+    [switch] $PublishOnly
 )
 
 $erroractionpreference = "STOP"
@@ -68,6 +74,11 @@ Write-Host "GenericTag: $GenericTag" -ForegroundColor Green
 Write-Host "PushRegistry: $PushRegistry" -ForegroundColor Green
 Write-Host "PushToDev: $PushToDev" -ForegroundColor Green
 Write-Host "PushToProd: $PushToProd" -ForegroundColor Green
+Write-Host "PublishOnly: $PublishOnly" -ForegroundColor Green
+
+if ($PublishOnly -and -not ($PushToDev -or $PushToProd)) {
+    throw "PublishOnly requires PushToDev or PushToProd"
+}
 
 function Get-OsVersion {
     param(
@@ -86,10 +97,38 @@ function Get-OsVersion {
     return $osversion
 }
 
+# Fails if the tag is already published or if the registry tags cannot be listed (fail closed)
+function Assert-TagNotPublished {
+    param(
+        [string]$Registry,
+        [string]$Repository,
+        [string]$Tag
+    )
+    $eap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $tagsJson = az acr repository show-tags --name $Registry.Split('.')[0] --repository $Repository --output json --only-show-errors
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $eap
+    }
+    if ($exitCode -ne 0) {
+        throw "Could not list tags of $Repository in $Registry (exit code $exitCode)"
+    }
+    $tags = ($tagsJson -join '') | ConvertFrom-Json
+    if ($tags -contains $Tag) {
+        throw "Tag $($Repository):$Tag already exists in $Registry. Refusing to overwrite it."
+    }
+}
+
 try {
-    # Login to ACR early, before the lengthy docker build, to avoid OIDC token expiry
+    # Pipelines build separately and authenticate again before invoking PublishOnly.
     if ($PushToDev -or $PushToProd) {
         az acr login --name $PushRegistry
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to log in to $PushRegistry"
+        }
     }
 
     Push-Location "generic"
@@ -110,29 +149,39 @@ try {
         $dockerfile += '-filesonly'
     }
     $created = [DateTime]::Now.ToUniversalTime().ToString("yyyyMMddHHmm")
-    docker pull $baseimage
-    $osversion = Get-OsVersion -Baseimage $baseimage
-
-    $success = $false
-    $image = "my:$osversion-$GenericTag$str24$strFilesOnly"
-    docker build --build-arg baseimage=$baseimage `
-        --build-arg created=$created `
-        --build-arg tag="$GenericTag" `
-        --build-arg osversion="$osversion" `
-        --build-arg filesonly="$filesonly" `
-        --build-arg only24="$only24" `
-        --isolation=hyperv `
-        --memory 8G `
-        --tag $image `
-        --file $dockerfile `
-        $RootPath | ForEach-Object {
-            $_ | Out-Host
-            if ($_ -like "Successfully built*") {
-                $success = $true
-            }
+    if (-not $PublishOnly) {
+        docker pull $baseimage
     }
-    if (!$success) {
-        throw "Error building image"
+    $osversion = Get-OsVersion -Baseimage $baseimage
+    $versionedTag = "$osversion-$GenericTag$str24$strFilesOnly"
+
+    # Fail fast, before the lengthy build, if the versioned tag is already published
+    if ($PushToProd -and -not $PublishOnly) {
+        Assert-TagNotPublished -Registry $PushRegistry -Repository "public/businesscentral" -Tag $versionedTag
+    }
+
+    $image = "my:$osversion-$GenericTag$str24$strFilesOnly"
+    if (-not $PublishOnly) {
+        $success = $false
+        docker build --build-arg baseimage=$baseimage `
+            --build-arg created=$created `
+            --build-arg tag="$GenericTag" `
+            --build-arg osversion="$osversion" `
+            --build-arg filesonly="$filesonly" `
+            --build-arg only24="$only24" `
+            --isolation=hyperv `
+            --memory 8G `
+            --tag $image `
+            --file $dockerfile `
+            $RootPath | ForEach-Object {
+                $_ | Out-Host
+                if ($_ -like "Successfully built*") {
+                    $success = $true
+                }
+        }
+        if (!$success) {
+            throw "Error building image"
+        }
     }
 } finally {
     Pop-Location
@@ -146,15 +195,23 @@ if ($PushToDev -or $PushToProd) {
     if ($PushToProd) {
         $newtags += @(
             "$PushRegistry/public/businesscentral:$osversion$str24$strFilesonly"
-            "$PushRegistry/public/businesscentral:$osversion-$GenericTag$str24$strFilesonly"
+            "$PushRegistry/public/businesscentral:$versionedTag"
             "$PushRegistry/public/businesscentral:$ltscTag$str24$strFilesonly"
         )
+        # Check again right before pushing, as another run may have published the tag during the build
+        Assert-TagNotPublished -Registry $PushRegistry -Repository "public/businesscentral" -Tag $versionedTag
     }
     
     $newtags | ForEach-Object {
         Write-Host "Pushing $image with tag $_"
         docker tag $image $_
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to tag $image as $_"
+        }
         docker push $_
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to push $_"
+        }
     }
 }
 

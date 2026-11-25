@@ -57,6 +57,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Build Image
+        env:
+          Tag: ${{ matrix.tag }}
+          GenericTag: ${{ needs.AnalyzeImages.outputs.genericTag }}
+        run: |
+          $filesonly = ($env:Tag -like '*-filesonly|*')
+          $only24 = ($env:Tag -like '*-24|*' -or $env:Tag -like '*-24-filesonly|*')
+          $baseImage = $env:Tag.split('|')[1]
+          $ltscTag = $env:Tag.split('|')[2]
+
+          . ${{ github.workspace }}/build/build.ps1 `
+              -BaseImage $baseImage `
+              -LtscTag $ltscTag `
+              -FilesOnly $filesonly `
+              -Only24 $only24 `
+              -GenericTag $env:GenericTag
+
       - name: 'Az CLI login'
         uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
         with:
@@ -65,7 +82,7 @@ jobs:
             subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
             enable-AzPSSession: true
 
-      - name: Build Image
+      - name: Publish Image
         env:
           Tag: ${{ matrix.tag }}
           PushToProd: ${{ github.event.inputs.PushToProd }}
@@ -87,6 +104,7 @@ jobs:
               -FilesOnly $filesonly `
               -Only24 $only24 `
               -GenericTag $env:GenericTag `
+              -PublishOnly `
               -PushToDev `
               -PushToProd:$pushToProd
 

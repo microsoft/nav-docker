@@ -1,0 +1,242 @@
+# Builds and publishes Business Central images using Official 1ES templates.
+# Setup instructions: LOCAL_DEV_ENV.md
+# Keep only one publisher active: this pipeline or the GitHub workflow.
+
+name: $(PublishTarget)_$(Date:yyyyMMdd)$(Rev:.r)
+
+lockBehavior: sequential
+
+trigger: none
+pr: none
+
+resources:
+  repositories:
+    - repository: 1esPipelines
+      type: git
+      name: 1ESPipelineTemplates/1ESPipelineTemplates
+      ref: refs/tags/release
+
+parameters:
+  - name: PushToProd
+    displayName: Push to production
+    type: boolean
+    default: false
+
+variables:
+  - name: PublishTarget
+    ${{ if eq(parameters.PushToProd, true) }}:
+      value: Prod
+    ${{ else }}:
+      value: Dev
+  - name: AgentPoolName
+    value: d365bc-agentpool-nonprod-1ESPT
+  - name: AzureServiceConnection
+    value: NAVDocker-ImagePublisher
+  - name: PushRegistry
+    value: mcrbusinesscentral.azurecr.io
+  - name: PushToProd
+    value: ${{ parameters.PushToProd }}
+
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1esPipelines
+  parameters:
+    pool:
+      name: ${{ variables.AgentPoolName }}
+      os: windows
+    stages:
+      - stage: Analyze
+        displayName: Analyze images
+        condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+        jobs:
+          - job: AnalyzeImages
+            displayName: Analyze images
+            steps:
+              - checkout: self
+
+              - task: PowerShell@2
+                name: Analyze
+                displayName: Analyze
+                inputs:
+                  targetType: inline
+                  workingDirectory: $(Build.SourcesDirectory)
+                  script: |
+                    $pushToProd = $env:PUSHTOPROD -eq 'True'
+
+                    # Preview only: the final revision is allocated from ACR under the Publish stage lock.
+                    $tagver = [System.Version](Get-Content -Raw -Path "$env:BUILD_SOURCESDIRECTORY/generic/tag.txt").Trim(@(13, 10, 32, 0xFEFF))
+                    $publishedTags = (Invoke-RestMethod -Uri 'https://mcr.microsoft.com/v2/businesscentral/tags/list').tags
+                    $versionPrefix = [regex]::Escape("$($tagver.Major).$($tagver.Minor).$($tagver.Build).")
+                    $publishedRevisions = @($publishedTags | ForEach-Object {
+                        if ($_ -match "^\d+\.\d+\.\d+\.\d+-$versionPrefix(\d+)(-|$)") { [int]$Matches[1] }
+                    })
+                    [int] $revisionNumber = 0
+                    if ($publishedRevisions.Count -gt 0) {
+                        $revisionNumber = ($publishedRevisions | Measure-Object -Maximum).Maximum + 1
+                    }
+                    Write-Host "Highest published revision: $(if ($publishedRevisions.Count -gt 0) { $revisionNumber - 1 } else { 'none' }), using $revisionNumber"
+
+                    . "$env:BUILD_SOURCESDIRECTORY/build/analyzeimages.ps1" `
+                          -RevisionNumber $revisionNumber `
+                          -PushToProd:$pushToProd
+
+                    # Azure Pipelines matrix requires an object of legs: { "legName": { "tag": "..." } }
+                    # Leg names may only contain letters, numbers and underscores and must start with a letter
+                    $matrix = [ordered]@{}
+                    $imagesBcTags | ForEach-Object {
+                        $legName = "img_$($_.Split('|')[0] -replace '[^A-Za-z0-9_]', '_')"
+                        $matrix[$legName] = @{ "tag" = $_ }
+                    }
+                    $buildImagesMatrix = ConvertTo-Json -InputObject $matrix -Compress
+                    Write-Host "buildImagesMatrix=$buildImagesMatrix"
+
+                    Write-Host "##vso[task.setvariable variable=genericTag;isOutput=true]$genericTag"
+                    Write-Host "##vso[task.setvariable variable=digestsJson;isOutput=true]$digestsJson"
+                    Write-Host "##vso[task.setvariable variable=buildImagesJson;isOutput=true]$buildImagesJson"
+                    Write-Host "##vso[task.setvariable variable=buildImagesMatrix;isOutput=true]$buildImagesMatrix"
+
+      # Uses the service connection, so its approval check is requested here, after analysis.
+      # Skipped (no approval requested) when there are no missing images.
+      - stage: Publish
+        displayName: Build and publish images
+        dependsOn: Analyze
+        condition: >-
+          and(
+            succeeded(),
+            eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+            ne(coalesce(dependencies.Analyze.outputs['AnalyzeImages.Analyze.buildImagesMatrix'], '{}'), '{}')
+          )
+        jobs:
+          - job: PreparePublish
+            displayName: Allocate publishing revision
+            variables:
+              AnalyzedGenericTag: $[ stageDependencies.Analyze.AnalyzeImages.outputs['Analyze.genericTag'] ]
+            steps:
+              - checkout: self
+
+              - task: AzureCLI@2
+                name: Allocate
+                displayName: Allocate revision from current ACR tags
+                inputs:
+                  azureSubscription: $(AzureServiceConnection)
+                  scriptType: ps
+                  scriptLocation: inlineScript
+                  workingDirectory: $(Build.SourcesDirectory)
+                  inlineScript: |
+                    $genericTag = & "$env:BUILD_SOURCESDIRECTORY/build/getnextgenerictag.ps1" `
+                        -GenericTag $env:ANALYZEDGENERICTAG `
+                        -PushRegistry $env:PUSHREGISTRY
+                    Write-Host "Publishing with generic tag $genericTag"
+                    Write-Host "##vso[task.setvariable variable=genericTag;isOutput=true]$genericTag"
+
+          - job: BuildImages
+            displayName: Build image
+            dependsOn: PreparePublish
+            timeoutInMinutes: 360
+            strategy:
+              matrix: $[ coalesce(stageDependencies.Analyze.AnalyzeImages.outputs['Analyze.buildImagesMatrix'], '{}') ]
+            variables:
+              GenericTag: $[ dependencies.PreparePublish.outputs['Allocate.genericTag'] ]
+              # Job-specific Docker config, so registry credentials from az acr login don't persist on the agent
+              DockerConfigDir: $(Agent.TempDirectory)\docker-config-$(System.JobId)
+            steps:
+              - checkout: self
+
+              - task: PowerShell@2
+                displayName: Build image
+                inputs:
+                  targetType: inline
+                  workingDirectory: $(Build.SourcesDirectory)
+                  script: |
+                    $filesonly = ($env:IMAGETAG -like '*-filesonly|*')
+                    $only24 = ($env:IMAGETAG -like '*-24|*' -or $env:IMAGETAG -like '*-24-filesonly|*')
+                    $baseImage = $env:IMAGETAG.split('|')[1]
+                    $ltscTag = $env:IMAGETAG.split('|')[2]
+
+                    . "$env:BUILD_SOURCESDIRECTORY/build/build.ps1" `
+                        -BaseImage $baseImage `
+                        -LtscTag $ltscTag `
+                        -FilesOnly $filesonly `
+                        -Only24 $only24 `
+                        -GenericTag $env:GENERICTAG
+                env:
+                  IMAGETAG: $(tag)
+                  DOCKER_CONFIG: $(DockerConfigDir)
+
+              # A new AzureCLI task authenticates after the potentially hours-long build.
+              - task: AzureCLI@2
+                displayName: Publish image
+                inputs:
+                  azureSubscription: $(AzureServiceConnection)
+                  scriptType: ps
+                  scriptLocation: inlineScript
+                  workingDirectory: $(Build.SourcesDirectory)
+                  inlineScript: |
+                    $filesonly = ($env:IMAGETAG -like '*-filesonly|*')
+                    $only24 = ($env:IMAGETAG -like '*-24|*' -or $env:IMAGETAG -like '*-24-filesonly|*')
+                    $baseImage = $env:IMAGETAG.split('|')[1]
+                    $ltscTag = $env:IMAGETAG.split('|')[2]
+                    $pushToProd = $env:PUSHTOPROD -eq 'True'
+
+                    . "$env:BUILD_SOURCESDIRECTORY/build/build.ps1" `
+                        -BaseImage $baseImage `
+                        -LtscTag $ltscTag `
+                        -FilesOnly $filesonly `
+                        -Only24 $only24 `
+                        -GenericTag $env:GENERICTAG `
+                        -PushRegistry $env:PUSHREGISTRY `
+                        -PublishOnly `
+                        -PushToDev `
+                        -PushToProd:$pushToProd
+                env:
+                  IMAGETAG: $(tag)
+                  DOCKER_CONFIG: $(DockerConfigDir)
+
+              - task: PowerShell@2
+                displayName: Remove registry credentials
+                condition: always()
+                inputs:
+                  targetType: inline
+                  script: |
+                    # Log out first, as Docker may have stored the token in a credential helper (e.g. wincred) outside DOCKER_CONFIG
+                    $env:DOCKER_CONFIG = $env:DOCKERCONFIGDIR
+                    docker logout $env:PUSHREGISTRY
+                    if (Test-Path $env:DOCKERCONFIGDIR) { Remove-Item -Recurse -Force $env:DOCKERCONFIGDIR }
+                    exit 0
+
+          - job: MarkOldImagesStale
+            displayName: Mark old images stale
+            dependsOn: BuildImages
+            variables:
+              DigestsJson: $[ stageDependencies.Analyze.AnalyzeImages.outputs['Analyze.digestsJson'] ]
+              DockerConfigDir: $(Agent.TempDirectory)\docker-config-$(System.JobId)
+            steps:
+              - checkout: self
+
+              - task: AzureCLI@2
+                displayName: Mark stale
+                inputs:
+                  azureSubscription: $(AzureServiceConnection)
+                  scriptType: pscore
+                  scriptLocation: inlineScript
+                  workingDirectory: $(Build.SourcesDirectory)
+                  inlineScript: |
+                    $erroractionpreference = "STOP"
+                    $digests = $env:DIGESTSJSON | ConvertFrom-Json
+                    . "$env:BUILD_SOURCESDIRECTORY/build/markstale.ps1" `
+                        -Digests $digests `
+                        -PushRegistry $env:PUSHREGISTRY `
+                        -ProtectProductionTags:($env:PUSHTOPROD -ne 'True')
+                env:
+                  DOCKER_CONFIG: $(DockerConfigDir)
+
+              - task: PowerShell@2
+                displayName: Remove registry credentials
+                condition: always()
+                inputs:
+                  targetType: inline
+                  script: |
+                    # Log out first, as Docker may have stored the token in a credential helper (e.g. wincred) outside DOCKER_CONFIG
+                    $env:DOCKER_CONFIG = $env:DOCKERCONFIGDIR
+                    docker logout $env:PUSHREGISTRY
+                    if (Test-Path $env:DOCKERCONFIGDIR) { Remove-Item -Recurse -Force $env:DOCKERCONFIGDIR }
+                    exit 0

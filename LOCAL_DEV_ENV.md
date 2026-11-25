@@ -14,6 +14,13 @@ If you want to build a new docker image locally you can use the build.ps1 script
     $imageName = ./build/build.ps1 -BaseImage $baseImage -LtscTag 'ltsc2025' -FilesOnly $false -Only24 $false -GenericTag $GenericTag
 ```
 
+For long-running builds, authenticate to Azure after the build completes, then invoke
+`build.ps1` again with the same parameters plus `-PublishOnly -PushToDev` (and
+`-PushToProd` when needed). Run both invocations on the same agent. `-PublishOnly`
+reuses the local base image without pulling or rebuilding, so the production tag
+guard checks the version that was actually built. Both publishing pipelines use
+this split to avoid relying on an Azure session created before the build.
+
 If you'd rather use a different base image, you can also use one of the following:
 * mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-ltsc2016
 * mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-ltsc2019
@@ -26,3 +33,22 @@ Once you have a local image you can use New-BCContainer to spin up a Business Ce
 ```powershell
     New-BcContainer -accept_eula -accept_insiderEula -containerName "MyTestContainer" -artifactUrl (Get-BCArtifactUrl -select NextMajor -accept_insiderEula -country W1) -useGenericImage $imageName
 ```
+
+## Azure pipeline
+
+The manual Azure pipeline is defined in `.azure-pipelines/BuildMissingImages.yml`.
+It extends the Official 1ES Pipeline Template and uses the pool named by
+`AgentPoolName`, letting the pool select its configured image, with the
+`NAVDocker-ImagePublisher` Azure Resource Manager service connection.
+Authorize access to the template repository,
+agent pool, and service connection, and configure approval and Exclusive Lock
+checks on that connection.
+Runs publish only from `main`. The default `PushToProd: false` still publishes dev
+images and marks eligible old images stale; it is not a dry run.
+
+Analysis provides a preview before approval. Inside the locked Publish stage, the
+pipeline allocates the final revision from current ACR tags before building.
+Dev-only runs recheck production tag digests in ACR immediately before stale
+marking, excluding candidates that became production images while awaiting the
+lock. Keep the GitHub publisher disabled while this pipeline is active; the ADO
+lock does not coordinate with GitHub Actions.
