@@ -9,7 +9,7 @@ if (-not $filesonly) {
         throw 'The staged SqlServer 22.2.0 module is missing.'
     }
 
-    Write-Host 'Verifying SqlServer module loads in PowerShell 7'
+    Write-Host 'Verifying SqlServer 22.2.0 module loads in PowerShell 7'
     pwsh -NoProfile -Command 'Import-Module -Name SqlServer -RequiredVersion 22.2.0 -ErrorAction Stop'
     if ($LASTEXITCODE -ne 0) {
         throw "SqlServer module 22.2.0 failed to import in PowerShell 7 (pwsh exit $LASTEXITCODE)"
