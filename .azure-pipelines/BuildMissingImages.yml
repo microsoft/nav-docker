@@ -141,6 +141,17 @@ extends:
             steps:
               - checkout: self
 
+              - task: DownloadPackage@1
+                displayName: Stage SqlServer from DynamicsSMBPackages
+                condition: and(succeeded(), not(contains(variables['tag'], '-filesonly|')))
+                inputs:
+                  packageType: nuget
+                  feed: /DynamicsSMBPackages
+                  definition: SqlServer
+                  version: '22.2.0'
+                  extract: true
+                  downloadPath: $(Build.SourcesDirectory)\generic\dependencies\SqlServer\22.2.0
+
               - task: PowerShell@2
                 displayName: Build image
                 inputs:

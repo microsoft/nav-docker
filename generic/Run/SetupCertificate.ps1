@@ -7,6 +7,10 @@
 #     $dnsIdentity
 #
 
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingConvertToSecureStringWithPlainText', '',
+    Justification = 'PFX export and import APIs require the runtime-generated password as a SecureString. This exception covers conversion only, not password generation, disclosure or PFX storage.')]
+param()
+
 Write-Host "Creating Self Signed Certificate"
 $cert = New-SelfSignedCertificate -DnsName @($publicDnsName, $hostName) -CertStoreLocation Cert:\LocalMachine\My
 

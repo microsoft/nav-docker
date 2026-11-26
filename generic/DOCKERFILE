@@ -17,6 +17,8 @@ COPY Run /Run/
 
 RUN . .\Run\SetupGeneric1.ps1
 
+COPY ["dependencies/SqlServer/22.2.0/", "C:/Program Files/PowerShell/Modules/SqlServer/22.2.0/"]
+
 RUN . .\Run\SetupGeneric2.ps1
 
 HEALTHCHECK --interval=30s --timeout=10s CMD [ "powershell", ".\\Run\\HealthCheck.ps1" ]

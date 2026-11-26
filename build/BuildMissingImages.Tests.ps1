@@ -260,3 +260,58 @@ Describe 'Separate build and publication' {
         Should -Invoke docker -Times 0 -Exactly -ParameterFilter { $args[0] -eq 'push' }
     }
 }
+
+Describe 'Staged SqlServer container setup' {
+    BeforeAll {
+        function pwsh { throw 'Unexpected pwsh command' }
+        $setupScript = Join-Path $repositoryRoot 'generic\Run\SetupGeneric2.ps1'
+    }
+
+    BeforeEach {
+        $originalFilesOnly = $env:filesonly
+        $originalOnly24 = $env:only24
+        $env:filesonly = 'false'
+        $env:only24 = 'false'
+        Mock Write-Host {}
+        Mock Test-Path { return $true }
+        Mock pwsh { $global:LASTEXITCODE = 0 }
+        Mock Save-Module { throw 'Unexpected gallery access in the container' }
+    }
+
+    AfterEach {
+        $env:filesonly = $originalFilesOnly
+        $env:only24 = $originalOnly24
+    }
+
+    It 'verifies the staged module in PowerShell 7 without changing PS5 module resolution' {
+        $modulePathBefore = $env:PSModulePath
+        & $setupScript
+
+        Should -Invoke pwsh -Times 1 -Exactly -ParameterFilter {
+            $args -contains 'Import-Module -Name SqlServer -RequiredVersion 22.2.0 -ErrorAction Stop'
+        }
+        $env:PSModulePath | Should -Be $modulePathBefore
+        Should -Invoke Save-Module -Times 0 -Exactly
+    }
+
+    It 'fails if the staged module is absent' {
+        Mock Test-Path { return $false }
+
+        { & $setupScript } | Should -Throw '*staged SqlServer 22.2.0 module is missing*'
+        Should -Invoke pwsh -Times 0 -Exactly
+    }
+
+    It 'fails if PowerShell 7 cannot import the staged module' {
+        Mock pwsh { $global:LASTEXITCODE = 1 }
+
+        { & $setupScript } | Should -Throw '*failed to import*'
+    }
+
+    It 'does not require or import SqlServer in files-only setup' {
+        $env:filesonly = 'true'
+        & $setupScript
+
+        Should -Invoke Test-Path -Times 0 -Exactly
+        Should -Invoke pwsh -Times 0 -Exactly
+    }
+}

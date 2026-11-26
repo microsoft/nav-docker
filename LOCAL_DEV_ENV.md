@@ -21,6 +21,9 @@ reuses the local base image without pulling or rebuilding, so the production tag
 guard checks the version that was actually built. Both publishing pipelines use
 this split to avoid relying on an Azure session created before the build.
 
+For local full-image builds, place the extracted SqlServer 22.2.0 module in
+`generic\dependencies\SqlServer\22.2.0` before building.
+
 If you'd rather use a different base image, you can also use one of the following:
 * mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-ltsc2016
 * mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-ltsc2019

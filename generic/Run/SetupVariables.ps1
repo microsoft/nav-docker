@@ -1,4 +1,8 @@
-﻿$Accept_eula = "$env:Accept_eula"
+﻿[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingConvertToSecureStringWithPlainText', '',
+    Justification = 'Provisioning APIs require SecureString values for runtime-generated passwords and existing plaintext environment inputs. This exception preserves input compatibility, not password generation or disclosure behavior.')]
+param()
+
+$Accept_eula = "$env:Accept_eula"
 $Accept_outdated = "$env:Accept_outdated"
 
 $hostname = hostname
